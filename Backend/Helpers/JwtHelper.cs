@@ -9,7 +9,9 @@ namespace MedicalSystem.Helpers
     {
         public static string GenerateToken(int userId, string email, string role, string fullName, IConfiguration config)
         {
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:Key"]!));
+            // Must resolve the SAME keyProgram uses for validation: JWT_KEY env first, then Jwt:Key.
+            var jwtKey = config["JWT_KEY"] ?? config["Jwt:Key"];
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey ?? string.Empty));
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
             var expireMinutes = int.Parse(config["Jwt:ExpireMinutes"] ?? "1440");
 
