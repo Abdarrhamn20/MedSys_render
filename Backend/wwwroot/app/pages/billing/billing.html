@@ -1,0 +1,1144 @@
+<div class="billing-page">
+    <!-- Inline CSS for Premium Styles, Print, and 3D Flipping Card -->
+    <style>
+        /* Modern Styles for Billing Page */
+        .billing-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .billing-stat-card {
+            background: var(--bg-card, #fff);
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(0, 0, 0, 0.03);
+        }
+
+        .billing-stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
+        }
+
+        .billing-stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 5px;
+            height: 100%;
+            background: var(--stat-color, #4361ee);
+        }
+
+        .billing-stat-info h3 {
+            font-size: 0.85rem;
+            color: var(--text-muted, #888);
+            margin: 0 0 8px 0;
+            font-weight: 600;
+        }
+
+        .billing-stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-primary, #333);
+            margin: 0;
+        }
+
+        .billing-stat-icon {
+            width: 55px;
+            height: 55px;
+            border-radius: 12px;
+            background: var(--stat-bg, rgba(67, 97, 238, 0.1));
+            color: var(--stat-color, #4361ee);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        /* 3D Credit Card Flipping styles */
+        .credit-card-wrapper {
+            perspective: 1000px;
+            width: 100%;
+            max-width: 380px;
+            height: 220px;
+            margin: 0 auto 30px auto;
+        }
+
+        .credit-card {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            cursor: pointer;
+        }
+
+        .credit-card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 15px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            color: white;
+            box-sizing: border-box;
+        }
+
+        .card-front {
+            background: linear-gradient(135deg, #1d3557, #457b9d);
+        }
+
+        .card-back {
+            background: linear-gradient(135deg, #457b9d, #1d3557);
+            transform: rotateY(180deg);
+            padding: 0;
+            justify-content: flex-start;
+        }
+
+        .card-chip {
+            width: 50px;
+            height: 38px;
+            background: linear-gradient(135deg, #e5c158, #c99e32);
+            border-radius: 6px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-chip::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border: 1px solid rgba(0,0,0,0.15);
+            background: repeating-linear-gradient(0deg, transparent, transparent 4px, rgba(0,0,0,0.05) 4px, rgba(0,0,0,0.05) 8px);
+        }
+
+        .card-logo {
+            font-size: 1.8rem;
+            font-weight: 800;
+            font-style: italic;
+            text-align: left;
+            opacity: 0.9;
+        }
+
+        .card-number-display {
+            font-size: 1.45rem;
+            letter-spacing: 2px;
+            text-align: center;
+            font-family: monospace, Courier, sans-serif;
+            margin: 20px 0 10px 0;
+            direction: ltr;
+        }
+
+        .card-footer-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .card-holder-display {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .card-holder-display span:first-child {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.7;
+        }
+
+        .card-holder-display span:last-child {
+            font-size: 0.95rem;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        .card-expiry-display {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 2px;
+        }
+
+        .card-expiry-display span:first-child {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.7;
+        }
+
+        .card-expiry-display span:last-child {
+            font-size: 0.95rem;
+            font-weight: 500;
+            direction: ltr;
+        }
+
+        .card-black-stripe {
+            background: #111;
+            height: 45px;
+            width: 100%;
+            margin-top: 25px;
+        }
+
+        .card-signature-stripe {
+            background: #eee;
+            height: 40px;
+            width: 80%;
+            margin: 20px auto 0 20px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 15px;
+            color: #333;
+            font-family: monospace;
+            font-size: 1.1rem;
+            font-weight: bold;
+            direction: ltr;
+        }
+
+        .card-back-text {
+            padding: 15px;
+            font-size: 0.6rem;
+            opacity: 0.6;
+            text-align: justify;
+        }
+
+        /* Filter Controls */
+        .billing-filters-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+            background: var(--bg-card, #fff);
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            margin-bottom: 25px;
+        }
+
+        /* Table & Lists Styles */
+        .billing-table-card {
+            background: var(--bg-card, #fff);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            margin-bottom: 25px;
+        }
+
+        .billing-table-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-color, rgba(0,0,0,0.05));
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .billing-table-header h2 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin: 0;
+            color: var(--text-primary, #333);
+        }
+
+        /* Interactive Grid Cards for mobile-friendly view */
+        .billing-grid-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+            padding: 24px;
+        }
+
+        .invoice-card {
+            background: var(--bg-card, #fff);
+            border: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
+            border-radius: 14px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 200px;
+        }
+
+        .invoice-card:hover {
+            border-color: rgba(67, 97, 238, 0.3);
+            box-shadow: 0 8px 24px rgba(67, 97, 238, 0.06);
+            transform: translateY(-2px);
+        }
+
+        .invoice-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .invoice-id {
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: var(--text-primary, #333);
+        }
+
+        .invoice-badge-type {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .invoice-badge-type.consultation {
+            background-color: rgba(67, 97, 238, 0.1);
+            color: #4361ee;
+        }
+
+        .invoice-badge-type.pharmacy {
+            background-color: rgba(46, 196, 182, 0.1);
+            color: #2ec4b6;
+        }
+
+        .invoice-body {
+            flex-grow: 1;
+            margin-bottom: 20px;
+        }
+
+        .invoice-detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.85rem;
+        }
+
+        .invoice-detail-row span:first-child {
+            color: var(--text-muted, #888);
+        }
+
+        .invoice-detail-row span:last-child {
+            font-weight: 600;
+            color: var(--text-primary, #333);
+        }
+
+        .invoice-amount-box {
+            background: var(--bg-secondary, #f8f9fa);
+            border-radius: 8px;
+            padding: 10px 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .invoice-amount-box span:first-child {
+            font-size: 0.8rem;
+            color: var(--text-muted, #666);
+            font-weight: 600;
+        }
+
+        .invoice-amount-box span:last-child {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: var(--primary-color, #4361ee);
+        }
+
+        .invoice-card-footer {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        /* Chart card styles */
+        .billing-chart-section {
+            background: var(--bg-card, #fff);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            padding: 24px;
+            margin-bottom: 25px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 350px;
+        }
+
+        /* Printable Invoice Styles */
+        .printable-receipt-container {
+            background: #fff;
+            color: #333;
+            font-family: 'Cairo', sans-serif;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            max-width: 800px;
+            margin: 20px auto;
+            position: relative;
+        }
+
+        .receipt-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #efefef;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        .receipt-logo {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: #1d3557;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .receipt-logo i {
+            color: #e63946;
+        }
+
+        .receipt-info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        .receipt-info-block h4 {
+            margin: 0 0 12px 0;
+            font-size: 1rem;
+            color: #457b9d;
+            border-bottom: 1px solid #efefef;
+            padding-bottom: 6px;
+        }
+
+        .receipt-info-block p {
+            margin: 0 0 8px 0;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .receipt-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 40px;
+        }
+
+        .receipt-table th {
+            background-color: #f1faee;
+            color: #1d3557;
+            text-align: right;
+            padding: 12px;
+            font-weight: 700;
+            border-bottom: 2px solid #a8dadc;
+        }
+
+        .receipt-table td {
+            padding: 12px;
+            border-bottom: 1px solid #efefef;
+            font-size: 0.9rem;
+        }
+
+        .receipt-summary-block {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .receipt-qr-code {
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            background: #fff;
+            width: 130px;
+            height: 130px;
+            justify-content: center;
+        }
+
+        .receipt-totals {
+            width: 280px;
+        }
+
+        .receipt-total-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 0.9rem;
+        }
+
+        .receipt-total-row.grand-total {
+            border-top: 2px solid #1d3557;
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: #1d3557;
+            padding-top: 12px;
+            margin-top: 8px;
+        }
+
+        /* PRINT STYLES */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            .printable-receipt-container, .printable-receipt-container * {
+                visibility: visible;
+            }
+            .printable-receipt-container {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                box-shadow: none;
+                padding: 0;
+                margin: 0;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+
+    <!-- Top Tabs Selection -->
+    <div class="card-tabs-header no-print" style="margin-bottom: 25px; display: flex; gap: 15px; border-bottom: 2px solid rgba(0,0,0,0.05); padding-bottom: 10px;">
+        <button class="tab-btn" ng-class="{'active': vm.activeTab === 'stats'}" ng-if="vm.role === 'Admin'" ng-click="vm.setTab('stats')" style="font-family: 'Cairo'; padding: 10px 20px; border: none; background: none; font-weight: bold; cursor: pointer; border-bottom: 3px solid transparent;" ng-style="vm.activeTab === 'stats' ? {'border-color': '#4361ee', 'color': '#4361ee'} : {'color': '#666'}">
+            <i class="fas fa-chart-pie" style="margin-left: 8px;"></i>لوحة الإحصائيات
+        </button>
+        <button class="tab-btn" ng-class="{'active': vm.activeTab === 'invoices'}" ng-click="vm.setTab('invoices')" style="font-family: 'Cairo'; padding: 10px 20px; border: none; background: none; font-weight: bold; cursor: pointer; border-bottom: 3px solid transparent;" ng-style="vm.activeTab === 'invoices' ? {'border-color': '#4361ee', 'color': '#4361ee'} : {'color': '#666'}">
+            <i class="fas fa-file-invoice-dollar" style="margin-left: 8px;"></i>
+            {{ vm.role === 'Patient' ? 'فواتيري الطبية' : (vm.role === 'Pharmacist' ? 'فواتير صرف الأدوية' : 'إدارة الفواتير') }}
+        </button>
+    </div>
+
+    <!-- STATS VIEW (ADMIN ONLY) -->
+    <div class="tab-content no-print" ng-if="vm.activeTab === 'stats' && vm.role === 'Admin'">
+        <!-- Stats Summary Grid -->
+        <div class="billing-stats-grid">
+            <div class="billing-stat-card" style="--stat-color: #2DC653; --stat-bg: rgba(45, 198, 83, 0.1);">
+                <div class="billing-stat-info">
+                    <h3>إجمالي الإيرادات المحصلة</h3>
+                    <p class="billing-stat-value">{{ vm.stats.totalRevenue | number: 2 }} <small style="font-size: 0.9rem;">د.ل</small></p>
+                </div>
+                <div class="billing-stat-icon">
+                    <i class="fas fa-hand-holding-usd"></i>
+                </div>
+            </div>
+
+            <div class="billing-stat-card" style="--stat-color: #FF9F1C; --stat-bg: rgba(255, 159, 28, 0.1);">
+                <div class="billing-stat-info">
+                    <h3>الإيرادات المعلقة (غير المدفوعة)</h3>
+                    <p class="billing-stat-value">{{ vm.stats.pendingRevenue | number: 2 }} <small style="font-size: 0.9rem;">د.ل</small></p>
+                </div>
+                <div class="billing-stat-icon">
+                    <i class="fas fa-hourglass-half"></i>
+                </div>
+            </div>
+
+            <div class="billing-stat-card" style="--stat-color: #4361ee; --stat-bg: rgba(67, 97, 238, 0.1);">
+                <div class="billing-stat-info">
+                    <h3>فواتير مدفوعة</h3>
+                    <p class="billing-stat-value">{{ vm.stats.paidCount }}</p>
+                </div>
+                <div class="billing-stat-icon">
+                    <i class="fas fa-check-double"></i>
+                </div>
+            </div>
+
+            <div class="billing-stat-card" style="--stat-color: #e63946; --stat-bg: rgba(230, 57, 70, 0.1);">
+                <div class="billing-stat-info">
+                    <h3>فواتير معلقة</h3>
+                    <p class="billing-stat-value">{{ vm.stats.unpaidCount }}</p>
+                </div>
+                <div class="billing-stat-icon">
+                    <i class="fas fa-exclamation-circle"></i>
+                </div>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 25px; margin-bottom: 30px;" class="stats-visual-grid">
+            <!-- Modern Financial Chart -->
+            <div class="billing-chart-section">
+                <h3 style="font-family: 'Cairo'; font-size: 1.15rem; font-weight: 700; align-self: flex-start; margin-bottom: 20px; color: #333;">
+                    <i class="fas fa-chart-bar" style="margin-left: 8px; color: #4361ee;"></i>نسب الدفع (إلكتروني مقابل نقدي)
+                </h3>
+                <div style="position: relative; height: 260px; width: 100%;">
+                    <canvas id="billingStatsChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Department Revenue Cards -->
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+                <div class="billing-stat-card" style="--stat-color: #4361ee; --stat-bg: rgba(67, 97, 238, 0.1); flex-grow: 1;">
+                    <div class="billing-stat-info">
+                        <h3>إيرادات كشوفات الأطباء</h3>
+                        <p class="billing-stat-value" style="font-size: 1.5rem;">{{ vm.stats.consultationRevenue | number: 2 }} <small style="font-size: 0.8rem;">د.ل</small></p>
+                    </div>
+                    <div class="billing-stat-icon">
+                        <i class="fas fa-user-md"></i>
+                    </div>
+                </div>
+
+                <div class="billing-stat-card" style="--stat-color: #2ec4b6; --stat-bg: rgba(46, 196, 182, 0.1); flex-grow: 1;">
+                    <div class="billing-stat-info">
+                        <h3>إيرادات الصيدلية (الأدوية)</h3>
+                        <p class="billing-stat-value" style="font-size: 1.5rem;">{{ vm.stats.pharmacyRevenue | number: 2 }} <small style="font-size: 0.8rem;">د.ل</small></p>
+                    </div>
+                    <div class="billing-stat-icon">
+                        <i class="fas fa-pills"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Transactions -->
+        <div class="billing-table-card">
+            <div class="billing-table-header">
+                <h2>آخر 10 معاملات مالية في النظام</h2>
+                <i class="fas fa-receipt" style="color: #666;"></i>
+            </div>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; text-align: right;" class="table">
+                    <thead>
+                        <tr style="border-bottom: 2px solid rgba(0,0,0,0.05); background: #f8f9fa;">
+                            <th style="padding: 15px; font-weight: 700; color: #555;">رقم الفاتورة</th>
+                            <th style="padding: 15px; font-weight: 700; color: #555;">المريض</th>
+                            <th style="padding: 15px; font-weight: 700; color: #555;">نوع الفاتورة</th>
+                            <th style="padding: 15px; font-weight: 700; color: #555;">طريقة الدفع</th>
+                            <th style="padding: 15px; font-weight: 700; color: #555;">المبلغ الإجمالي</th>
+                            <th style="padding: 15px; font-weight: 700; color: #555;">الحالة</th>
+                            <th style="padding: 15px; font-weight: 700; color: #555;">التاريخ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="invoice in vm.stats.recentInvoices" style="border-bottom: 1px solid rgba(0,0,0,0.03); transition: background 0.2s;" onmouseover="this.style.backgroundColor='#fcfcfc'" onmouseout="this.style.backgroundColor='transparent'">
+                            <td style="padding: 15px; font-weight: 700; color: #4361ee;">#{{ invoice.invoiceID }}</td>
+                            <td style="padding: 15px; font-weight: 600;">{{ invoice.patientName }}</td>
+                            <td style="padding: 15px;">
+                                <span class="invoice-badge-type" ng-class="{'consultation': invoice.invoiceType === 'Consultation', 'pharmacy': invoice.invoiceType === 'Pharmacy', 'laboratory': invoice.invoiceType === 'Laboratory', 'radiology': invoice.invoiceType === 'Radiology', 'inpatient': invoice.invoiceType === 'Inpatient'}">
+                                    {{invoice.invoiceType === 'Consultation' ? 'كشف طبي' : invoice.invoiceType === 'Pharmacy' ? 'صيدلية' : invoice.invoiceType === 'Laboratory' ? 'تحاليل' : invoice.invoiceType === 'Radiology' ? 'أشعة' : invoice.invoiceType === 'Inpatient' ? 'تنويم' : invoice.invoiceType}}
+                                </span>
+                            </td>
+                            <td style="padding: 15px; font-weight: bold; color: #555;">
+                                <span ng-if="invoice.status === 'Paid'">
+                                    <i class="fas" ng-class="invoice.paymentMethod === 'Card' ? 'fa-credit-card text-primary' : 'fa-money-bill-wave text-success'" style="margin-left: 5px;"></i>
+                                    {{ invoice.paymentMethod === 'Card' ? 'إلكتروني' : 'نقدي' }}
+                                </span>
+                                <span ng-if="invoice.status !== 'Paid'">-</span>
+                            </td>
+                            <td style="padding: 15px; font-weight: 800; color: #333;">{{ invoice.totalAmount | number:2 }} د.ل</td>
+                            <td style="padding: 15px;">
+                                <span style="padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700;" ng-style="invoice.status === 'Paid' ? {'background':'rgba(45, 198, 83, 0.1)','color':'#2DC653'} : {'background':'rgba(230, 57, 70, 0.1)','color':'#e63946'}">
+                                    {{ invoice.status === 'Paid' ? 'مدفوعة' : 'غير مدفوعة' }}
+                                </span>
+                            </td>
+                            <td style="padding: 15px; color: #888; font-size: 0.8rem;">{{ invoice.createdAt | date: 'yyyy/MM/dd - hh:mm a' }}</td>
+                        </tr>
+                        <tr ng-if="!vm.stats.recentInvoices || vm.stats.recentInvoices.length === 0">
+                            <td colspan="7" style="padding: 30px; text-align: center; color: #888; font-family: 'Cairo';">
+                                <i class="fas fa-info-circle" style="font-size: 2rem; margin-bottom: 10px; display: block; color: #ccc;"></i>
+                                لا توجد معاملات مسجلة حالياً
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- INVOICES LIST & MANAGEMENT -->
+    <div class="tab-content no-print" ng-if="vm.activeTab === 'invoices'">
+        <!-- Filter Bar -->
+        <div class="billing-filters-bar">
+            <div style="display: flex; gap: 15px; flex-grow: 1;">
+                <!-- Status Filter -->
+                <div style="display: flex; flex-direction: column; gap: 6px; min-width: 150px;">
+                    <label style="font-size: 0.8rem; font-weight: bold; color: var(--text-secondary);">حالة الفاتورة</label>
+                    <select ng-model="vm.filterStatus" ng-change="vm.applyFilters()" style="padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary); font-family: 'Cairo'; outline: none;">
+                        <option value="" style="background: var(--bg-card); color: var(--text-primary);">كل الحالات</option>
+                        <option value="Unpaid" style="background: var(--bg-card); color: var(--text-primary);">غير مدفوعة</option>
+                        <option value="Paid" style="background: var(--bg-card); color: var(--text-primary);">مدفوعة</option>
+                    </select>
+                </div>
+
+                <!-- Type Filter (not shown for Pharmacist) -->
+                <div ng-if="vm.role !== 'Pharmacist'" style="display: flex; flex-direction: column; gap: 6px; min-width: 150px;">
+                    <label style="font-size: 0.8rem; font-weight: bold; color: var(--text-secondary);">نوع الخدمة</label>
+                    <select ng-model="vm.filterType" ng-change="vm.applyFilters()" style="padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary); font-family: 'Cairo'; outline: none;">
+                        <option value="" style="background: var(--bg-card); color: var(--text-primary);">كل الخدمات</option>
+                        <option value="Consultation" style="background: var(--bg-card); color: var(--text-primary);">كشف طبي</option>
+                        <option value="Pharmacy" style="background: var(--bg-card); color: var(--text-primary);">صرف أدوية</option>
+                        <option value="Laboratory" style="background: var(--bg-card); color: var(--text-primary);">تحاليل مخبرية</option>
+                        <option value="Radiology" style="background: var(--bg-card); color: var(--text-primary);">أشعة تشخيصية</option>
+                        <option value="Inpatient" style="background: var(--bg-card); color: var(--text-primary);">إيواء وتنويم</option>
+                    </select>
+                </div>
+            </div>
+
+            <button class="btn btn-primary" ng-click="vm.loadInvoices()" style="padding: 11px 24px; border-radius: 8px; font-family: 'Cairo'; font-weight: bold; background: #4361ee; color: white; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; align-self: flex-end;">
+                <i class="fas fa-sync" ng-class="{'fa-spin': vm.loading}"></i>تحديث
+            </button>
+        </div>
+
+        <!-- Invoices Grid Cards -->
+        <div class="billing-table-card">
+            <div class="billing-table-header">
+                <h2>{{ vm.role === 'Patient' ? 'فواتير الخدمات الطبية الخاصة بك' : (vm.role === 'Pharmacist' ? 'فواتير صرف الأدوية من الصيدلية' : 'كافة الفواتير الطبية والمالية') }}</h2>
+                <i class="fas fa-file-invoice" style="color: #666;"></i>
+            </div>
+            
+            <div class="billing-grid-cards" ng-if="vm.invoices.length > 0">
+                <div class="invoice-card" ng-repeat="invoice in vm.invoices">
+                    <div>
+                        <div class="invoice-card-header">
+                            <span class="invoice-id">فاتورة #{{ invoice.invoiceID }}</span>
+                            <span class="invoice-badge-type" ng-class="{'consultation': invoice.invoiceType === 'Consultation', 'pharmacy': invoice.invoiceType === 'Pharmacy', 'laboratory': invoice.invoiceType === 'Laboratory', 'radiology': invoice.invoiceType === 'Radiology', 'inpatient': invoice.invoiceType === 'Inpatient'}">
+                                {{invoice.invoiceType === 'Consultation' ? 'كشف طبي' : invoice.invoiceType === 'Pharmacy' ? 'صيدلية' : invoice.invoiceType === 'Laboratory' ? 'تحاليل' : invoice.invoiceType === 'Radiology' ? 'أشعة' : invoice.invoiceType === 'Inpatient' ? 'تنويم' : invoice.invoiceType}}
+                            </span>
+                        </div>
+
+                        <div class="invoice-body">
+                            <!-- Patient info (Admin only) -->
+                            <div class="invoice-detail-row" ng-if="vm.role !== 'Patient'">
+                                <span>المريض:</span>
+                                <span>{{ invoice.patientName }}</span>
+                            </div>
+
+                            <!-- Consultation Details -->
+                            <div class="invoice-detail-row" ng-if="invoice.invoiceType === 'Consultation'">
+                                <span>الطبيب المعالج:</span>
+                                <span>{{ invoice.doctorName }}</span>
+                            </div>
+                            <div class="invoice-detail-row" ng-if="invoice.invoiceType === 'Consultation'">
+                                <span>تاريخ الموعد:</span>
+                                <span>{{ invoice.appointmentDate | date: 'yyyy/MM/dd' }}</span>
+                            </div>
+
+                            <!-- Pharmacy Details -->
+                            <div class="invoice-detail-row" ng-if="invoice.invoiceType === 'Pharmacy'">
+                                <span>الدواء المصروف:</span>
+                                <span>{{ invoice.medicationName }}</span>
+                            </div>
+
+                            <!-- Laboratory Details -->
+                            <div class="invoice-detail-row" ng-if="invoice.invoiceType === 'Laboratory'">
+                                <span>التحاليل:</span>
+                                <span>{{ invoice.labTestsSummary || 'تحاليل مخبرية' }}</span>
+                            </div>
+
+                            <!-- Radiology Details -->
+                            <div class="invoice-detail-row" ng-if="invoice.invoiceType === 'Radiology'">
+                                <span>نوع الأشعة:</span>
+                                <span>{{ invoice.radiologySummary || 'فحص أشعة' }}</span>
+                            </div>
+
+                            <!-- Inpatient Details -->
+                            <div class="invoice-detail-row" ng-if="invoice.invoiceType === 'Inpatient'">
+                                <span>نوع الفاتورة:</span>
+                                <span>إيواء وتنويم</span>
+                            </div>
+
+                            <div class="invoice-detail-row">
+                                <span>حالة السداد:</span>
+                                <span style="font-weight: bold;" ng-style="invoice.status === 'Paid' ? {'color': '#2DC653'} : {'color': '#e63946'}">
+                                    {{ invoice.status === 'Paid' ? 'مدفوعة' : 'غير مدفوعة' }}
+                                </span>
+                            </div>
+
+                            <div class="invoice-amount-box">
+                                <span>المبلغ الإجمالي</span>
+                                <span>{{ invoice.totalAmount | number:2 }} د.ل</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="invoice-card-footer">
+                        <!-- Patient Payment Action -->
+                        <button class="btn btn-success" ng-if="vm.role === 'Patient' && invoice.status === 'Unpaid'" ng-click="vm.openPaymentMethodSelection(invoice)" style="flex-grow: 1; padding: 10px; font-weight: bold; font-family: 'Cairo'; border-radius: 8px; border: none; background: #2DC653; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <i class="fas fa-credit-card"></i>ادفع الآن
+                        </button>
+
+                        <!-- Cash Collection Action -->
+                        <button class="btn btn-warning" ng-if="(vm.role === 'Admin' || vm.role === 'Pharmacist' || vm.role === 'Cashier') && invoice.status === 'Unpaid'" ng-click="vm.payCash(invoice)" style="flex-grow: 1; padding: 10px; font-weight: bold; font-family: 'Cairo'; border-radius: 8px; border: none; background: #FF9F1C; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <i class="fas fa-money-bill-wave"></i>تحصيل كاش
+                        </button>
+
+                        <!-- Receipt details and printing -->
+                        <button class="btn btn-secondary" ng-if="invoice.status === 'Paid'" ng-click="vm.openReceipt(invoice)" style="flex-grow: 1; padding: 10px; font-weight: bold; font-family: 'Cairo'; border-radius: 8px; border: 1px solid #ddd; background: #f8f9fa; color: #333; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <i class="fas fa-print"></i>إيصال الدفع
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div ng-if="vm.invoices.length === 0 && !vm.loading" style="padding: 50px; text-align: center; color: #888; font-family: 'Cairo';">
+                <i class="fas fa-file-invoice-dollar" style="font-size: 3.5rem; color: #ccc; margin-bottom: 15px; display: block;"></i>
+                <p style="font-size: 1.1rem; font-weight: bold; margin: 0 0 10px 0;">لا توجد فواتير مطابقة لخيارات البحث</p>
+                <small>سيتم إنشاء فواتير تلقائية عند حجز المواعيد أو صرف الوصفات من الصيدلية</small>
+            </div>
+
+            <!-- Simple Pagination -->
+            <div class="billing-table-footer" ng-if="vm.totalPages > 1" style="padding: 15px 24px; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                <button class="btn btn-sm btn-secondary" ng-click="vm.pageChange(-1)" ng-disabled="vm.page === 1" style="padding: 6px 12px; border-radius: 6px; font-family: 'Cairo'; border: 1px solid var(--border-color); cursor: pointer; background: var(--bg-primary); color: var(--text-primary);">
+                    <i class="fas fa-chevron-right" style="margin-left: 5px;"></i>السابق
+                </button>
+                <span style="font-family: 'Cairo'; font-weight: bold; font-size: 0.85rem; color: var(--text-secondary);">صفحة {{ vm.page }} من {{ vm.totalPages }}</span>
+                <button class="btn btn-sm btn-secondary" ng-click="vm.pageChange(1)" ng-disabled="vm.page === vm.totalPages" style="padding: 6px 12px; border-radius: 6px; font-family: 'Cairo'; border: 1px solid var(--border-color); cursor: pointer; background: var(--bg-primary); color: var(--text-primary);">
+                    التالي<i class="fas fa-chevron-left" style="margin-right: 5px;"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CHOOSE PAYMENT METHOD MODAL (GLASSMORPHIC & INTERACTIVE) -->
+    <div class="modal-backdrop no-print" ng-if="vm.showPaymentMethodModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.3s ease;">
+        <div class="checkout-modal-content" style="background: var(--bg-card, #fff); width: 100%; max-width: 550px; border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); padding: 35px; position: relative; animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.15); font-family: 'Cairo'; text-align: right;">
+            
+            <button ng-click="vm.closePaymentMethodSelection()" style="position: absolute; top: 20px; left: 20px; background: #f1f3f5; border: none; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.1rem; color: #555; transition: background 0.2s;">
+                <i class="fas fa-times"></i>
+            </button>
+
+            <h3 style="font-size: 1.35rem; font-weight: 800; text-align: center; margin: 0 0 10px 0; color: #1d3557;">
+                اختر طريقة الدفع المناسبة لك
+            </h3>
+            <p style="color: #666; font-size: 0.88rem; text-align: center; margin-bottom: 25px; line-height: 1.5;">
+                يرجى تحديد الطريقة التي تفضلها لسداد فاتورتك الطبية. يدعم النظام السداد الإلكتروني بالبطاقة أو السداد النقدي (كاش).
+            </p>
+
+            <!-- Invoice Summary inside Payment Selection -->
+            <div style="background: rgba(67, 97, 238, 0.04); padding: 15px 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; border: 1.5px dashed rgba(67, 97, 238, 0.15); margin-bottom: 25px; direction: rtl;">
+                <div>
+                    <span style="font-size: 0.8rem; color: #888; display: block; font-weight: 600;">رقم الفاتورة: #{{vm.selectedInvoice.invoiceID}}</span>
+                    <span style="font-size: 0.85rem; font-weight: bold; color: #333;" ng-if="vm.selectedInvoice.invoiceType === 'Consultation'">كشف عيادة: د. {{vm.selectedInvoice.doctorName}}</span>
+                    <span style="font-size: 0.85rem; font-weight: bold; color: #333;" ng-if="vm.selectedInvoice.invoiceType === 'Pharmacy'">صيدلية: دواء {{vm.selectedInvoice.medicationName}}</span>
+                    <span style="font-size: 0.85rem; font-weight: bold; color: #333;" ng-if="vm.selectedInvoice.invoiceType === 'Laboratory'">تحاليل مخبرية: {{vm.selectedInvoice.labTestsSummary || 'طلبات تحاليل'}}</span>
+                    <span style="font-size: 0.85rem; font-weight: bold; color: #333;" ng-if="vm.selectedInvoice.invoiceType === 'Radiology'">أشعة تشخيصية: {{vm.selectedInvoice.radiologySummary || 'فحص أشعة'}}</span>
+                    <span style="font-size: 0.85rem; font-weight: bold; color: #333;" ng-if="vm.selectedInvoice.invoiceType === 'Inpatient'">إيواء وتنويم</span>
+                </div>
+                <div style="text-align: left;">
+                    <span style="font-size: 0.8rem; color: #888; display: block; font-weight: 600;">إجمالي المطلوب:</span>
+                    <strong style="font-size: 1.35rem; color: #2DC653; font-weight: 900;">{{vm.selectedInvoice.totalAmount | number:2}} د.ل</strong>
+                </div>
+            </div>
+
+            <!-- Two Interactive Cards for Selection -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 10px;">
+                
+                <!-- Card Option 1: Credit Card -->
+                <div ng-click="vm.choosePaymentMethod('Card')" style="border: 2px solid #e2e8f0; border-radius: 16px; padding: 24px; text-align: center; cursor: pointer; transition: all 0.3s ease; display: flex; flex-direction: column; align-items: center; gap: 12px;" 
+                     onmouseover="this.style.borderColor='#4361ee'; this.style.background='rgba(67, 97, 238, 0.03)'; this.style.transform='translateY(-5px)';" 
+                     onmouseout="this.style.borderColor='#e2e8f0'; this.style.background='transparent'; this.style.transform='none';">
+                    <div style="width: 55px; height: 55px; border-radius: 12px; background: rgba(67, 97, 238, 0.1); color: #4361ee; display: flex; align-items: center; justify-content: center; font-size: 1.8rem;">
+                        <i class="fas fa-credit-card"></i>
+                    </div>
+                    <strong style="font-size: 1rem; color: #2d3748; display: block;">الدفع بالبطاقة</strong>
+                    <span style="font-size: 0.72rem; color: #718096; line-height: 1.4; display: block;">سداد فوري آمن ومحاكاة بطاقة ثلاثية الأبعاد ممتازة</span>
+                </div>
+
+                <!-- Card Option 2: Cash -->
+                <div ng-click="vm.choosePaymentMethod('Cash')" style="border: 2px solid #e2e8f0; border-radius: 16px; padding: 24px; text-align: center; cursor: pointer; transition: all 0.3s ease; display: flex; flex-direction: column; align-items: center; gap: 12px;" 
+                     onmouseover="this.style.borderColor='#2DC653'; this.style.background='rgba(45, 198, 83, 0.03)'; this.style.transform='translateY(-5px)';" 
+                     onmouseout="this.style.borderColor='#e2e8f0'; this.style.background='transparent'; this.style.transform='none';">
+                    <div style="width: 55px; height: 55px; border-radius: 12px; background: rgba(45, 198, 83, 0.1); color: #2DC653; display: flex; align-items: center; justify-content: center; font-size: 1.8rem;">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </div>
+                    <strong style="font-size: 1rem; color: #2d3748; display: block;">الدفع نقداً (كاش)</strong>
+                    <span style="font-size: 0.72rem; color: #718096; line-height: 1.4; display: block;">سداد يدوي لدى المركز أو تسجيل دفع كاش سريع بالمنظومة</span>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <!-- DIGITAL CHECKOUT MODAL (3D CARD FLIP) -->
+    <div class="modal-backdrop no-print" ng-if="vm.showPayModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.3s ease;">
+        <div class="checkout-modal-content" style="background: var(--bg-card, #fff); width: 100%; max-width: 500px; border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); padding: 30px; position: relative; animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.15);">
+            
+            <button ng-click="vm.closePayModal()" style="position: absolute; top: 20px; left: 20px; background: #f1f3f5; border: none; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.1rem; color: #555; transition: background 0.2s;">
+                <i class="fas fa-times"></i>
+            </button>
+
+            <h3 style="font-family: 'Cairo'; font-size: 1.25rem; font-weight: 800; text-align: center; margin: 0 0 25px 0; color: #333;">
+                بوابة الدفع الإلكتروني الآمن
+            </h3>
+
+            <!-- 3D Card Visualizer -->
+            <div class="credit-card-wrapper" ng-click="vm.flipCard(!vm.cardFlipped)">
+                <div class="credit-card" ng-class="{'flipped': vm.cardFlipped}">
+                    <!-- Card Front -->
+                    <div class="card-front">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div class="card-chip"></div>
+                            <!-- Card brand image / text -->
+                            <div class="card-logo">
+                                <span ng-if="vm.cardBrand === 'visa'"><i class="fab fa-cc-visa" style="font-size: 2.2rem;"></i></span>
+                                <span ng-if="vm.cardBrand === 'mastercard'"><i class="fab fa-cc-mastercard" style="font-size: 2.2rem;"></i></span>
+                                <span ng-if="vm.cardBrand === 'unknown'"><i class="fas fa-credit-card" style="font-size: 1.8rem; opacity: 0.6;"></i></span>
+                            </div>
+                        </div>
+                        <div class="card-number-display">
+                            {{ vm.cardForm.cardNumber || '•••• •••• •••• ••••' }}
+                        </div>
+                        <div class="card-footer-info">
+                            <div class="card-holder-display">
+                                <span>صاحب البطاقة</span>
+                                <span>{{ vm.cardForm.cardName || 'اسم حامل البطاقة' | uppercase }}</span>
+                            </div>
+                            <div class="card-expiry-display">
+                                <span>صلاحية</span>
+                                <span>{{ vm.cardForm.expiryDate || 'MM/YY' }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Card Back -->
+                    <div class="card-back">
+                        <div class="card-black-stripe"></div>
+                        <div class="card-signature-stripe">
+                            {{ vm.cardForm.cvc || '•••' }}
+                        </div>
+                        <p class="card-back-text">
+                            هذه البطاقة افتراضية وتخضع لأنظمة الحماية والأمان العالية المعتمدة في منظومة العيادة الافتراضية. لا يتم حفظ بياناتك السرية.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Form -->
+            <form ng-submit="vm.submitCardPayment()" style="display: flex; flex-direction: column; gap: 15px; font-family: 'Cairo';">
+                
+                <!-- Invoice Summary Header inside Modal -->
+                <div style="background: rgba(67, 97, 238, 0.05); padding: 12px 18px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(67, 97, 238, 0.1);">
+                    <span style="font-weight: bold; color: #555; font-size: 0.9rem;">المبلغ المطلوب سداده:</span>
+                    <span style="font-weight: 800; color: #4361ee; font-size: 1.2rem;">{{ vm.selectedInvoice.totalAmount | number:2 }} د.ل</span>
+                </div>
+
+                <!-- Card Name Input -->
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <label style="font-size: 0.85rem; font-weight: bold; color: #555;">الاسم على البطاقة</label>
+                    <input type="text" ng-model="vm.cardForm.cardName" ng-focus="vm.flipCard(false)" placeholder="مثال: AHMAD AL-GHAMDI" style="padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-family: 'Cairo'; outline: none;" required>
+                </div>
+
+                <!-- Card Number Input -->
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <label style="font-size: 0.85rem; font-weight: bold; color: #555;">رقم البطاقة الائتمانية</label>
+                    <div style="position: relative; display: flex; align-items: center;">
+                        <input type="text" ng-model="vm.cardForm.cardNumber" ng-change="vm.onCardNumberChange()" ng-focus="vm.flipCard(false)" placeholder="4000 1234 5678 9010" maxlength="19" style="padding: 12px 12px 12px 45px; border: 1px solid #ddd; border-radius: 8px; font-family: 'Cairo'; outline: none; width: 100%; direction: ltr;" required>
+                        <i class="fas fa-lock" style="position: absolute; left: 15px; color: #ccc;"></i>
+                    </div>
+                </div>
+
+                <!-- Expiry Date & CVC -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <label style="font-size: 0.85rem; font-weight: bold; color: #555;">تاريخ الانتهاء</label>
+                        <input type="text" ng-model="vm.cardForm.expiryDate" placeholder="MM/YY" maxlength="5" ng-focus="vm.flipCard(false)" style="padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-family: 'Cairo'; outline: none; text-align: center; direction: ltr;" required>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <label style="font-size: 0.85rem; font-weight: bold; color: #555;">رمز الأمان (CVC)</label>
+                        <input type="password" ng-model="vm.cardForm.cvc" placeholder="•••" maxlength="3" ng-focus="vm.flipCard(true)" ng-blur="vm.flipCard(false)" style="padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-family: 'Cairo'; outline: none; text-align: center; direction: ltr;" required>
+                    </div>
+                </div>
+
+                <!-- Checkout Button -->
+                <button type="submit" ng-disabled="vm.processingPayment" style="background: #2DC653; color: white; border: none; padding: 14px; border-radius: 10px; font-family: 'Cairo'; font-weight: bold; font-size: 1.05rem; cursor: pointer; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 10px; transition: background 0.2s;">
+                    <span ng-if="!vm.processingPayment">
+                        <i class="fas fa-shield-alt"></i>إتمام الدفع الآمن
+                    </span>
+                    <span ng-if="vm.processingPayment">
+                        <i class="fas fa-circle-notch fa-spin"></i>جاري التحقق وسحب الأموال...
+                    </span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- PREMIUM INVOICE RECEIPT TEMPLATE (FOR MODAL & PRINTING) -->
+    <div class="modal-backdrop" ng-if="vm.showReceiptModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 20px; overflow-y: auto;">
+        
+        <!-- Main Receipt Frame -->
+        <div style="width: 100%; max-width: 800px; position: relative;">
+            
+            <!-- Actions Header for Screen Only -->
+            <div class="no-print" style="display: flex; justify-content: space-between; align-items: center; background: #1d3557; color: white; padding: 15px 25px; border-top-left-radius: 12px; border-top-right-radius: 12px;">
+                <h4 style="font-family: 'Cairo'; margin: 0; font-size: 1.05rem;"><i class="fas fa-file-invoice" style="margin-left: 8px;"></i>معاينة إيصال السداد المالي الرسمي</h4>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn" ng-click="vm.printReceipt()" style="background: #2ec4b6; border: none; color: white; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-family: 'Cairo'; font-weight: bold; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-print"></i>طباعة الإيصال
+                    </button>
+                    <button class="btn" ng-click="vm.closeReceipt()" style="background: #e63946; border: none; color: white; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-family: 'Cairo'; font-weight: bold; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-times"></i>إغلاق
+                    </button>
+                </div>
+            </div>
+
+            <!-- Receipt Content (This will print) -->
+            <div class="printable-receipt-container" style="border-top-left-radius: 0; border-top-right-radius: 0; margin-top: 0;">
+                
+                <!-- Official Header -->
+                <div class="receipt-header">
+                    <div class="receipt-logo">
+                        <i class="fas fa-clinic-medical"></i>
+                        <div style="display: flex; flex-direction: column;">
+                            <span style="font-size: 1.6rem; font-weight: 800; line-height: 1;">العيادة الافتراضية الذكية</span>
+                            <span style="font-size: 0.75rem; color: #666; font-weight: normal; letter-spacing: 0.5px;">IVS SMART CLINIC SYSTEM</span>
+                        </div>
+                    </div>
+                    <div style="text-align: left; font-size: 0.85rem; color: #555;">
+                        <p style="margin: 0 0 5px 0; font-weight: bold; color: #1d3557; font-size: 1rem;">إيصال سداد مالي رسمي</p>
+                        <p style="margin: 0 0 3px 0;">رقم المعاملة: <strong>{{ vm.currentReceipt.transactionReference }}</strong></p>
+                        <p style="margin: 0 0 3px 0;">رقم الفاتورة: #{{ vm.currentReceipt.invoiceID }}</p>
+                        <p style="margin: 0;">تاريخ السداد: {{ vm.currentReceipt.paidAt || vm.currentReceipt.createdAt | date: 'yyyy/MM/dd - hh:mm a' }}</p>
+                    </div>
+                </div>
+
+                <!-- Info Grid -->
+                <div class="receipt-info-grid">
+                    <div class="receipt-info-block">
+                        <h4>بيانات المريض</h4>
+                        <p><strong>الاسم الكرتوني:</strong> {{ vm.currentReceipt.patientName }}</p>
+                        <p><strong>رقم الهوية/المعرّف:</strong> Patient-{{ vm.currentReceipt.patientUserID }}</p>
+                        <p><strong>رقم الجوال:</strong> {{ vm.currentReceipt.patientPhone || 'غير مسجل' }}</p>
+                    </div>
+
+                    <div class="receipt-info-block">
+                        <h4>تفاصيل جهة الخدمة والفوترة</h4>
+                        <p><strong>اسم المنشأة:</strong> مستشفى العيادة الافتراضية العام</p>
+                        <p><strong>الموقع الالكتروني:</strong> www.virtual-clinic.gov.sa</p>
+                        <p><strong>طريقة الدفع المعتمدة:</strong> {{ vm.currentReceipt.paymentMethod === 'Card' ? 'دفع إلكتروني بالبطاقة' : 'دفع نقدي (كاش)' }}</p>
+                    </div>
+                </div>
+
+                <!-- Invoice Table -->
+                <table class="receipt-table">
+                    <thead>
+                        <tr>
+                            <th>وصف الخدمة الطبية / البند المالي</th>
+                            <th style="text-align: center; width: 100px;">الكمية</th>
+                            <th style="text-align: left; width: 150px;">سعر الوحدة</th>
+                            <th style="text-align: left; width: 150px;">الإجمالي</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Consultation Row -->
+                        <tr ng-if="vm.currentReceipt.invoiceType === 'Consultation'">
+                            <td>
+                                <strong>كشف عيادة الطبيب: د. {{ vm.currentReceipt.doctorName }}</strong><br>
+                                <small style="color: #666;">حجز موعد طبي استشاري وتخصص: {{ vm.currentReceipt.doctorSpecialty || 'عام' }}</small>
+                            </td>
+                            <td style="text-align: center;">1</td>
+                            <td style="text-align: left;">{{ vm.currentReceipt.amount | number:2 }} د.ل</td>
+                            <td style="text-align: left;">{{ vm.currentReceipt.amount | number:2 }} د.ل</td>
+                        </tr>
+
+                        <!-- Pharmacy Medication Row -->
+                        <tr ng-if="vm.currentReceipt.invoiceType === 'Pharmacy'">
+                            <td>
+                                <strong>صرف وصفة طبية أدوية: {{ vm.currentReceipt.medicationName }}</strong><br>
+                                <small style="color: #666;">الأدوية المعتمدة والمصروفة من مستودع وصيدلية المنظومة الذكية</small>
+                            </td>
+                            <td style="text-align: center;">{{ vm.currentReceipt.quantityDispensed || 1 }}</td>
+                            <td style="text-align: left;">{{ (vm.currentReceipt.amount / (vm.currentReceipt.quantityDispensed || 1)) | number:2 }} د.ل</td>
+                            <td style="text-align: left;">{{ vm.currentReceipt.amount | number:2 }} د.ل</td>
+                        </tr>
+
+                        <!-- Laboratory Row -->
+                        <tr ng-if="vm.currentReceipt.invoiceType === 'Laboratory'">
+                            <td>
+                                <strong>تحاليل مخبرية - طلب رقم #{{ vm.currentReceipt.labOrderID }}</strong><br>
+                                <small style="color: #666;" ng-if="vm.currentReceipt.labTests && vm.currentReceipt.labTests.length > 0">
+                                    التحاليل: <span ng-repeat="test in vm.currentReceipt.labTests">{{ test.testName }}<span ng-if="!$last">، </span></span>
+                                </small>
+                                <small style="color: #666;" ng-if="!vm.currentReceipt.labTests || vm.currentReceipt.labTests.length === 0">تحاليل مخبرية</small>
+                            </td>
+                            <td style="text-align: center;">{{ (vm.currentReceipt.labTests ? vm.currentReceipt.labTests.length : 1) }}</td>
+                            <td style="text-align: left;">{{ vm.currentReceipt.amount | number:2 }} د.ل</td>
+                            <td style="text-align: left;">{{ vm.currentReceipt.totalAmount | number:2 }} د.ل</td>
+                        </tr>
+
+                        <!-- Radiology Row -->
+                        <tr ng-if="vm.currentReceipt.invoiceType === 'Radiology'">
+                            <td>
+                                <strong>فحص أشعة: {{ vm.currentReceipt.radiologyModality }} - {{ vm.currentReceipt.radiologyBodyPart }}</strong><br>
+                                <small style="color: #666;">طلب أشعة تشخيصية رقم #{{ vm.currentReceipt.radiologyOrderID }}</small>
+                            </td>
+                            <td style="text-align: center;">1</td>
+                            <td style="text-align: left;">{{ vm.currentReceipt.amount | number:2 }} د.ل</td>
+                            <td style="text-align: left;">{{ vm.currentReceipt.totalAmount | number:2 }} د.ل</td>
+                        </tr>
+
+                        <!-- Inpatient Row -->
+                        <tr ng-if="vm.currentReceipt.invoiceType === 'Inpatient'">
+                            <td>
+                                <strong>إيواء وتنويم مريض</strong><br>
+                                <small style="color: #666;">رسوم الإيواء والخدمات التمريضية والإقامة في المستشفى</small>
+                            </td>
+                            <td style="text-align: center;">1</td>
+                            <td style="text-align: left;">{{ vm.currentReceipt.amount | number:2 }} د.ل</td>
+                            <td style="text-align: left;">{{ vm.currentReceipt.totalAmount | number:2 }} د.ل</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- Summary Block -->
+                <div class="receipt-summary-block">
+                    <!-- Dynamic Secure Verification QR -->
+                    <div class="receipt-qr-code">
+                        <div style="background: #333; width: 85px; height: 85px; display: flex; align-items: center; justify-content: center; border-radius: 4px; position: relative;">
+                            <!-- Styled Faux QR Code Graphic -->
+                            <i class="fas fa-qrcode" style="font-size: 4.8rem; color: #fff;"></i>
+                        </div>
+                        <span style="font-size: 0.55rem; color: #777; font-weight: bold; text-align: center;">تحقق مشفر رقمي</span>
+                    </div>
+
+                    <div class="receipt-totals">
+                        <div class="receipt-total-row">
+                            <span>{{vm.currentReceipt.invoiceType === 'Consultation' ? 'قيمة الكشف' : vm.currentReceipt.invoiceType === 'Pharmacy' ? 'قيمة الأدوية' : vm.currentReceipt.invoiceType === 'Laboratory' ? 'قيمة التحاليل' : vm.currentReceipt.invoiceType === 'Radiology' ? 'قيمة الأشعة' : vm.currentReceipt.invoiceType === 'Inpatient' ? 'رسوم الإيواء' : 'المبلغ الفرعي'}}:</span>
+                            <span>{{ vm.currentReceipt.amount | number:2 }} د.ل</span>
+                        </div>
+                        <div class="receipt-total-row" ng-if="vm.currentReceipt.discount > 0">
+                            <span>خصم خاص / تأمين:</span>
+                            <span style="color: #e63946;">- {{ vm.currentReceipt.discount | number:2 }} د.ل</span>
+                        </div>
+                        <div class="receipt-total-row grand-total">
+                            <span>المبلغ الإجمالي المدفوع:</span>
+                            <span>{{ vm.currentReceipt.totalAmount | number:2 }} دينار ليبي</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Receipt Footer Info -->
+                <div style="text-align: center; margin-top: 50px; border-top: 1px solid #efefef; padding-top: 20px; font-size: 0.8rem; color: #888;">
+                    <p style="margin: 0 0 5px 0; font-weight: bold; color: #1d3557;">شكراً لثقتكم بالعيادة الافتراضية الذكية</p>
+                    <p style="margin: 0;">تم إصدار هذا الإيصال إلكترونياً ولا يحتاج إلى توقيع رسمي</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,341 @@
+<div class="page-content">
+
+    <!-- Tabs -->
+    <div style="display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap;">
+        <button class="btn" ng-class="vm.activeTab === 'dashboard' ? 'btn-primary' : 'btn-secondary'" ng-click="vm.setTab('dashboard')">
+            <i class="fas fa-chart-pie"></i> لوحة التحكم
+        </button>
+        <button class="btn" ng-class="vm.activeTab === 'inventory' ? 'btn-primary' : 'btn-secondary'" ng-click="vm.setTab('inventory')">
+            <i class="fas fa-pills"></i> مخزون الأدوية
+        </button>
+        <button class="btn" ng-class="vm.activeTab === 'dispense' ? 'btn-primary' : 'btn-secondary'" ng-click="vm.setTab('dispense')">
+            <i class="fas fa-prescription-bottle-alt"></i> صرف الوصفات
+            <span ng-if="vm.pendingPrescriptions.length > 0" style="background:#E63946;color:#fff;border-radius:10px;padding:1px 7px;font-size:0.7rem;margin-right:6px;">{{vm.pendingPrescriptions.length}}</span>
+        </button>
+        <button class="btn" ng-class="vm.activeTab === 'history' ? 'btn-primary' : 'btn-secondary'" ng-click="vm.setTab('history')">
+            <i class="fas fa-history"></i> سجل الصرف
+        </button>
+    </div>
+
+    <!-- =================== DASHBOARD TAB =================== -->
+    <div ng-if="vm.activeTab === 'dashboard'">
+        <!-- Stats Cards -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;" class="stagger-children">
+            <div class="card" style="padding: 20px; text-align: center; border-right: 4px solid var(--priority-urgent);">
+                <div style="font-size: 2rem; font-weight: 800; color: var(--priority-urgent);">{{vm.stats.pendingPrescriptions || 0}}</div>
+                <div class="text-muted" style="font-size: 0.85rem;">وصفات معلقة</div>
+            </div>
+            <div class="card" style="padding: 20px; text-align: center; border-right: 4px solid var(--priority-normal);">
+                <div style="font-size: 2rem; font-weight: 800; color: var(--priority-normal);">{{vm.stats.dispensedToday || 0}}</div>
+                <div class="text-muted" style="font-size: 0.85rem;">تم صرفها اليوم</div>
+            </div>
+            <div class="card" style="padding: 20px; text-align: center; border-right: 4px solid var(--primary);">
+                <div style="font-size: 2rem; font-weight: 800; color: var(--primary);">{{vm.stats.totalMedications || 0}}</div>
+                <div class="text-muted" style="font-size: 0.85rem;">إجمالي الأدوية</div>
+            </div>
+            <div class="card" style="padding: 20px; text-align: center; border-right: 4px solid var(--priority-emergency);">
+                <div style="font-size: 2rem; font-weight: 800; color: var(--priority-emergency);">{{vm.stats.lowStockCount || 0}}</div>
+                <div class="text-muted" style="font-size: 0.85rem;">مخزون منخفض</div>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <!-- Revenue -->
+            <div class="card" style="padding: 20px;">
+                <h4 style="margin-bottom: 16px; font-size: 1rem;"><i class="fas fa-coins" style="color: var(--priority-urgent);"></i> الإيرادات</h4>
+                <div style="display: flex; gap: 20px;">
+                    <div style="flex:1; text-align:center; padding:16px; background:var(--bg-primary); border-radius:10px;">
+                        <div style="font-size:1.4rem; font-weight:800; color:var(--priority-normal);">{{vm.stats.revenueToday | number:0}} <small>د.ل</small></div>
+                        <div class="text-muted" style="font-size:0.8rem;">إيرادات اليوم</div>
+                    </div>
+                    <div style="flex:1; text-align:center; padding:16px; background:var(--bg-primary); border-radius:10px;">
+                        <div style="font-size:1.4rem; font-weight:800; color:var(--primary);">{{vm.stats.revenueMonth | number:0}} <small>د.ل</small></div>
+                        <div class="text-muted" style="font-size:0.8rem;">إيرادات الشهر</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Low Stock Alerts -->
+            <div class="card" style="padding: 20px;">
+                <h4 style="margin-bottom: 16px; font-size: 1rem;"><i class="fas fa-exclamation-triangle" style="color: var(--priority-emergency);"></i> تنبيهات المخزون</h4>
+                <div ng-if="vm.lowStockItems.length === 0" class="text-muted" style="text-align:center; padding:20px;">لا توجد تنبيهات ✅</div>
+                <div ng-repeat="item in vm.lowStockItems | limitTo:5" style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border-color);">
+                    <span style="font-weight:600;">{{item.nameAr}}</span>
+                    <span style="background:var(--priority-emergency); color:#fff; padding:2px 10px; border-radius:10px; font-size:0.8rem;">{{item.quantityInStock}} {{item.unit}}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Medications -->
+        <div class="card" style="padding: 20px; margin-top: 20px;" ng-if="vm.stats.topMedications.length > 0">
+            <h4 style="margin-bottom: 16px; font-size: 1rem;"><i class="fas fa-fire" style="color: var(--priority-urgent);"></i> أكثر الأدوية طلباً هذا الشهر</h4>
+            <div ng-repeat="med in vm.stats.topMedications" style="display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--border-color);">
+                <span style="width:28px; height:28px; border-radius:50%; background:var(--primary-gradient); color:#fff; display:flex; align-items:center; justify-content:center; font-size:0.8rem; font-weight:700;">{{$index + 1}}</span>
+                <span style="flex:1; font-weight:600;">{{med.name}}</span>
+                <span style="background:var(--bg-primary); padding:4px 12px; border-radius:8px; font-weight:700; color:var(--primary);">{{med.count}}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- =================== INVENTORY TAB =================== -->
+    <div ng-if="vm.activeTab === 'inventory'">
+        <div class="card" style="padding: 20px;">
+            <!-- Header -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; gap: 10px; flex: 1; flex-wrap: wrap;">
+                    <div style="position:relative; flex:1; min-width:200px;">
+                        <input type="text" class="form-control" ng-model="vm.medSearch" ng-change="vm.loadMedications()" placeholder="بحث عن دواء..." style="padding-right:36px;">
+                        <i class="fas fa-search" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); color:var(--text-muted);"></i>
+                    </div>
+                    <select class="form-control" ng-model="vm.medCategory" ng-change="vm.loadMedications()" style="width:auto; min-width:140px;">
+                        <option value="">كل التصنيفات</option>
+                        <option ng-repeat="c in vm.categories" value="{{c}}">{{c}}</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" ng-click="vm.openAddMed()"><i class="fas fa-plus"></i> إضافة دواء</button>
+            </div>
+
+            <!-- Table -->
+            <div style="overflow-x: auto;">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>اسم الدواء</th>
+                            <th>التصنيف</th>
+                            <th>الشكل</th>
+                            <th>الكمية</th>
+                            <th>سعر البيع</th>
+                            <th>الصلاحية</th>
+                            <th>الحالة</th>
+                            <th>إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="med in vm.medications" ng-class="{'low-stock-row': med.isLowStock}">
+                            <td>{{med.medicationID}}</td>
+                            <td>
+                                <strong>{{med.nameAr}}</strong>
+                                <small class="text-muted" style="display:block;">{{med.name}}</small>
+                            </td>
+                            <td>{{med.category || '—'}}</td>
+                            <td>{{med.dosageForm || '—'}}</td>
+                            <td>
+                                <span ng-class="med.isLowStock ? 'status-badge status-emergency' : 'status-badge status-normal'">
+                                    {{med.quantityInStock}} {{med.unit}}
+                                </span>
+                            </td>
+                            <td>{{med.sellingPrice | number:0}} د.ل</td>
+                            <td>
+                                <span ng-if="med.expiryDate" ng-class="med.isExpired ? 'text-danger' : ''">{{med.expiryDate | date:'yyyy/MM'}}</span>
+                                <span ng-if="!med.expiryDate" class="text-muted">—</span>
+                            </td>
+                            <td>
+                                <span ng-if="med.isLowStock" class="status-badge status-emergency" style="font-size:0.7rem;"><i class="fas fa-exclamation-triangle"></i> منخفض</span>
+                                <span ng-if="med.isExpired" class="status-badge status-emergency" style="font-size:0.7rem;"><i class="fas fa-times-circle"></i> منتهي</span>
+                                <span ng-if="!med.isLowStock && !med.isExpired" class="status-badge status-normal" style="font-size:0.7rem;">متوفر</span>
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-primary" ng-click="vm.openEditMed(med)" style="padding:4px 8px; min-height:auto;"><i class="fas fa-edit"></i></button>
+                                <button class="btn btn-sm btn-danger" ng-click="vm.deleteMedication(med)" style="padding:4px 8px; min-height:auto;"><i class="fas fa-trash"></i></button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div ng-if="vm.medications.length === 0" style="text-align:center; padding:40px; color:var(--text-muted);">
+                <i class="fas fa-pills" style="font-size:3rem; margin-bottom:12px; opacity:0.3;"></i>
+                <p>لا توجد أدوية في المخزون</p>
+            </div>
+
+            <!-- Pagination -->
+            <div style="display:flex; justify-content:center; gap:8px; margin-top:16px;" ng-if="vm.medTotalPages > 1">
+                <button class="btn btn-sm btn-secondary" ng-click="vm.medPageChange(-1)" ng-disabled="vm.medPage <= 1"><i class="fas fa-chevron-right"></i></button>
+                <span style="padding:6px 14px; background:var(--bg-primary); border-radius:8px; font-weight:600;">{{vm.medPage}} / {{vm.medTotalPages}}</span>
+                <button class="btn btn-sm btn-secondary" ng-click="vm.medPageChange(1)" ng-disabled="vm.medPage >= vm.medTotalPages"><i class="fas fa-chevron-left"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =================== DISPENSE TAB =================== -->
+    <div ng-if="vm.activeTab === 'dispense'">
+        <div class="card" style="padding: 24px; border-radius: 16px;">
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+                <h4 style="margin: 0; font-size: 1.1rem; font-weight: 700; color: var(--primary);">
+                    <i class="fas fa-prescription-bottle-alt"></i> الوصفات الطبية المحولة للصيدلية ({{vm.pendingPrescriptionGroups.length}} مريض بانتظار الصرف)
+                </h4>
+                <!-- حقل البحث -->
+                <div style="position: relative; width: 300px;">
+                    <input type="text" class="form-control" ng-model="vm.dispenseSearch" placeholder="البحث باسم المريض أو الطبيب..." style="padding-right: 36px; border-radius: 8px; font-family: 'Cairo'; font-size: 0.85rem; height: 38px;">
+                    <i class="fas fa-search" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
+                </div>
+            </div>
+
+            <div ng-if="vm.pendingPrescriptionGroups.length === 0" style="text-align:center; padding:50px; color:var(--text-muted);">
+                <i class="fas fa-check-circle" style="font-size:3.5rem; margin-bottom:12px; color:var(--priority-normal); opacity:0.5;"></i>
+                <p style="font-weight: bold; font-size: 1.1rem; margin-bottom: 6px;">لا توجد وصفات طبية محولة للصرف حالياً 🎉</p>
+                <small>بمجرد قيام الطبيب بإرسال وصفة للمريض، ستظهر هنا فورياً.</small>
+            </div>
+
+            <!-- قائمة الوصفات المجمعة باسم المريض -->
+            <div ng-repeat="group in vm.pendingPrescriptionGroups | filter:vm.dispenseSearch" class="card" style="padding: 20px; margin-bottom: 20px; border-radius: 14px; border-right: 5px solid var(--primary); background: var(--bg-primary); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+                
+                <!-- رأس الكارت: بيانات المريض والزيارة -->
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; border-bottom: 1px dashed rgba(0,0,0,0.08); padding-bottom: 12px; margin-bottom: 16px;">
+                    <div>
+                        <div style="font-size: 1.2rem; font-weight: 800; color: #1d3557; display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                            <i class="fas fa-user-circle" style="color: var(--primary);"></i> الوصفة الطبية للمريض: {{group.patientName}}
+                        </div>
+                        <div style="display: flex; gap: 16px; font-size: 0.82rem; color: #666; flex-wrap: wrap;">
+                            <span><i class="fas fa-user-md"></i> <strong>الطبيب المعالج:</strong> د. {{group.doctorName}}</span>
+                            <span><i class="fas fa-phone-alt"></i> <strong>رقم الهاتف:</strong> {{group.patientPhone || 'غير متوفر'}}</span>
+                            <span><i class="fas fa-calendar-alt"></i> <strong>تاريخ الكشف:</strong> {{group.appointmentDate | date:'yyyy/MM/dd'}}</span>
+                            <span><i class="fas fa-file-invoice"></i> <strong>رقم السجل:</strong> #{{group.recordID}}</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-secondary btn-sm" ng-click="vm.printGroupPrescription(group)" style="font-size: 0.78rem; font-weight: bold; padding: 6px 12px; border-radius: 6px; display: flex; align-items: center; gap: 5px; height: 32px; min-height: auto;">
+                        <i class="fas fa-print"></i> طباعة الوصفة الطبية
+                    </button>
+                </div>
+
+                <!-- محتوى الكارت: قائمة الأدوية بالوصفة -->
+                <h5 style="margin: 0 0 10px; font-size: 0.9rem; color: #555; font-weight: bold;"><i class="fas fa-capsules"></i> قائمة الأدوية المطلوبة بالوصفة:</h5>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <div ng-repeat="p in group.prescriptions" style="background: rgba(255,255,255,0.7); border: 1px solid rgba(0,0,0,0.05); border-radius: 8px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                        <div style="flex: 1; min-width: 200px;">
+                            <strong style="color: var(--primary); font-size: 0.95rem; display: block;"><i class="fas fa-pills" style="margin-left: 6px;"></i>{{p.medicationName}}</strong>
+                            <div style="display: flex; gap: 15px; font-size: 0.8rem; color: #777; margin-top: 4px; flex-wrap: wrap;">
+                                <span><strong>الجرعة:</strong> {{p.dosage}}</span>
+                                <span><strong>التكرار:</strong> {{p.frequency || '—'}}</span>
+                                <span><strong>المدة:</strong> {{p.duration || '—'}}</span>
+                                <span ng-if="p.instructions" style="color: #457b9d;"><strong>تعليمات:</strong> {{p.instructions}}</span>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary btn-sm" ng-click="vm.openDispense(p)" style="font-size: 0.8rem; font-weight: bold; padding: 6px 14px; border-radius: 6px; display: flex; align-items: center; gap: 6px; min-height: auto; height: 32px;">
+                            <i class="fas fa-hand-holding-medical"></i> صرف الدواء
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- =================== HISTORY TAB =================== -->
+    <div ng-if="vm.activeTab === 'history'">
+        <div class="card" style="padding: 20px;">
+            <h4 style="margin-bottom: 16px; font-size: 1rem;"><i class="fas fa-history" style="color:var(--primary);"></i> سجل عمليات الصرف</h4>
+            <div style="overflow-x:auto;">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>الدواء</th>
+                            <th>الكمية</th>
+                            <th>السعر</th>
+                            <th>صُرف بواسطة</th>
+                            <th>التاريخ</th>
+                            <th>ملاحظات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="d in vm.dispenseHistory">
+                            <td>{{d.dispenseID}}</td>
+                            <td><strong>{{d.medicationName}}</strong></td>
+                            <td>{{d.quantityDispensed}}</td>
+                            <td>{{d.totalPrice | number:0}} د.ل</td>
+                            <td>{{d.dispensedBy}}</td>
+                            <td>{{d.dispensedAt | date:'yyyy/MM/dd HH:mm'}}</td>
+                            <td>{{d.notes || '—'}}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div ng-if="vm.dispenseHistory.length === 0" style="text-align:center; padding:40px; color:var(--text-muted);">
+                <i class="fas fa-inbox" style="font-size:3rem; margin-bottom:12px; opacity:0.3;"></i>
+                <p>لا توجد عمليات صرف مسجلة</p>
+            </div>
+            <div style="display:flex; justify-content:center; gap:8px; margin-top:16px;" ng-if="vm.historyTotalPages > 1">
+                <button class="btn btn-sm btn-secondary" ng-click="vm.historyPageChange(-1)" ng-disabled="vm.historyPage <= 1"><i class="fas fa-chevron-right"></i></button>
+                <span style="padding:6px 14px; background:var(--bg-primary); border-radius:8px; font-weight:600;">{{vm.historyPage}} / {{vm.historyTotalPages}}</span>
+                <button class="btn btn-sm btn-secondary" ng-click="vm.historyPageChange(1)" ng-disabled="vm.historyPage >= vm.historyTotalPages"><i class="fas fa-chevron-left"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =================== ADD/EDIT MEDICATION MODAL =================== -->
+    <div class="modal-overlay" ng-if="vm.showMedModal" ng-click="vm.showMedModal = false">
+        <div class="modal-content" style="max-width: 600px;" ng-click="$event.stopPropagation()">
+            <div class="modal-header">
+                <h4><i class="fas fa-pills" style="color:var(--primary); margin-left:8px;"></i> {{vm.editingMed ? 'تعديل دواء' : 'إضافة دواء جديد'}}</h4>
+                <button style="background:none; border:none; font-size:1.2rem; cursor:pointer; color:var(--text-muted);" ng-click="vm.showMedModal = false"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                    <div class="form-group"><label>اسم الدواء (عربي) *</label><input class="form-control" ng-model="vm.medForm.nameAr" placeholder="باراسيتامول"></div>
+                    <div class="form-group"><label>اسم الدواء (إنجليزي)</label><input class="form-control" ng-model="vm.medForm.name" placeholder="Paracetamol"></div>
+                    <div class="form-group"><label>التصنيف</label><input class="form-control" ng-model="vm.medForm.category" placeholder="مسكنات" list="catList">
+                        <datalist id="catList"><option ng-repeat="c in vm.categories" value="{{c}}"></option></datalist>
+                    </div>
+                    <div class="form-group"><label>الشكل الدوائي</label>
+                        <select class="form-control" ng-model="vm.medForm.dosageForm">
+                            <option value="أقراص">أقراص</option><option value="كبسولات">كبسولات</option><option value="شراب">شراب</option>
+                            <option value="حقن">حقن</option><option value="مرهم">مرهم</option><option value="قطرة">قطرة</option><option value="تحاميل">تحاميل</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label>الوحدة</label><input class="form-control" ng-model="vm.medForm.unit" placeholder="قرص، مل"></div>
+                    <div class="form-group"><label>الشركة المصنعة</label><input class="form-control" ng-model="vm.medForm.manufacturer"></div>
+                    <div class="form-group"><label>الكمية في المخزون</label><input type="number" class="form-control" ng-model="vm.medForm.quantityInStock" min="0"></div>
+                    <div class="form-group"><label>الحد الأدنى للتنبيه</label><input type="number" class="form-control" ng-model="vm.medForm.minStockLevel" min="0"></div>
+                    <div class="form-group"><label>سعر الشراء (د.ل)</label><input type="number" class="form-control" ng-model="vm.medForm.purchasePrice" min="0"></div>
+                    <div class="form-group"><label>سعر البيع (د.ل)</label><input type="number" class="form-control" ng-model="vm.medForm.sellingPrice" min="0"></div>
+                    <div class="form-group" style="grid-column:span 2;"><label>تاريخ الصلاحية</label><input type="date" class="form-control" ng-model="vm.medForm.expiryDate"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" ng-click="vm.saveMedication()" ng-disabled="vm.savingMed">
+                    <span ng-if="!vm.savingMed"><i class="fas fa-save"></i> حفظ</span>
+                    <span ng-if="vm.savingMed"><span class="spinner"></span> جاري الحفظ...</span>
+                </button>
+                <button class="btn btn-secondary" ng-click="vm.showMedModal = false">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =================== DISPENSE MODAL =================== -->
+    <div class="modal-overlay" ng-if="vm.showDispenseModal" ng-click="vm.showDispenseModal = false">
+        <div class="modal-content" style="max-width: 500px;" ng-click="$event.stopPropagation()">
+            <div class="modal-header">
+                <h4><i class="fas fa-hand-holding-medical" style="color:var(--priority-normal); margin-left:8px;"></i> صرف وصفة</h4>
+                <button style="background:none; border:none; font-size:1.2rem; cursor:pointer; color:var(--text-muted);" ng-click="vm.showDispenseModal = false"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div style="background:var(--bg-primary); padding:16px; border-radius:10px; margin-bottom:16px;">
+                    <div style="font-size:1.1rem; font-weight:700; color:var(--primary); margin-bottom:8px;">{{vm.selectedPrescription.medicationName}}</div>
+                    <div style="font-size:0.85rem; display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+                        <div><strong>المريض:</strong> {{vm.selectedPrescription.patientName}}</div>
+                        <div><strong>الجرعة:</strong> {{vm.selectedPrescription.dosage}}</div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>ربط بدواء من المخزون (اختياري)</label>
+                    <select class="form-control" ng-model="vm.dispenseForm.medicationID">
+                        <option value="">— بدون ربط —</option>
+                        <option ng-repeat="med in vm.medications" value="{{med.medicationID}}">{{med.nameAr}} (متوفر: {{med.quantityInStock}})</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>الكمية</label><input type="number" class="form-control" ng-model="vm.dispenseForm.quantity" min="1"></div>
+                <div class="form-group"><label>ملاحظات</label><input class="form-control" ng-model="vm.dispenseForm.notes" placeholder="ملاحظات إضافية..."></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-success" ng-click="vm.confirmDispense()" ng-disabled="vm.dispensing">
+                    <span ng-if="!vm.dispensing"><i class="fas fa-check"></i> تأكيد الصرف</span>
+                    <span ng-if="vm.dispensing"><span class="spinner"></span> جاري الصرف...</span>
+                </button>
+                <button class="btn btn-secondary" ng-click="vm.showDispenseModal = false">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+</div>

@@ -1,0 +1,81 @@
+# Spec — P2/8 المختبر المتقدم (Advanced Laboratory)
+
+## الهدف
+- تحاليل مركبة (Panels) — طلب واحد يتسع لعدة فحوصات
+- مزرعة وحساسية (Culture & Sensitivity)
+- ربط أجهزة (Device Integration — تسجيل نتائج من أجهزة)
+
+## البيانات الجديدة
+### LabTest (توسعة)
+- `IsPanel` bool = false — هل هو فحص مركب
+- `PanelID` int? — انتماء الفحص إلى بانل أب
+- `DeviceID` int? — الجهاز الافتراضي لتنفيذ الفحص
+- (الأسعار والفئات موجودة)
+
+### LabOrderItem (جديد) — عناصر الطلب
+- `LabOrderItemID` PK
+- `LabOrderID` FK → LabOrders
+- `LabTestID` FK → LabTests
+- `ResultValue` string?
+- `ResultStatus` string (Pending/Normal/High/Low/Critical)
+- `TechnicianNotes` string?
+- `CompletedAt` DateTime?
+- فهرس فريد (LabOrderID, LabTestID)
+
+### CultureSensitivity (جديد) — مزرعة وحساسية
+- `CultureSensitivityID` PK
+- `LabOrderItemID` FK (بشأن عنصر طلب نوعه مزرعة)
+- `Organism` string? — الكائن المستنبت
+- `GramStain` string? — صبغة غرام (Positive/Negative)
+- `CultureStatus` string (NoGrowth/Growth)
+- `QuantitativeResult` string? (نمو خفيف/متوسط/كثيف)
+- `SensitivityResults` ICollection<SensitivityResult>
+
+### SensitivityResult (جديد) — نتائج المضادات
+- `SensitivityResultID` PK
+- `CultureSensitivityID` FK
+- `AntibioticName` string
+- `Interpretation` string (Sensitive/Intermediate/Resistant)
+- `ZoneDiameter` decimal? (مم)
+
+### LabDevice (جديد) — الأجهزة
+- `LabDeviceID` PK
+- `DeviceName` string
+- `DeviceCode` string (فهرس فريد)
+- `DeviceModel` string?
+- `ConnectionType` string (Manual/HL7/ASTM/Serial) — للإشارة لا للاتصال الفعلي
+- `IsActive` bool
+
+## تعديل سلوك LabOrder
+- `CreateLabOrderDTO` يتقبل `LabTestIDs: List<int>` (يحتفظ بـ LabTestID للتوافق الخلفي).
+- عند إنشاء طلب: كل LabTestID يُنشئ LabOrderItem.
+- إذا كان الفحص المطلوب بانل (IsPanel=true) → تُضاف كل فحوصاته الفرعية كعناصر.
+- الـ order نفسه Status=Requested، كل عنصر ResultStatus=Pending.
+- لا يُنشئ قيداً محاسبياً — خارج النطاق (يرتبط لاحقاً بالفاتورة).
+
+## API (LabController)
+- `POST /api/lab/orders` — متعدد الفحوصات (بانل أو مباشر).
+- `GET /api/lab/orders/{id}` — طلب مع عناصره.
+- `PUT /api/lab/orders/{id}/items/{itemId}/result` — إدخال نتيجة عنصر (مع احتساب Normal/High/Low حسب المرجعية + Gender/Age).
+- `POST /api/lab/orders/{id}/items/{itemId}/culture` — حفظ بيانات مزرعة.
+- `POST /api/lab/orders/{id}/items/{itemId}/culture/{cultureId}/sensitivities` — إضافة نتائج مضادات.
+- `POST /api/lab/tests` / `PUT /api/lab/tests/{id}` / `DELETE /api/lab/tests/{id}` — إدارة الفحوصات (Admin/LabTechnician).
+- `POST /api/lab/tests/{id}/panel` — إضافة فحص فرعي إلى بانل (Admin/LabTechnician).
+- `GET/POST/PUT/DELETE /api/lab/devices` — إدارة الأجهزة (Admin).
+- `POST /api/lab/devices/{id}/capture` — تسجيل نتيجة قادمة من جهاز لعنصر طلب محدد `{ labOrderItemID, value, notes }` (Admin/LabTechnician).
+- بعد اكتمال كل العناصر → Status الطلب Completed تلقائياً.
+
+## الواجهة
+- تحديث `lab.html`/`lab.controller.js`:
+  - اختيار فحوصات متعددة + فكّ البانلات
+  - جدول عناصر الطلب مع إدخال نتيجة لكل عنصر
+  - تبويب "إدارة الفحوصات" (إنشاء/تعديل فحص + بانل + معايير)
+  - تبويب "المزرعة والحساسية" (أثناء إدخال نتيجة عنصر مزرعة)
+  - تبويب "الأجهزة" (إدارة + تسجيل نتيجة جهاز)
+- الأدوار: Admin/Doctor/LabTechnician كاملة؛ Patient يشاهد نتائجه فقط.
+
+## الضوابط
+- LabOrder.LabTestID يبقى إلزامياً للتوافق (يساوي أول بانل أو الفحص الوحيد).
+- منع حذف فحص مرجعي من قبل عناصر طلبات قائمة (Restrict).
+- الحساب التلقائي Normal/High/Low يراعي Gender/عمر المريض عند وجود معايير مناسبة.
+- الواجهة تعرض الأسماء العربية للدول (Sensitive=حساس، Intermediate=متوسط، Resistant=مقاوم).

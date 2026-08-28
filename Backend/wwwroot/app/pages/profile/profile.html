@@ -1,0 +1,175 @@
+<!-- Profile Page -->
+<div class="stagger-children">
+    <!-- Profile Header Card -->
+    <div class="card" style="margin-bottom: 24px; overflow: visible;">
+        <div style="background: var(--primary-gradient); padding: 32px 32px 60px; border-radius: 12px 12px 0 0; position: relative;">
+            <div style="position: absolute; bottom: -40px; right: 32px;">
+                <div class="avatar avatar-xl" style="border: 4px solid white; box-shadow: 0 4px 16px rgba(0,0,0,0.15); font-size: 2rem;">{{vm.user.fullName.charAt(0)}}</div>
+            </div>
+        </div>
+        <div class="card-body" style="padding: 48px 32px 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+                <div>
+                    <h2 style="margin-bottom: 4px;">{{vm.user.fullName}}</h2>
+                    <span class="badge" ng-class="{'badge-primary': vm.user.role === 'Admin', 'badge-normal': vm.user.role === 'Doctor', 'badge-urgent': vm.user.role === 'Patient'}">
+                        <i class="fas" ng-class="{'fa-user-shield': vm.user.role === 'Admin', 'fa-user-md': vm.user.role === 'Doctor', 'fa-user': vm.user.role === 'Patient'}"></i>
+                        {{vm.getRoleAr()}}
+                    </span>
+                    <p style="color: var(--text-secondary); margin-top: 8px; font-size: 0.9rem;">
+                        <i class="fas fa-envelope" style="margin-left: 4px;"></i> {{vm.user.email}}
+                        <span ng-if="vm.user.phone" style="margin-right: 16px;"><i class="fas fa-phone" style="margin-left: 4px;"></i> {{vm.user.phone}}</span>
+                    </p>
+                </div>
+                <button class="btn btn-secondary btn-sm" ng-click="vm.editMode = !vm.editMode">
+                    <i class="fas" ng-class="vm.editMode ? 'fa-times' : 'fa-edit'"></i> {{vm.editMode ? 'إلغاء' : 'تعديل'}}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Info / Edit -->
+    <div class="row">
+        <div class="col-6">
+            <div class="card" style="margin-bottom: 20px;">
+                <div class="card-header"><h4><i class="fas fa-user" style="color: var(--primary); margin-left: 8px;"></i> المعلومات الشخصية</h4></div>
+                <div class="card-body">
+                    <div ng-if="!vm.editMode">
+                        <div style="margin-bottom: 14px;"><strong>الاسم:</strong> {{vm.profile.fullName}}</div>
+                        <div style="margin-bottom: 14px;"><strong>البريد:</strong> {{vm.profile.email}}</div>
+                        <div style="margin-bottom: 14px;"><strong>الهاتف:</strong> {{vm.profile.phone || 'غير محدد'}}</div>
+                        <div ng-if="vm.user.role === 'Patient'">
+                            <div style="margin-bottom: 14px;"><strong>فصيلة الدم:</strong> {{vm.profile.bloodType || 'غير محدد'}}</div>
+                            <div style="margin-bottom: 14px;"><strong>الجنس:</strong> {{vm.profile.gender || 'غير محدد'}}</div>
+                            <div style="margin-bottom: 14px;"><strong>الأمراض المزمنة:</strong> {{vm.profile.chronicDiseases || 'لا يوجد'}}</div>
+                            <div style="margin-bottom: 14px;"><strong>الحساسية:</strong> {{vm.profile.allergies || 'لا يوجد'}}</div>
+                        </div>
+                        <div ng-if="vm.user.role === 'Doctor'">
+                            <div style="margin-bottom: 14px;"><strong>التخصص:</strong> {{vm.profile.specialty}}</div>
+                            <div style="margin-bottom: 14px;"><strong>رقم الترخيص:</strong> {{vm.profile.licenseNumber || 'غير محدد'}}</div>
+                            <div style="margin-bottom: 14px;"><strong>سعر الكشف:</strong> {{vm.profile.consultationFee | number:2}} دينار ليبي</div>
+                            <div style="margin-bottom: 14px;"><strong>أيام العمل:</strong> {{vm.profile.availableDaysDisplay}}</div>
+                            <div style="margin-bottom: 14px;"><strong>ساعات العمل:</strong> {{vm.profile.workHoursDisplay}}</div>
+                            <div style="margin-bottom: 14px;"><strong>جاهز للطوارئ:</strong> {{vm.profile.emergencyReady ? 'نعم' : 'لا'}}</div>
+                        </div>
+                    </div>
+                    <!-- Edit Mode -->
+                    <div ng-if="vm.editMode">
+                        <div class="alert alert-info"><i class="fas fa-info-circle"></i> يمكنك تعديل معلوماتك الشخصية</div>
+                        <div ng-if="vm.user.role === 'Patient'">
+                            <div class="form-group"><label>فصيلة الدم</label><select class="form-control" ng-model="vm.editData.bloodType"><option ng-repeat="b in ['A+','A-','B+','B-','AB+','AB-','O+','O-']" value="{{b}}">{{b}}</option></select></div>
+                            <div class="form-group"><label>الأمراض المزمنة</label><input class="form-control" ng-model="vm.editData.chronicDiseases"></div>
+                            <div class="form-group"><label>الحساسية</label><input class="form-control" ng-model="vm.editData.allergies"></div>
+                            <div class="form-group"><label>جهة اتصال طوارئ</label><input class="form-control" ng-model="vm.editData.emergencyContact"></div>
+                            <div class="form-group"><label>هاتف الطوارئ</label><input class="form-control" ng-model="vm.editData.emergencyPhone"></div>
+                        </div>
+                        <div ng-if="vm.user.role === 'Doctor'">
+                            <div class="form-group"><label>التخصص</label><input class="form-control" ng-model="vm.editData.specialty"></div>
+                            <div class="form-group"><label>رسوم الكشف (دينار ليبي)</label><input type="number" step="0.01" class="form-control" ng-model="vm.editData.consultationFee" required></div>
+                            <div class="form-group"><label>نبذة عنك</label><textarea class="form-control" ng-model="vm.editData.bio" rows="3"></textarea></div>
+                            <div class="form-group" style="margin-bottom: 14px;">
+                                <label style="font-weight: 700; margin-bottom: 8px; display: block; color: #333; font-size: 0.95rem;">أيام العمل</label>
+                                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                                    <label ng-repeat="d in vm.dayList" style="display: flex; align-items: center; gap: 6px; padding: 7px 12px; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; background: #f8fafc; font-size: 0.85rem; margin: 0;">
+                                        <input type="checkbox" ng-model="vm.selectedDays[d.code]" style="accent-color: #4361ee; width: 16px; height: 16px; cursor: pointer;"> {{d.nameAr}}
+                                    </label>
+                                </div>
+                                <small style="color: #888; font-size: 0.78rem; display: block; margin-top: 6px;">في حال عدم تحديد أي يوم يعتبر الطبيب متاحاً طوال أيام الأسبوع</small>
+                            </div>
+                            <div style="display: flex; gap: 12px;">
+                                <div class="form-group" style="flex: 1; margin-bottom: 14px;"><label>وقت بدء العمل</label><input type="time" class="form-control" ng-model="vm.editWorkStart" style="direction: ltr;"></div>
+                                <div class="form-group" style="flex: 1; margin-bottom: 14px;"><label>وقت انتهاء العمل</label><input type="time" class="form-control" ng-model="vm.editWorkEnd" style="direction: ltr;"></div>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" ng-click="vm.saveProfile()" ng-disabled="vm.saving">
+                            <span ng-if="!vm.saving"><i class="fas fa-save"></i> حفظ</span>
+                            <span ng-if="vm.saving"><span class="spinner"></span></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6">
+            <!-- System Operating Mode Setting Card (Admin Only) -->
+            <div class="card" style="margin-bottom: 20px;" ng-if="vm.user.role === 'Admin'">
+                <div class="card-header">
+                    <h4><i class="fas fa-sliders-h" style="color: var(--primary); margin-left: 8px;"></i> نمط نشاط المنظومة (System Operating Mode)</h4>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 16px;">
+                        حدد التخصص الأساسي لنشاط عيادتك لتهيئة القوائم والواجهات تلقائياً بما يلائم طبيعة عمل الكادر الطبي:
+                    </p>
+
+                    <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
+                        <!-- Mode Option: General -->
+                        <div style="border: 2px solid; border-radius: 10px; padding: 12px 16px; cursor: pointer; transition: all 0.2s;" 
+                             ng-style="{'border-color': vm.facilityMode === 'General' ? '#0077b6' : 'rgba(0,0,0,0.1)', 'background': vm.facilityMode === 'General' ? 'rgba(0,119,182,0.05)' : '#fff'}"
+                             ng-click="vm.saveFacilityMode('General')">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <div>
+                                    <strong style="color: #0077b6;"><i class="fas fa-clinic-medical me-1"></i> 1. نمط العيادة والمركز الطبي العام (General Clinic)</strong>
+                                    <div style="font-size: 0.78rem; color: #666; margin-top: 4px;">تفعيل المواعيد، المختبر، الأشعة، الصيدلية، الإيواء والخزينة (إخفاء التبويبات النفسية)</div>
+                                </div>
+                                <i class="fas fa-check-circle" ng-if="vm.facilityMode === 'General'" style="color: #0077b6; font-size: 1.2rem;"></i>
+                            </div>
+                        </div>
+
+                        <!-- Mode Option: Psychiatric -->
+                        <div style="border: 2px solid; border-radius: 10px; padding: 12px 16px; cursor: pointer; transition: all 0.2s;" 
+                             ng-style="{'border-color': vm.facilityMode === 'Psychiatric' ? '#7209b7' : 'rgba(0,0,0,0.1)', 'background': vm.facilityMode === 'Psychiatric' ? 'rgba(114,9,183,0.05)' : '#fff'}"
+                             ng-click="vm.saveFacilityMode('Psychiatric')">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <div>
+                                    <strong style="color: #7209b7;"><i class="fas fa-brain me-1"></i> 2. نمط مركز الصحة النفسية وتعديل السلوك (Psychiatric)</strong>
+                                    <div style="font-size: 0.78rem; color: #666; margin-top: 4px;">تفعيل الجلسات النفسية، المقاييس والاستبيانات والملفات السرية (إخفاء المختبرات العامة والأشعة)</div>
+                                </div>
+                                <i class="fas fa-check-circle" ng-if="vm.facilityMode === 'Psychiatric'" style="color: #7209b7; font-size: 1.2rem;"></i>
+                            </div>
+                        </div>
+
+                        <!-- Mode Option: Hybrid -->
+                        <div style="border: 2px solid; border-radius: 10px; padding: 12px 16px; cursor: pointer; transition: all 0.2s;" 
+                             ng-style="{'border-color': vm.facilityMode === 'Hybrid' ? '#2DC653' : 'rgba(0,0,0,0.1)', 'background': vm.facilityMode === 'Hybrid' ? 'rgba(45,198,83,0.05)' : '#fff'}"
+                             ng-click="vm.saveFacilityMode('Hybrid')">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <div>
+                                    <strong style="color: #2DC653;"><i class="fas fa-hospital me-1"></i> 3. نمط المركز المجمع الشامل (Hybrid Mode)</strong>
+                                    <div style="font-size: 0.78rem; color: #666; margin-top: 4px;">إظهار كافة الخدمات الطبية والنفسية معاً للمجمعات الطبية الكبيرة</div>
+                                </div>
+                                <i class="fas fa-check-circle" ng-if="vm.facilityMode === 'Hybrid'" style="color: #2DC653; font-size: 1.2rem;"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Change Password -->
+            <div class="card" style="margin-bottom: 20px;">
+                <div class="card-header"><h4><i class="fas fa-lock" style="color: var(--primary); margin-left: 8px;"></i> تغيير كلمة المرور</h4></div>
+                <div class="card-body">
+                    <div class="form-group"><label>كلمة المرور الحالية</label><input type="password" class="form-control" ng-model="vm.passwordData.currentPassword"></div>
+                    <div class="form-group"><label>كلمة المرور الجديدة</label><input type="password" class="form-control" ng-model="vm.passwordData.newPassword"></div>
+                    <button class="btn btn-warning" ng-click="vm.changePassword()" ng-disabled="vm.changingPw">
+                        <span ng-if="!vm.changingPw"><i class="fas fa-key"></i> تغيير كلمة المرور</span>
+                        <span ng-if="vm.changingPw"><span class="spinner"></span></span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="card">
+                <div class="card-header"><h4><i class="fas fa-chart-bar" style="color: var(--primary); margin-left: 8px;"></i> إحصائياتي</h4></div>
+                <div class="card-body">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;" ng-if="vm.user.role === 'Patient'">
+                        <div style="text-align: center; padding: 16px; background: var(--bg-primary); border-radius: 10px;"><div style="font-size: 1.5rem; font-weight: 800; color: var(--primary);">{{vm.profileStats.appointments || 0}}</div><small>مواعيد</small></div>
+                        <div style="text-align: center; padding: 16px; background: var(--bg-primary); border-radius: 10px;"><div style="font-size: 1.5rem; font-weight: 800; color: var(--priority-normal);">{{vm.profileStats.records || 0}}</div><small>سجلات</small></div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;" ng-if="vm.user.role === 'Doctor'">
+                        <div style="text-align: center; padding: 16px; background: var(--bg-primary); border-radius: 10px;"><div style="font-size: 1.5rem; font-weight: 800; color: var(--primary);">{{vm.profileStats.patients || 0}}</div><small>مرضى</small></div>
+                        <div style="text-align: center; padding: 16px; background: var(--bg-primary); border-radius: 10px;"><div style="font-size: 1.5rem; font-weight: 800; color: var(--priority-normal);">{{vm.profileStats.completed || 0}}</div><small>مكتمل</small></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

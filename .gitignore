@@ -1,0 +1,24 @@
+﻿# Build outputs
+**/bin/
+**/obj/
+publish/
+Backend/bin/
+Backend/obj/
+
+# IDE / tools
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# Uploaded patient files (ØªÙÙˆÙ„ÙŽÙ‘Ø¯ Ù…Ø­Ù„ÙŠØ§Ù‹ØŒ Ù„Ø§ ØªÙØ±ÙØ¹ Ù„Ù„Ù…Ø³ØªÙˆØ¯Ø¹)
+Backend/wwwroot/uploads/
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db

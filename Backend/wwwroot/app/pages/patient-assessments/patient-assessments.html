@@ -1,0 +1,132 @@
+<!-- Patient Assessments Page -->
+<div class="stagger-children">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+        <h2 style="margin: 0;"><i class="fas fa-clipboard-check" style="color: var(--primary);"></i> الاستبيانات والتقييمات النفسية</h2>
+    </div>
+
+    <!-- Tabs -->
+    <div style="display: flex; gap: 8px; margin-bottom: 20px;">
+        <button class="btn" ng-class="vm.activeTab === 'pending' ? 'btn-primary' : 'btn-secondary'" ng-click="vm.activeTab = 'pending'" style="position: relative;">
+            <i class="fas fa-hourglass-half"></i> بانتظار التعبئة
+            <span ng-if="vm.pending.length > 0" style="background: #E63946; color: white; font-size: 0.7rem; padding: 2px 7px; border-radius: 10px; margin-right: 6px; font-weight: bold;">{{vm.pending.length}}</span>
+        </button>
+        <button class="btn" ng-class="vm.activeTab === 'completed' ? 'btn-primary' : 'btn-secondary'" ng-click="vm.activeTab = 'completed'">
+            <i class="fas fa-check-circle"></i> مكتملة
+        </button>
+    </div>
+
+    <!-- ==================== Pending Tab ==================== -->
+    <div ng-if="vm.activeTab === 'pending'">
+        <div class="card" ng-repeat="assessment in vm.pending" style="margin-bottom: 20px; border-right: 4px solid #FF9F1C;">
+            <div class="card-body" style="padding: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+                    <div style="flex: 1;">
+                        <h4 style="margin: 0; color: var(--text-primary); font-size: 1.05rem;">
+                            <i class="fas fa-clipboard-list" style="color: var(--primary); margin-left: 8px;"></i>{{assessment.templateTitle}}
+                        </h4>
+                        <p style="margin: 4px 0 0; color: var(--text-secondary); font-size: 0.85rem;" ng-if="assessment.templateDescription">{{assessment.templateDescription}}</p>
+                        <small class="text-muted" style="font-size: 0.8rem;">
+                            <i class="fas fa-clock" style="margin-left: 4px;"></i> طُلب بتاريخ: {{assessment.createdAt | date:'yyyy/MM/dd hh:mm a'}}
+                        </small>
+                    </div>
+                    <span style="background: rgba(255, 159, 28, 0.1); color: #FF9F1C; padding: 4px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; white-space: nowrap;">
+                        <i class="fas fa-hourglass-half"></i> بانتظار التعبئة
+                    </span>
+                </div>
+
+                <button class="btn btn-sm btn-primary" ng-click="assessment.showForm = !assessment.showForm" style="margin-bottom: 12px;">
+                    <i class="fas" ng-class="assessment.showForm ? 'fa-chevron-up' : 'fa-pen'"></i>
+                    {{assessment.showForm ? 'إخفاء النموذج' : 'بدء التعبئة'}}
+                </button>
+
+                <!-- Dynamic Assessment Form -->
+                <div ng-if="assessment.showForm" style="background: var(--bg-primary); border-radius: 12px; padding: 24px; border: 1px solid var(--border-color);">
+                    <div ng-repeat="q in assessment.parsedSchema track by $index" style="margin-bottom: 20px; padding-bottom: 16px;" ng-style="{'border-bottom': $last ? 'none' : '1px solid var(--border-color)'}">
+                        <label style="font-weight: 600; color: var(--text-primary); font-size: 0.92rem; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                            <span style="background: var(--primary); color: white; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; flex-shrink: 0;">{{$index + 1}}</span>
+                            {{q.text}}
+                        </label>
+                        <textarea ng-if="q.type === 'text'" class="form-control" ng-model="assessment.answers[q.text]" rows="2" placeholder="اكتب إجابتك هنا..." style="resize: vertical; margin-top: 4px;"></textarea>
+                        <div ng-if="q.type === 'rating'" style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px;">
+                            <button ng-repeat="r in [1,2,3,4,5,6,7,8,9,10]" type="button" class="btn btn-sm" ng-class="assessment.answers[q.text] === r ? 'btn-primary' : 'btn-secondary'" ng-click="assessment.answers[q.text] = r" style="min-width: 38px; padding: 6px 8px; font-weight: bold;">{{r}}</button>
+                        </div>
+                        <div ng-if="q.type === 'yesno'" style="display: flex; gap: 10px; margin-top: 6px;">
+                            <button type="button" class="btn" ng-class="assessment.answers[q.text] === 'نعم' ? 'btn-primary' : 'btn-secondary'" ng-click="assessment.answers[q.text] = 'نعم'" style="min-width: 70px;"><i class="fas fa-check"></i> نعم</button>
+                            <button type="button" class="btn" ng-class="assessment.answers[q.text] === 'لا' ? 'btn-primary' : 'btn-secondary'" ng-click="assessment.answers[q.text] = 'لا'" style="min-width: 70px;"><i class="fas fa-times"></i> لا</button>
+                        </div>
+                        <div ng-if="q.type === 'choice'" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px;">
+                            <button ng-repeat="opt in q.options" type="button" class="btn btn-sm" ng-class="assessment.answers[q.text] === opt ? 'btn-primary' : 'btn-secondary'" ng-click="assessment.answers[q.text] = opt">{{opt}}</button>
+                        </div>
+                    </div>
+                    <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end;">
+                        <button class="btn btn-primary" ng-click="vm.submitAssessment(assessment)" ng-disabled="vm.submitting" style="padding: 8px 24px;">
+                            <span ng-if="!vm.submitting"><i class="fas fa-paper-plane"></i> إرسال الإجابات</span>
+                            <span ng-if="vm.submitting"><span class="spinner" style="width: 14px; height: 14px; border-width: 2px;"></span> جاري الإرسال...</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card" ng-if="vm.pending.length === 0">
+            <div class="card-body">
+                <div class="empty-state">
+                    <i class="fas fa-clipboard-check" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 12px;"></i>
+                    <h4>لا توجد استبيانات معلقة</h4>
+                    <p style="color: var(--text-secondary);">ستظهر هنا الاستبيانات التي يطلب منك الطبيب تعبئتها</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== Completed Tab ==================== -->
+    <div ng-if="vm.activeTab === 'completed'">
+        <div class="card" ng-repeat="assessment in vm.completed" style="margin-bottom: 16px; border-right: 4px solid var(--priority-normal);">
+            <div class="card-body" style="padding: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div>
+                        <h4 style="margin: 0; color: var(--text-primary); font-size: 1rem;">
+                            <i class="fas fa-check-circle" style="color: var(--priority-normal); margin-left: 8px;"></i>{{assessment.templateTitle}}
+                        </h4>
+                        <p style="margin: 4px 0 0; color: var(--text-secondary); font-size: 0.85rem;" ng-if="assessment.templateDescription">{{assessment.templateDescription}}</p>
+                        <small class="text-muted" style="font-size: 0.8rem;">
+                            <i class="fas fa-calendar-check" style="margin-left: 4px;"></i> اكتمل في: {{assessment.completedAt | date:'yyyy/MM/dd hh:mm a'}}
+                        </small>
+                    </div>
+                    <button class="btn btn-sm btn-primary" ng-click="vm.viewMyResult(assessment)"><i class="fas fa-eye"></i> عرض إجاباتي</button>
+                </div>
+            </div>
+        </div>
+        <div class="card" ng-if="vm.completed.length === 0">
+            <div class="card-body">
+                <div class="empty-state">
+                    <i class="fas fa-history" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 12px;"></i>
+                    <h4>لا توجد استبيانات مكتملة</h4>
+                    <p style="color: var(--text-secondary);">ستظهر هنا الاستبيانات التي قمت بتعبئتها سابقاً</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== View My Result Modal ==================== -->
+    <div class="modal-overlay" ng-if="vm.showMyResult" ng-click="vm.showMyResult = false">
+        <div class="modal-content" style="max-width: 600px;" ng-click="$event.stopPropagation()">
+            <div class="modal-header" style="background: var(--primary-gradient); color: white; border-radius: 16px 16px 0 0; display: flex; justify-content: space-between; align-items: center;">
+                <h4 style="color: white; margin: 0;"><i class="fas fa-clipboard-check" style="margin-left: 8px;"></i> إجابات الاستبيان</h4>
+                <button style="background:none; border:none; font-size:1.2rem; cursor:pointer; color: rgba(255,255,255,0.8);" ng-click="vm.showMyResult = false"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body" ng-if="vm.myResult" style="max-height: 60vh; overflow-y: auto;">
+                <h5 style="color: var(--primary); margin-bottom: 4px;">{{vm.myResult.templateTitle}}</h5>
+                <small class="text-muted" style="display: block; margin-bottom: 16px;">اكتمل في: {{vm.myResult.completedAt | date:'yyyy/MM/dd hh:mm a'}}</small>
+                <div ng-repeat="q in vm.myResult.parsedSchema track by $index" style="margin-bottom: 12px; background: var(--bg-primary); padding: 14px; border-radius: 8px; border-right: 3px solid var(--primary);">
+                    <div style="font-weight: 600; font-size: 0.9rem; color: var(--text-primary); margin-bottom: 6px;">
+                        <span style="color: var(--primary); margin-left: 6px;">{{$index + 1}}.</span> {{q.text}}
+                    </div>
+                    <div style="color: var(--primary); font-weight: bold; font-size: 0.95rem;">
+                        <i class="fas fa-angle-left" style="margin-left: 4px; font-size: 0.8rem;"></i>
+                        {{vm.myResult.parsedAnswers[q.text] || 'لا إجابة'}}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,1019 @@
+<div class="warehouse-page">
+
+    <style>
+        .wh-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 25px; }
+        .wh-stat-card { background: var(--bg-card, #fff); padding: 20px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.03); position: relative; overflow: hidden; }
+        .wh-stat-card::before { content: ''; position: absolute; top: 0; right: 0; width: 5px; height: 100%; background: var(--stat-color, #4361ee); }
+        .wh-stat-card h3 { font-size: 0.82rem; color: var(--text-muted, #888); margin: 0 0 8px 0; font-weight: 600; }
+        .wh-stat-value { font-size: 1.5rem; font-weight: 700; color: var(--text-primary, #333); margin: 0; }
+        .wh-filter-bar { display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; margin-bottom: 20px; }
+        .wh-filter-bar label { display: block; font-size: 0.8rem; font-weight: bold; color: var(--text-secondary, #555); margin-bottom: 6px; }
+        .wh-filter-bar select, .wh-filter-bar input { padding: 10px; border-radius: 8px; border: 1px solid var(--border-color, #ddd); background: var(--bg-primary, #fff); color: var(--text-primary, #333); font-family: 'Cairo'; outline: none; }
+        .wh-card { background: var(--bg-card, #fff); border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.03); overflow: hidden; }
+        .wh-card-header { display: flex; justify-content: space-between; align-items: center; padding: 18px 22px; border-bottom: 2px solid rgba(0,0,0,0.05); }
+        .wh-card-header h2 { font-size: 1.05rem; margin: 0; color: var(--text-primary, #333); font-weight: 700; }
+        .wh-table-wrap { overflow-x: auto; }
+        .wh-table { width: 100%; border-collapse: collapse; text-align: right; }
+        .wh-table thead tr { border-bottom: 2px solid rgba(0,0,0,0.05); background: #f8f9fa; }
+        .wh-table th { padding: 14px; font-weight: 700; color: #555; white-space: nowrap; }
+        .wh-table td { padding: 13px 14px; color: #333; border-bottom: 1px solid rgba(0,0,0,0.03); }
+        .wh-table tbody tr:hover { background: rgba(67, 97, 238, 0.03); }
+        .wh-tag { padding: 4px 12px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; white-space: nowrap; }
+        .wh-tag-in { background: rgba(45, 198, 83, 0.12); color: #1f9d55; }
+        .wh-tag-out { background: rgba(230, 57, 70, 0.12); color: #c0392b; }
+        .wh-tag-transfer { background: rgba(67, 97, 238, 0.12); color: #4361ee; }
+        .wh-empty { padding: 40px; text-align: center; color: #888; font-family: 'Cairo'; }
+        .wh-btn { padding: 10px 18px; border-radius: 8px; font-family: 'Cairo'; font-weight: bold; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; font-size: 0.85rem; }
+        .wh-btn-primary { background: #4361ee; color: #fff; }
+        .wh-btn-success { background: #2ec4b6; color: #fff; }
+        .wh-btn-danger { background: #e63946; color: #fff; }
+        .wh-btn-light { background: #f1f3f9; color: #555; }
+        .wh-btn[disabled] { opacity: 0.6; cursor: not-allowed; }
+        .wh-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 20px; }
+        .wh-modal { background: var(--bg-card, #fff); border-radius: 16px; width: 100%; max-width: 760px; max-height: 92vh; overflow-y: auto; box-shadow: 0 25px 60px rgba(0,0,0,0.25); }
+        .wh-modal-header { display: flex; justify-content: space-between; align-items: center; padding: 18px 22px; border-bottom: 2px solid rgba(0,0,0,0.05); position: sticky; top: 0; background: var(--bg-card, #fff); z-index: 2; }
+        .wh-modal-header h2 { font-size: 1.05rem; margin: 0; }
+        .wh-modal-body { padding: 22px; }
+        .wh-modal-footer { padding: 16px 22px; border-top: 2px solid rgba(0,0,0,0.05); display: flex; justify-content: flex-end; gap: 10px; }
+        .wh-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .wh-form-grid .full { grid-column: 1 / -1; }
+        .wh-field label { display: block; font-size: 0.8rem; font-weight: bold; color: var(--text-secondary, #555); margin-bottom: 6px; }
+        .wh-field input, .wh-field select, .wh-field textarea { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color, #ddd); background: var(--bg-primary, #fff); color: var(--text-primary, #333); font-family: 'Cairo'; outline: none; box-sizing: border-box; }
+        .wh-pagination { display: flex; justify-content: space-between; align-items: center; padding: 15px 22px; border-top: 2px solid rgba(0,0,0,0.05); color: #666; font-size: 0.85rem; }
+        .wh-badge { padding: 4px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; }
+        .wh-badge-draft { background: rgba(255, 159, 28, 0.12); color: #b57e12; }
+        .wh-badge-posted { background: rgba(45, 198, 83, 0.12); color: #1f9d55; }
+        .wh-badge-reversed { background: rgba(230, 57, 70, 0.12); color: #c0392b; }
+        .wh-tree { list-style: none; padding: 0; margin: 0; }
+        .wh-tree li { padding: 6px 0; }
+        .wh-tree li .wh-tree-node { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px; background: #f8f9fa; }
+        .wh-tree li .wh-tree-node:hover { background: rgba(67, 97, 238, 0.05); }
+        .wh-tree ul { list-style: none; padding-right: 25px; margin-top: 6px; }
+        .wh-line-row { display: grid; grid-template-columns: 1.4fr 0.7fr 0.7fr 1fr auto; gap: 10px; align-items: center; margin-bottom: 10px; }
+        @media (max-width: 600px) { .wh-form-grid { grid-template-columns: 1fr; } .wh-line-row { grid-template-columns: 1fr; } }
+    </style>
+
+    <!-- Tabs -->
+    <div class="card-tabs-header no-print" style="margin-bottom: 25px; display: flex; gap: 15px; border-bottom: 2px solid rgba(0,0,0,0.05); padding-bottom: 10px; flex-wrap: wrap;">
+        <button class="tab-btn" ng-click="vm.setTab('movements')" style="font-family: 'Cairo'; padding: 10px 20px; border: none; background: none; font-weight: bold; cursor: pointer; border-bottom: 3px solid transparent;" ng-style="vm.activeTab === 'movements' ? {'border-color': '#4361ee', 'color': '#4361ee'} : {'color': '#666'}">
+            <i class="fas fa-exchange-alt" style="margin-left: 8px;"></i>سندات المخزن
+        </button>
+        <button class="tab-btn" ng-click="vm.setTab('warehouses')" style="font-family: 'Cairo'; padding: 10px 20px; border: none; background: none; font-weight: bold; cursor: pointer; border-bottom: 3px solid transparent;" ng-style="vm.activeTab === 'warehouses' ? {'border-color': '#4361ee', 'color': '#4361ee'} : {'color': '#666'}">
+            <i class="fas fa-warehouse" style="margin-left: 8px;"></i>المخازن
+        </button>
+        <button class="tab-btn" ng-click="vm.setTab('items')" style="font-family: 'Cairo'; padding: 10px 20px; border: none; background: none; font-weight: bold; cursor: pointer; border-bottom: 3px solid transparent;" ng-style="vm.activeTab === 'items' ? {'border-color': '#4361ee', 'color': '#4361ee'} : {'color': '#666'}">
+            <i class="fas fa-boxes" style="margin-left: 8px;"></i>الأصناف والفئات
+        </button>
+        <button class="tab-btn" ng-click="vm.setTab('stock')" style="font-family: 'Cairo'; padding: 10px 20px; border: none; background: none; font-weight: bold; cursor: pointer; border-bottom: 3px solid transparent;" ng-style="vm.activeTab === 'stock' ? {'border-color': '#4361ee', 'color': '#4361ee'} : {'color': '#666'}">
+            <i class="fas fa-cubes" style="margin-left: 8px;"></i>الكميات والأرصدة
+        </button>
+        <button class="tab-btn" ng-click="vm.setTab('lowStock')" style="font-family: 'Cairo'; padding: 10px 20px; border: none; background: none; font-weight: bold; cursor: pointer; border-bottom: 3px solid transparent;" ng-style="vm.activeTab === 'lowStock' ? {'border-color': '#e63946', 'color': '#e63946'} : {'color': '#666'}">
+            <i class="fas fa-exclamation-triangle" style="margin-left: 8px;"></i>انخفاض المخزون
+        </button>
+        <button class="tab-btn" ng-click="vm.setTab('counts')" style="font-family: 'Cairo'; padding: 10px 20px; border: none; background: none; font-weight: bold; cursor: pointer; border-bottom: 3px solid transparent;" ng-style="vm.activeTab === 'counts' ? {'border-color': '#2ec4b6', 'color': '#2ec4b6'} : {'color': '#666'}">
+            <i class="fas fa-clipboard-check" style="margin-left: 8px;"></i>الجرد الدوري
+        </button>
+    </div>
+
+    <!-- ==================== MOVEMENTS ==================== -->
+    <div class="tab-content" ng-if="vm.activeTab === 'movements'">
+        <div class="wh-filter-bar">
+            <div>
+                <label>نوع السند</label>
+                <select ng-model="vm.filterType" ng-change="vm.applyMovementFilters()">
+                    <option value="">الكل</option>
+                    <option value="In">سند إدخال</option>
+                    <option value="Out">سند إخراج</option>
+                    <option value="Transfer">سند تحويل</option>
+                </select>
+            </div>
+            <div>
+                <label>الحالة</label>
+                <select ng-model="vm.filterStatus" ng-change="vm.applyMovementFilters()">
+                    <option value="">الكل</option>
+                    <option value="Draft">مسودة</option>
+                    <option value="Posted">مرحّل</option>
+                    <option value="Reversed">معكوس</option>
+                </select>
+            </div>
+            <div>
+                <label>من تاريخ</label>
+                <input type="date" ng-model="vm.filterFrom" ng-change="vm.applyMovementFilters()">
+            </div>
+            <div>
+                <label>إلى تاريخ</label>
+                <input type="date" ng-model="vm.filterTo" ng-change="vm.applyMovementFilters()">
+            </div>
+            <div style="flex-grow: 1;"></div>
+            <button class="wh-btn wh-btn-primary" ng-click="vm.openMovementModal()">
+                <i class="fas fa-plus"></i>سند جديد
+            </button>
+            <button class="wh-btn wh-btn-light" ng-click="vm.loadMovements()">
+                <i class="fas fa-sync"></i>تحديث
+            </button>
+            <button class="wh-btn wh-btn-success" ng-click="vm.exportMovements('xlsx')" style="background: #1f9d55;">
+                <i class="fas fa-file-excel"></i>Excel
+            </button>
+            <button class="wh-btn wh-btn-light" ng-click="vm.exportMovements('csv')">
+                <i class="fas fa-file-csv"></i>CSV
+            </button>
+        </div>
+
+        <div class="wh-card">
+            <div class="wh-card-header">
+                <h2><i class="fas fa-exchange-alt" style="margin-left: 8px; color: #4361ee;"></i>سندات الإدخال والإخراج والتحويل</h2>
+            </div>
+            <div class="wh-table-wrap">
+                <table class="wh-table">
+                    <thead>
+                        <tr>
+                            <th>رقم السند</th>
+                            <th>النوع</th>
+                            <th>التاريخ</th>
+                            <th>المخزن</th>
+                            <th>إلى</th>
+                            <th>عدد الأصناف</th>
+                            <th>الكمية</th>
+                            <th>القيمة (د.ل)</th>
+                            <th>الحالة</th>
+                            <th>بواسطة</th>
+                            <th>إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="movement in vm.movements">
+                            <td style="font-weight: bold;">{{ movement.movementNumber }}</td>
+                            <td>
+                                <span class="wh-tag" ng-class="{'wh-tag-in': movement.movementType === 'In', 'wh-tag-out': movement.movementType === 'Out', 'wh-tag-transfer': movement.movementType === 'Transfer'}">{{ vm.movementTypeAr(movement.movementType) }}</span>
+                            </td>
+                            <td>{{ movement.movementDate | date: 'yyyy-MM-dd' }}</td>
+                            <td>{{ movement.warehouseNameAr }}</td>
+                            <td>{{ movement.toWarehouseNameAr || '-' }}</td>
+                            <td>{{ movement.itemsCount }}</td>
+                            <td style="font-weight: bold;">{{ movement.totalQuantity | number: 2 }}</td>
+                            <td>{{ movement.totalValue | number: 2 }}</td>
+                            <td><span class="wh-badge" ng-class="vm.statusBadgeClass(movement.status)">{{ vm.statusAr(movement.status) }}</span></td>
+                            <td>{{ movement.createdByName }}</td>
+                            <td>
+                                <button class="wh-btn wh-btn-light" style="padding: 6px 12px;" ng-click="vm.openMovementDetail(movement)">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr ng-if="vm.movements.length === 0">
+                            <td colspan="11" class="wh-empty">لا توجد سندات مطابقة</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="wh-pagination">
+                <span>صفحة {{ vm.page }} من {{ vm.totalPages }}</span>
+                <div style="display: flex; gap: 8px;">
+                    <button class="wh-btn wh-btn-light" ng-disabled="vm.page <= 1" ng-click="vm.pageChange(-1)"><i class="fas fa-chevron-right"></i> السابق</button>
+                    <button class="wh-btn wh-btn-light" ng-disabled="vm.page >= vm.totalPages" ng-click="vm.pageChange(1)">التالي <i class="fas fa-chevron-left"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== WAREHOUSES ==================== -->
+    <div class="tab-content" ng-if="vm.activeTab === 'warehouses'">
+        <div class="wh-filter-bar">
+            <div style="flex-grow: 1;"></div>
+            <button class="wh-btn wh-btn-primary" ng-if="vm.isAdmin" ng-click="vm.openWarehouseModal(null)">
+                <i class="fas fa-plus"></i>مخزن جديد
+            </button>
+            <button class="wh-btn wh-btn-light" ng-click="vm.loadWarehouses()">
+                <i class="fas fa-sync"></i>تحديث
+            </button>
+        </div>
+
+        <div class="wh-card">
+            <div class="wh-card-header">
+                <h2><i class="fas fa-warehouse" style="margin-left: 8px; color: #4361ee;"></i>المخازن المتاحة</h2>
+            </div>
+            <div class="wh-table-wrap">
+                <table class="wh-table">
+                    <thead>
+                        <tr>
+                            <th>الكود</th>
+                            <th>اسم المخزن</th>
+                            <th>الاسم بالإنجليزية</th>
+                            <th>الموقع</th>
+                            <th>الحالة</th>
+                            <th ng-if="vm.isAdmin">إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="warehouse in vm.warehouses">
+                            <td style="font-weight: bold;">{{ warehouse.warehouseCode }}</td>
+                            <td>{{ warehouse.warehouseNameAr }}</td>
+                            <td>{{ warehouse.warehouseName }}</td>
+                            <td>{{ warehouse.location || '-' }}</td>
+                            <td>
+                                <span class="wh-tag" ng-class="warehouse.isActive ? 'wh-tag-in' : 'wh-tag-out'">{{ warehouse.isActive ? 'مفعّل' : 'معطّل' }}</span>
+                            </td>
+                            <td ng-if="vm.isAdmin">
+                                <button class="wh-btn wh-btn-light" style="padding: 6px 12px;" ng-click="vm.openWarehouseModal(warehouse)">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="wh-btn wh-btn-danger" style="padding: 6px 12px;" ng-click="vm.deleteWarehouse(warehouse)">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr ng-if="vm.warehouses.length === 0">
+                            <td colspan="6" class="wh-empty">لا توجد مخازن مسجلة</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== ITEMS & CATEGORIES ==================== -->
+    <div class="tab-content" ng-if="vm.activeTab === 'items'">
+        <div class="wh-filter-bar">
+            <div>
+                <label>الفئة</label>
+                <select ng-model="vm.itemFilterCategory" ng-change="vm.applyItemFilters()">
+                    <option value="">الكل</option>
+                    <option ng-repeat="category in vm.flatCategories" value="{{ category.categoryID }}">{{ category.categoryNameAr }}</option>
+                </select>
+            </div>
+            <div style="min-width: 220px;">
+                <label>بحث</label>
+                <input type="text" ng-model="vm.itemSearch" ng-keyup="$event.keyCode === 13 && vm.applyItemFilters()" placeholder="اسم الصنف أو الكود">
+            </div>
+            <button class="wh-btn wh-btn-light" ng-click="vm.applyItemFilters()">
+                <i class="fas fa-search"></i>بحث
+            </button>
+            <div style="flex-grow: 1;"></div>
+            <button class="wh-btn wh-btn-primary" ng-if="vm.isAdmin" ng-click="vm.openItemModal(null)">
+                <i class="fas fa-plus"></i>صنف جديد
+            </button>
+            <button class="wh-btn wh-btn-primary" ng-if="vm.isAdmin" ng-click="vm.openCategoryModal(null)" style="background: #2ec4b6;">
+                <i class="fas fa-folder-plus"></i>فئة جديدة
+            </button>
+            <button class="wh-btn wh-btn-success" ng-click="vm.exportItems('xlsx')" style="background: #1f9d55;">
+                <i class="fas fa-file-excel"></i>Excel
+            </button>
+            <button class="wh-btn wh-btn-light" ng-click="vm.exportItems('csv')">
+                <i class="fas fa-file-csv"></i>CSV
+            </button>
+        </div>
+
+        <div class="wh-stats-grid" style="grid-template-columns: 1fr 1.6fr;">
+            <div class="wh-card">
+                <div class="wh-card-header">
+                    <h2><i class="fas fa-sitemap" style="margin-left: 8px; color: #2ec4b6;"></i>شجرة الفئات</h2>
+                </div>
+                <div class="wh-modal-body">
+                    <ul class="wh-tree">
+                        <li ng-repeat="category in vm.categories">
+                            <div class="wh-tree-node">
+                                <i class="fas" ng-class="category.children.length > 0 ? 'fa-folder-open' : 'fa-folder'" style="color: #2ec4b6;"></i>
+                                <span style="font-weight: bold; flex-grow: 1;">{{ category.categoryNameAr }}</span>
+                                <span ng-if="category.children.length > 0" style="font-size: 0.72rem; color: #888;">{{ category.children.length }} فروع</span>
+                                <button class="wh-btn wh-btn-light" style="padding: 4px 10px;" ng-if="vm.isAdmin" ng-click="vm.openCategoryModal(category)">
+                                    <i class="fas fa-edit" style="font-size: 0.75rem;"></i>
+                                </button>
+                            </div>
+                            <ul ng-if="category.children.length > 0">
+                                <li ng-repeat="child in category.children">
+                                    <div class="wh-tree-node" style="background: #fff; border: 1px solid rgba(0,0,0,0.04);">
+                                        <i class="fas fa-folder" style="color: #2ec4b6;"></i>
+                                        <span style="font-weight: bold; flex-grow: 1;">{{ child.categoryNameAr }}</span>
+                                        <button class="wh-btn wh-btn-light" style="padding: 4px 10px;" ng-if="vm.isAdmin" ng-click="vm.openCategoryModal(child)">
+                                            <i class="fas fa-edit" style="font-size: 0.75rem;"></i>
+                                        </button>
+                                    </div>
+                                </li>
+                            </ul>
+                        </li>
+                        <li ng-if="vm.categories.length === 0">
+                            <div class="wh-empty" style="padding: 20px;">لا توجد فئات — أنشئ فئة جديدة أولاً</div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="wh-card">
+                <div class="wh-card-header">
+                    <h2><i class="fas fa-boxes" style="margin-left: 8px; color: #4361ee;"></i>الأصناف</h2>
+                </div>
+                <div class="wh-table-wrap">
+                    <table class="wh-table">
+                        <thead>
+                            <tr>
+                                <th>الكود</th>
+                                <th>اسم الصنف</th>
+                                <th>الفئة</th>
+                                <th>الوحدة</th>
+                                <th>سعر الشراء</th>
+                                <th>سعر البيع</th>
+                                <th>حد إعادة الطلب</th>
+                                <th>الحالة</th>
+                                <th ng-if="vm.isAdmin">إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr ng-repeat="item in vm.items">
+                                <td style="font-weight: bold;">{{ item.itemCode }}</td>
+                                <td>{{ item.itemNameAr }}</td>
+                                <td>{{ item.categoryNameAr }}</td>
+                                <td>{{ item.unit }}</td>
+                                <td>{{ item.purchasePrice | number: 2 }}</td>
+                                <td>{{ item.sellingPrice | number: 2 }}</td>
+                                <td>{{ item.reorderLevel }}</td>
+                                <td>
+                                    <span class="wh-tag" ng-class="item.isActive ? 'wh-tag-in' : 'wh-tag-out'">{{ item.isActive ? 'مفعّل' : 'معطّل' }}</span>
+                                </td>
+                                <td ng-if="vm.isAdmin">
+                                    <button class="wh-btn wh-btn-light" style="padding: 6px 12px;" ng-click="vm.openItemModal(item)">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr ng-if="vm.items.length === 0">
+                                <td colspan="9" class="wh-empty">لا توجد أصناف مطابقة</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="wh-pagination">
+                    <span>صفحة {{ vm.itemPage }} من {{ vm.itemTotalPages }}</span>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="wh-btn wh-btn-light" ng-disabled="vm.itemPage <= 1" ng-click="vm.itemPageChange(-1)"><i class="fas fa-chevron-right"></i> السابق</button>
+                        <button class="wh-btn wh-btn-light" ng-disabled="vm.itemPage >= vm.itemTotalPages" ng-click="vm.itemPageChange(1)">التالي <i class="fas fa-chevron-left"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== STOCK ==================== -->
+    <div class="tab-content" ng-if="vm.activeTab === 'stock'">
+        <div class="wh-filter-bar">
+            <div>
+                <label>المخزن</label>
+                <select ng-model="vm.stockWarehouseID">
+                    <option value="">كل المخازن</option>
+                    <option ng-repeat="warehouse in vm.warehouses" value="{{ warehouse.warehouseID }}">{{ warehouse.warehouseNameAr }}</option>
+                </select>
+            </div>
+            <button class="wh-btn wh-btn-primary" ng-click="vm.loadStock()">
+                <i class="fas fa-search"></i>عرض الأرصدة
+            </button>
+            <button class="wh-btn wh-btn-success" ng-click="vm.exportStock('xlsx')" style="background: #1f9d55;">
+                <i class="fas fa-file-excel"></i>Excel
+            </button>
+            <button class="wh-btn wh-btn-light" ng-click="vm.exportStock('csv')">
+                <i class="fas fa-file-csv"></i>CSV
+            </button>
+        </div>
+
+        <div class="wh-card">
+            <div class="wh-card-header">
+                <h2><i class="fas fa-cubes" style="margin-left: 8px; color: #4361ee;"></i>الكميات والأرصدة (حسب الحركة المرحّلة)</h2>
+            </div>
+            <div class="wh-table-wrap">
+                <table class="wh-table">
+                    <thead>
+                        <tr>
+                            <th>الكود</th>
+                            <th>الصنف</th>
+                            <th>الفئة</th>
+                            <th>المخزن</th>
+                            <th>الوحدة</th>
+                            <th>الكمية المتاحة</th>
+                            <th>حد إعادة الطلب</th>
+                            <th>الحالة</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="row in vm.stock">
+                            <td style="font-weight: bold;">{{ row.itemCode }}</td>
+                            <td>{{ row.itemNameAr }}</td>
+                            <td>{{ row.categoryNameAr }}</td>
+                            <td>{{ vm.warehouseNameAr(row.warehouseID) }}</td>
+                            <td>{{ row.unit }}</td>
+                            <td style="font-weight: bold;" ng-class="row.quantity <= 0 ? {'color': '#e63946'} : {'color': '#1f9d55'}">{{ row.quantity | number: 2 }}</td>
+                            <td>{{ row.reorderLevel }}</td>
+                            <td>
+                                <span class="wh-tag" ng-class="row.quantity <= 0 ? 'wh-tag-out' : (row.quantity <= row.reorderLevel ? 'wh-badge-draft' : 'wh-tag-in')">
+                                    {{ row.quantity <= 0 ? 'نفد المخزون' : (row.quantity <= row.reorderLevel ? 'منخفض' : 'متاح') }}
+                                </span>
+                            </td>
+                        </tr>
+                        <tr ng-if="vm.stock.length === 0">
+                            <td colspan="8" class="wh-empty">لا توجد أرصدة — لا توجد حركة مرحّلة بعد</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== LOW STOCK ==================== -->
+    <div class="tab-content" ng-if="vm.activeTab === 'lowStock'">
+        <div class="wh-filter-bar">
+            <div style="flex-grow: 1;"></div>
+            <button class="wh-btn wh-btn-light" ng-click="vm.loadLowStock()">
+                <i class="fas fa-sync"></i>تحديث
+            </button>
+        </div>
+
+        <div class="wh-card">
+            <div class="wh-card-header">
+                <h2><i class="fas fa-exclamation-triangle" style="margin-left: 8px; color: #e63946;"></i>الأصناف تحت حد إعادة الطلب</h2>
+            </div>
+            <div class="wh-table-wrap">
+                <table class="wh-table">
+                    <thead>
+                        <tr>
+                            <th>الكود</th>
+                            <th>الصنف</th>
+                            <th>المخزن</th>
+                            <th>الوحدة</th>
+                            <th>الكمية المتاحة</th>
+                            <th>حد إعادة الطلب</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="row in vm.lowStock">
+                            <td style="font-weight: bold;">{{ row.itemCode }}</td>
+                            <td>{{ row.itemNameAr }}</td>
+                            <td>{{ vm.warehouseNameAr(row.warehouseID) }}</td>
+                            <td>{{ row.unit }}</td>
+                            <td style="font-weight: bold; color: #e63946;">{{ row.quantity | number: 2 }}</td>
+                            <td>{{ row.reorderLevel }}</td>
+                        </tr>
+                        <tr ng-if="vm.lowStock.length === 0">
+                            <td colspan="6" class="wh-empty">لا توجد أصناف منخفضة المخزون — كل الأرصدة جيدة</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== COUNTS (الجرد الدوري) ==================== -->
+    <div class="tab-content" ng-if="vm.activeTab === 'counts'">
+        <div class="wh-filter-bar">
+            <div>
+                <label>الحالة</label>
+                <select ng-model="vm.countFilterStatus" ng-change="vm.applyCountFilters()">
+                    <option value="">الكل</option>
+                    <option value="Draft">مسودة</option>
+                    <option value="Posted">مرحّل</option>
+                    <option value="Reversed">معكوس</option>
+                </select>
+            </div>
+            <div style="flex-grow: 1;"></div>
+            <button class="wh-btn wh-btn-primary" ng-click="vm.openCountModal(null)" style="background: #2ec4b6;">
+                <i class="fas fa-plus"></i>جرد جديد
+            </button>
+            <button class="wh-btn wh-btn-light" ng-click="vm.loadCounts()">
+                <i class="fas fa-sync"></i>تحديث
+            </button>
+            <button class="wh-btn wh-btn-success" ng-click="vm.exportCounts('xlsx')" style="background: #1f9d55;">
+                <i class="fas fa-file-excel"></i>Excel
+            </button>
+            <button class="wh-btn wh-btn-light" ng-click="vm.exportCounts('csv')">
+                <i class="fas fa-file-csv"></i>CSV
+            </button>
+        </div>
+
+        <div class="wh-card">
+            <div class="wh-card-header">
+                <h2><i class="fas fa-clipboard-check" style="margin-left: 8px; color: #2ec4b6;"></i>سندات الجرد الدوري</h2>
+            </div>
+            <div class="wh-table-wrap">
+                <table class="wh-table">
+                    <thead>
+                        <tr>
+                            <th>رقم الجرد</th>
+                            <th>التاريخ</th>
+                            <th>المخزن</th>
+                            <th>عدد الأصناف</th>
+                            <th>النظامي</th>
+                            <th>الفعلي</th>
+                            <th>الفرق</th>
+                            <th>الحالة</th>
+                            <th>بواسطة</th>
+                            <th>إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="count in vm.counts">
+                            <td style="font-weight: bold;">{{ count.stockCountNumber }}</td>
+                            <td>{{ count.countDate | date: 'yyyy-MM-dd' }}</td>
+                            <td>{{ count.warehouseNameAr }}</td>
+                            <td>{{ count.itemsCount }}</td>
+                            <td>{{ count.totalSystem | number: 2 }}</td>
+                            <td>{{ count.totalCounted | number: 2 }}</td>
+                            <td style="font-weight: bold;" ng-class="count.totalDifference > 0 ? {'color': '#1f9d55'} : (count.totalDifference < 0 ? {'color': '#e63946'} : {})">{{ count.totalDifference | number: 2 }}</td>
+                            <td><span class="wh-badge" ng-class="vm.statusBadgeClass(count.status)">{{ vm.statusAr(count.status) }}</span></td>
+                            <td>{{ count.createdByName }}</td>
+                            <td>
+                                <button class="wh-btn wh-btn-light" style="padding: 6px 12px;" ng-click="vm.openCountDetail(count)">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="wh-btn wh-btn-light" style="padding: 6px 12px;" ng-if="count.status === 'Draft'" ng-click="vm.openCountModal(count)">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr ng-if="vm.counts.length === 0">
+                            <td colspan="10" class="wh-empty">لا توجد سندات جرد مطابقة</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="wh-pagination">
+                <span>صفحة {{ vm.countPage }} من {{ vm.countTotalPages }}</span>
+                <div style="display: flex; gap: 8px;">
+                    <button class="wh-btn wh-btn-light" ng-disabled="vm.countPage <= 1" ng-click="vm.countPageChange(-1)"><i class="fas fa-chevron-right"></i> السابق</button>
+                    <button class="wh-btn wh-btn-light" ng-disabled="vm.countPage >= vm.countTotalPages" ng-click="vm.countPageChange(1)">التالي <i class="fas fa-chevron-left"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== NEW MOVEMENT MODAL ==================== -->
+    <div class="wh-modal-overlay" ng-if="vm.showMovementModal" ng-click="vm.closeMovementModal()">
+        <div class="wh-modal" ng-click="$event.stopPropagation()">
+            <div class="wh-modal-header">
+                <h2><i class="fas fa-exchange-alt" style="margin-left: 8px; color: #4361ee;"></i>سند مخزن جديد</h2>
+                <button class="wh-btn wh-btn-light" style="padding: 6px 12px;" ng-click="vm.closeMovementModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="wh-modal-body">
+                <div class="wh-form-grid" style="margin-bottom: 18px;">
+                    <div class="wh-field">
+                        <label>نوع السند</label>
+                        <select ng-model="vm.movementForm.movementType" ng-change="vm.onMovementTypeChange()">
+                            <option value="In">سند إدخال</option>
+                            <option value="Out">سند إخراج</option>
+                            <option value="Transfer">سند تحويل</option>
+                        </select>
+                    </div>
+                    <div class="wh-field">
+                        <label>التاريخ</label>
+                        <input type="date" ng-model="vm.movementForm.movementDate">
+                    </div>
+                    <div class="wh-field">
+                        <label>المخزن</label>
+                        <select ng-model="vm.movementForm.warehouseID">
+                            <option ng-repeat="warehouse in vm.warehouses" value="{{ warehouse.warehouseID }}">{{ warehouse.warehouseNameAr }}</option>
+                        </select>
+                    </div>
+                    <div class="wh-field" ng-if="vm.movementForm.movementType === 'Transfer'">
+                        <label>التحويل إلى مخزن</label>
+                        <select ng-model="vm.movementForm.toWarehouseID">
+                            <option value="">اختر المخزن</option>
+                            <option ng-repeat="warehouse in vm.warehouses" ng-if="warehouse.warehouseID !== vm.movementForm.warehouseID" value="{{ warehouse.warehouseID }}">{{ warehouse.warehouseNameAr }}</option>
+                        </select>
+                    </div>
+                    <div class="wh-field">
+                        <label>نوع المرجع</label>
+                        <select ng-model="vm.movementForm.referenceType">
+                            <option value="Adjustment">تسوية مخزنية</option>
+                            <option value="Purchase">مشتريات</option>
+                            <option value="Return">مرتجع</option>
+                            <option value="Expense">استهلاك</option>
+                        </select>
+                    </div>
+                    <div class="wh-field">
+                        <label>مرجع رقم</label>
+                        <input type="number" min="0" ng-model="vm.movementForm.referenceID">
+                    </div>
+                    <div class="wh-field full">
+                        <label>البيان</label>
+                        <textarea ng-model="vm.movementForm.notes" rows="2" style="resize: vertical;"></textarea>
+                    </div>
+                </div>
+
+                <div class="wh-card-header" style="border: none; padding: 0 0 10px 0;">
+                    <h2 style="font-size: 0.95rem;"><i class="fas fa-list" style="margin-left: 8px; color: #4361ee;"></i>أصناف السند</h2>
+                </div>
+                <div class="wh-line-row" style="font-weight: bold; font-size: 0.8rem; color: #888;">
+                    <span>الصنف</span>
+                    <span>الكمية</span>
+                    <span>سعر الوحدة</span>
+                    <span>ملاحظة</span>
+                    <span></span>
+                </div>
+                <div class="wh-line-row" ng-repeat="line in vm.movementForm.items">
+                    <select ng-model="line.itemID" style="padding: 10px; border-radius: 8px; border: 1px solid var(--border-color, #ddd); background: var(--bg-primary, #fff); color: var(--text-primary, #333); font-family: 'Cairo'; outline: none; width: 100%;">
+                        <option value="">اختر الصنف</option>
+                        <option ng-repeat="item in vm.allItems" value="{{ item.itemID }}">{{ item.itemCode }} — {{ item.itemNameAr }}</option>
+                    </select>
+                    <input type="number" min="0.01" step="0.01" ng-model="line.quantity" style="padding: 10px; border-radius: 8px; border: 1px solid var(--border-color, #ddd); background: var(--bg-primary, #fff); color: var(--text-primary, #333); font-family: 'Cairo'; outline: none; width: 100%; box-sizing: border-box;">
+                    <input type="number" min="0" step="0.01" ng-model="line.unitPrice" style="padding: 10px; border-radius: 8px; border: 1px solid var(--border-color, #ddd); background: var(--bg-primary, #fff); color: var(--text-primary, #333); font-family: 'Cairo'; outline: none; width: 100%; box-sizing: border-box;">
+                    <input type="text" ng-model="line.notes" style="padding: 10px; border-radius: 8px; border: 1px solid var(--border-color, #ddd); background: var(--bg-primary, #fff); color: var(--text-primary, #333); font-family: 'Cairo'; outline: none; width: 100%; box-sizing: border-box;">
+                    <button class="wh-btn wh-btn-danger" style="padding: 8px 12px;" ng-click="vm.removeMovementLine($index)">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <button class="wh-btn wh-btn-light" style="width: 100%; margin-top: 8px;" ng-click="vm.addMovementLine()">
+                    <i class="fas fa-plus"></i>إضافة صنف
+                </button>
+            </div>
+            <div class="wh-modal-footer">
+                <button class="wh-btn wh-btn-light" ng-click="vm.closeMovementModal()">إلغاء</button>
+                <button class="wh-btn wh-btn-primary" ng-click="vm.saveMovement()" ng-disabled="vm.savingMovement">
+                    <i class="fas fa-save"></i>{{ vm.savingMovement ? 'جارٍ الحفظ...' : 'حفظ السند' }}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MOVEMENT DETAIL MODAL ==================== -->
+    <div class="wh-modal-overlay" ng-if="vm.showMovementDetail" ng-click="vm.closeMovementDetail()">
+        <div class="wh-modal" style="max-width: 640px;" ng-click="$event.stopPropagation()">
+            <div class="wh-modal-header">
+                <h2><i class="fas fa-exchange-alt" style="margin-left: 8px; color: #4361ee;"></i>تفاصيل السند {{ vm.currentMovement.movementNumber }}</h2>
+                <button class="wh-btn wh-btn-light" style="padding: 6px 12px;" ng-click="vm.closeMovementDetail()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="wh-modal-body" ng-if="vm.currentMovement">
+                <div class="wh-form-grid">
+                    <div class="wh-field">
+                        <label>النوع</label>
+                        <input value="{{ vm.movementTypeAr(vm.currentMovement.movementType) }}" readonly>
+                    </div>
+                    <div class="wh-field">
+                        <label>التاريخ</label>
+                        <input value="{{ vm.currentMovement.movementDate | date: 'yyyy-MM-dd' }}" readonly>
+                    </div>
+                    <div class="wh-field">
+                        <label>المخزن</label>
+                        <input value="{{ vm.currentMovement.warehouseNameAr }}" readonly>
+                    </div>
+                    <div class="wh-field" ng-if="vm.currentMovement.toWarehouseNameAr">
+                        <label>التحويل إلى</label>
+                        <input value="{{ vm.currentMovement.toWarehouseNameAr }}" readonly>
+                    </div>
+                    <div class="wh-field">
+                        <label>المرجع</label>
+                        <input value="{{ vm.currentMovement.referenceType + (vm.currentMovement.referenceID ? ' (' + vm.currentMovement.referenceID + ')' : '') }}" readonly>
+                    </div>
+                    <div class="wh-field">
+                        <label>الحالة</label>
+                        <input value="{{ vm.statusAr(vm.currentMovement.status) }}" readonly>
+                    </div>
+                    <div class="wh-field">
+                        <label>أنشئ بواسطة</label>
+                        <input value="{{ vm.currentMovement.createdByName }}" readonly>
+                    </div>
+                    <div class="wh-field">
+                        <label>رحّل بواسطة</label>
+                        <input value="{{ vm.currentMovement.postedByName || '-' }}" readonly>
+                    </div>
+                    <div class="wh-field full">
+                        <label>البيان</label>
+                        <textarea readonly rows="2" style="resize: vertical;">{{ vm.currentMovement.notes }}</textarea>
+                    </div>
+                </div>
+
+                <div style="margin-top: 18px; border: 1px solid rgba(0,0,0,0.05); border-radius: 12px; overflow: hidden;">
+                    <div class="wh-table-wrap">
+                        <table class="wh-table">
+                            <thead>
+                                <tr>
+                                    <th>الكود</th>
+                                    <th>الصنف</th>
+                                    <th>الكمية</th>
+                                    <th>سعر الوحدة</th>
+                                    <th>الإجمالي (د.ل)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ng-repeat="item in vm.currentMovement.items">
+                                    <td style="font-weight: bold;">{{ item.itemCode }}</td>
+                                    <td>{{ item.itemNameAr }}</td>
+                                    <td>{{ item.quantity | number: 2 }}</td>
+                                    <td>{{ item.unitPrice | number: 2 }}</td>
+                                    <td style="font-weight: bold;">{{ item.totalPrice | number: 2 }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="wh-modal-footer">
+                <button class="wh-btn wh-btn-light" ng-click="vm.closeMovementDetail()">إغلاق</button>
+                <button class="wh-btn wh-btn-success" ng-if="vm.currentMovement && vm.currentMovement.status === 'Draft'" ng-click="vm.postMovement(vm.currentMovement)">
+                    <i class="fas fa-check-circle"></i>ترحيل السند
+                </button>
+                <button class="wh-btn wh-btn-danger" ng-if="vm.currentMovement && vm.currentMovement.status === 'Posted'" ng-click="vm.reverseMovement(vm.currentMovement)">
+                    <i class="fas fa-undo"></i>عكس السند
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== WAREHOUSE MODAL ==================== -->
+    <div class="wh-modal-overlay" ng-if="vm.showWarehouseModal" ng-click="vm.closeWarehouseModal()">
+        <div class="wh-modal" style="max-width: 560px;" ng-click="$event.stopPropagation()">
+            <div class="wh-modal-header">
+                <h2><i class="fas fa-warehouse" style="margin-left: 8px; color: #4361ee;"></i>{{ vm.editingWarehouse ? 'تعديل مخزن' : 'مخزن جديد' }}</h2>
+                <button class="wh-btn wh-btn-light" style="padding: 6px 12px;" ng-click="vm.closeWarehouseModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="wh-modal-body">
+                <div class="wh-form-grid">
+                    <div class="wh-field">
+                        <label>كود المخزن</label>
+                        <input type="text" ng-model="vm.warehouseForm.warehouseCode" placeholder="مثال: WARE-02">
+                    </div>
+                    <div class="wh-field">
+                        <label>اسم المخزن بالعربية</label>
+                        <input type="text" ng-model="vm.warehouseForm.warehouseNameAr">
+                    </div>
+                    <div class="wh-field">
+                        <label>الاسم بالإنجليزية</label>
+                        <input type="text" ng-model="vm.warehouseForm.warehouseName">
+                    </div>
+                    <div class="wh-field">
+                        <label>الموقع</label>
+                        <input type="text" ng-model="vm.warehouseForm.location">
+                    </div>
+                    <div class="wh-field">
+                        <label>الحالة</label>
+                        <select ng-model="vm.warehouseForm.isActive">
+                            <option value="true">مفعّل</option>
+                            <option value="false">معطّل</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="wh-modal-footer">
+                <button class="wh-btn wh-btn-light" ng-click="vm.closeWarehouseModal()">إلغاء</button>
+                <button class="wh-btn wh-btn-primary" ng-click="vm.saveWarehouse()" ng-disabled="vm.savingWarehouse">
+                    <i class="fas fa-save"></i>{{ vm.savingWarehouse ? 'جارٍ الحفظ...' : 'حفظ' }}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== CATEGORY MODAL ==================== -->
+    <div class="wh-modal-overlay" ng-if="vm.showCategoryModal" ng-click="vm.closeCategoryModal()">
+        <div class="wh-modal" style="max-width: 560px;" ng-click="$event.stopPropagation()">
+            <div class="wh-modal-header">
+                <h2><i class="fas fa-folder-plus" style="margin-left: 8px; color: #2ec4b6;"></i>{{ vm.editingCategory ? 'تعديل فئة' : 'فئة جديدة' }}</h2>
+                <button class="wh-btn wh-btn-light" style="padding: 6px 12px;" ng-click="vm.closeCategoryModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="wh-modal-body">
+                <div class="wh-form-grid">
+                    <div class="wh-field">
+                        <label>اسم الفئة بالعربية</label>
+                        <input type="text" ng-model="vm.categoryForm.categoryNameAr">
+                    </div>
+                    <div class="wh-field">
+                        <label>الاسم بالإنجليزية</label>
+                        <input type="text" ng-model="vm.categoryForm.categoryName">
+                    </div>
+                    <div class="wh-field">
+                        <label>الفئة الأب</label>
+                        <select ng-model="vm.categoryForm.parentCategoryID">
+                            <option value="">— بدون أب (فئة رئيسية) —</option>
+                            <option ng-repeat="category in vm.flatCategories" ng-if="!vm.editingCategory || category.categoryID !== vm.editingCategory.categoryID" value="{{ category.categoryID }}">{{ category.categoryNameAr }}</option>
+                        </select>
+                    </div>
+                    <div class="wh-field">
+                        <label>الحالة</label>
+                        <select ng-model="vm.categoryForm.isActive">
+                            <option value="true">مفعّلة</option>
+                            <option value="false">معطّلة</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="wh-modal-footer">
+                <button class="wh-btn wh-btn-light" ng-click="vm.closeCategoryModal()">إلغاء</button>
+                <button class="wh-btn wh-btn-primary" ng-click="vm.saveCategory()" ng-disabled="vm.savingCategory" style="background: #2ec4b6;">
+                    <i class="fas fa-save"></i>{{ vm.savingCategory ? 'جارٍ الحفظ...' : 'حفظ' }}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== ITEM MODAL ==================== -->
+    <div class="wh-modal-overlay" ng-if="vm.showItemModal" ng-click="vm.closeItemModal()">
+        <div class="wh-modal" style="max-width: 640px;" ng-click="$event.stopPropagation()">
+            <div class="wh-modal-header">
+                <h2><i class="fas fa-box" style="margin-left: 8px; color: #4361ee;"></i>{{ vm.editingItem ? 'تعديل صنف' : 'صنف جديد' }}</h2>
+                <button class="wh-btn wh-btn-light" style="padding: 6px 12px;" ng-click="vm.closeItemModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="wh-modal-body">
+                <div class="wh-form-grid">
+                    <div class="wh-field">
+                        <label>كود الصنف</label>
+                        <input type="text" ng-model="vm.itemForm.itemCode" placeholder="مثال: ITM-001">
+                    </div>
+                    <div class="wh-field">
+                        <label>اسم الصنف بالعربية</label>
+                        <input type="text" ng-model="vm.itemForm.itemNameAr">
+                    </div>
+                    <div class="wh-field">
+                        <label>الاسم بالإنجليزية</label>
+                        <input type="text" ng-model="vm.itemForm.itemName">
+                    </div>
+                    <div class="wh-field">
+                        <label>الفئة</label>
+                        <select ng-model="vm.itemForm.categoryID">
+                            <option ng-repeat="category in vm.flatCategories" value="{{ category.categoryID }}">{{ category.categoryNameAr }}</option>
+                        </select>
+                    </div>
+                    <div class="wh-field">
+                        <label>الوحدة</label>
+                        <select ng-model="vm.itemForm.unit">
+                            <option value="قطعة">قطعة</option>
+                            <option value="علبة">علبة</option>
+                            <option value="عبوة">عبوة</option>
+                            <option value="زجاجة">زجاجة</option>
+                            <option value="أمبولة">أمبولة</option>
+                            <option value="كيلوجرام">كيلوجرام</option>
+                        </select>
+                    </div>
+                    <div class="wh-field">
+                        <label>المصنّع</label>
+                        <input type="text" ng-model="vm.itemForm.manufacturer">
+                    </div>
+                    <div class="wh-field">
+                        <label>سعر الشراء (د.ل)</label>
+                        <input type="number" min="0" step="0.01" ng-model="vm.itemForm.purchasePrice">
+                    </div>
+                    <div class="wh-field">
+                        <label>سعر البيع (د.ل)</label>
+                        <input type="number" min="0" step="0.01" ng-model="vm.itemForm.sellingPrice">
+                    </div>
+                    <div class="wh-field">
+                        <label>حد إعادة الطلب</label>
+                        <input type="number" min="0" ng-model="vm.itemForm.reorderLevel">
+                    </div>
+                    <div class="wh-field">
+                        <label>تاريخ الانتهاء</label>
+                        <input type="date" ng-model="vm.itemForm.expiryDate">
+                    </div>
+                    <div class="wh-field">
+                        <label>الحالة</label>
+                        <select ng-model="vm.itemForm.isActive">
+                            <option value="true">مفعّل</option>
+                            <option value="false">معطّل</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="wh-modal-footer">
+                <button class="wh-btn wh-btn-light" ng-click="vm.closeItemModal()">إلغاء</button>
+                <button class="wh-btn wh-btn-primary" ng-click="vm.saveItem()" ng-disabled="vm.savingItem">
+                    <i class="fas fa-save"></i>{{ vm.savingItem ? 'جارٍ الحفظ...' : 'حفظ' }}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== COUNT MODAL ==================== -->
+    <div class="wh-modal-overlay" ng-if="vm.showCountModal" ng-click="vm.closeCountModal()">
+        <div class="wh-modal" style="max-width: 720px;" ng-click="$event.stopPropagation()">
+            <div class="wh-modal-header">
+                <h2><i class="fas fa-clipboard-check" style="margin-left: 8px; color: #2ec4b6;"></i>{{ vm.editingCount ? 'تعديل جرد' : 'جرد جديد' }}</h2>
+                <button class="wh-btn wh-btn-light" style="padding: 6px 12px;" ng-click="vm.closeCountModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="wh-modal-body">
+                <div class="wh-form-grid" style="margin-bottom: 18px;">
+                    <div class="wh-field">
+                        <label>المخزن</label>
+                        <select ng-model="vm.countForm.warehouseID" ng-change="vm.onCountWarehouseChange()">
+                            <option ng-repeat="warehouse in vm.warehouses" value="{{ warehouse.warehouseID }}">{{ warehouse.warehouseNameAr }}</option>
+                        </select>
+                    </div>
+                    <div class="wh-field">
+                        <label>التاريخ</label>
+                        <input type="date" ng-model="vm.countForm.countDate">
+                    </div>
+                    <div class="wh-field full">
+                        <label>البيان</label>
+                        <textarea ng-model="vm.countForm.notes" rows="2" style="resize: vertical;"></textarea>
+                    </div>
+                </div>
+
+                <div class="wh-card-header" style="border: none; padding: 0 0 10px 0;">
+                    <h2 style="font-size: 0.95rem;"><i class="fas fa-list" style="margin-left: 8px; color: #2ec4b6;"></i>أصناف الجرد (الكمية النظامية تُعرض للمقارنة)</h2>
+                </div>
+                <div class="wh-line-row" style="font-weight: bold; font-size: 0.8rem; color: #888;">
+                    <span>الصنف</span>
+                    <span>النظامي</span>
+                    <span>الفعلي</span>
+                    <span>ملاحظة</span>
+                    <span></span>
+                </div>
+                <div class="wh-line-row" ng-repeat="line in vm.countForm.items">
+                    <select ng-model="line.itemID" style="padding: 10px; border-radius: 8px; border: 1px solid var(--border-color, #ddd); background: var(--bg-primary, #fff); color: var(--text-primary, #333); font-family: 'Cairo'; outline: none; width: 100%;">
+                        <option value="">اختر الصنف</option>
+                        <option ng-repeat="item in vm.allItems" value="{{ item.itemID }}">{{ item.itemCode }} — {{ item.itemNameAr }}</option>
+                    </select>
+                    <input value="{{ vm.countLineSystemQty(line.itemID) | number: 2 }}" readonly style="padding: 10px; border-radius: 8px; border: 1px dashed #ddd; background: #f8f9fa; color: #666; font-family: 'Cairo'; outline: none; width: 100%; box-sizing: border-box; text-align: center;">
+                    <input type="number" min="0" step="0.01" ng-model="line.countedQuantity" style="padding: 10px; border-radius: 8px; border: 1px solid var(--border-color, #ddd); background: var(--bg-primary, #fff); color: var(--text-primary, #333); font-family: 'Cairo'; outline: none; width: 100%; box-sizing: border-box;">
+                    <input type="text" ng-model="line.notes" style="padding: 10px; border-radius: 8px; border: 1px solid var(--border-color, #ddd); background: var(--bg-primary, #fff); color: var(--text-primary, #333); font-family: 'Cairo'; outline: none; width: 100%; box-sizing: border-box;">
+                    <button class="wh-btn wh-btn-danger" style="padding: 8px 12px;" ng-click="vm.removeCountLine($index)">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <button class="wh-btn wh-btn-light" style="width: 100%; margin-top: 8px;" ng-click="vm.addCountLine()">
+                    <i class="fas fa-plus"></i>إضافة صنف
+                </button>
+            </div>
+            <div class="wh-modal-footer">
+                <button class="wh-btn wh-btn-light" ng-click="vm.closeCountModal()">إلغاء</button>
+                <button class="wh-btn wh-btn-primary" ng-click="vm.saveCount()" ng-disabled="vm.savingCount" style="background: #2ec4b6;">
+                    <i class="fas fa-save"></i>{{ vm.savingCount ? 'جارٍ الحفظ...' : 'حفظ الجرد' }}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== COUNT DETAIL MODAL ==================== -->
+    <div class="wh-modal-overlay" ng-if="vm.showCountDetail" ng-click="vm.closeCountDetail()">
+        <div class="wh-modal" style="max-width: 680px;" ng-click="$event.stopPropagation()">
+            <div class="wh-modal-header">
+                <h2><i class="fas fa-clipboard-check" style="margin-left: 8px; color: #2ec4b6;"></i>تفاصيل الجرد {{ vm.currentCount.stockCountNumber }}</h2>
+                <button class="wh-btn wh-btn-light" style="padding: 6px 12px;" ng-click="vm.closeCountDetail()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="wh-modal-body" ng-if="vm.currentCount">
+                <div class="wh-form-grid">
+                    <div class="wh-field">
+                        <label>المخزن</label>
+                        <input value="{{ vm.currentCount.warehouseNameAr }}" readonly>
+                    </div>
+                    <div class="wh-field">
+                        <label>التاريخ</label>
+                        <input value="{{ vm.currentCount.countDate | date: 'yyyy-MM-dd' }}" readonly>
+                    </div>
+                    <div class="wh-field">
+                        <label>الحالة</label>
+                        <input value="{{ vm.statusAr(vm.currentCount.status) }}" readonly>
+                    </div>
+                    <div class="wh-field">
+                        <label>بواسطة</label>
+                        <input value="{{ vm.currentCount.createdByName }}" readonly>
+                    </div>
+                    <div class="wh-field full" ng-if="vm.currentCount.notes">
+                        <label>البيان</label>
+                        <textarea readonly rows="2" style="resize: vertical;">{{ vm.currentCount.notes }}</textarea>
+                    </div>
+                </div>
+
+                <div style="margin-top: 18px; border: 1px solid rgba(0,0,0,0.05); border-radius: 12px; overflow: hidden;">
+                    <div class="wh-table-wrap">
+                        <table class="wh-table">
+                            <thead>
+                                <tr>
+                                    <th>الكود</th>
+                                    <th>الصنف</th>
+                                    <th>النظامي</th>
+                                    <th>الفعلي</th>
+                                    <th>الفرق</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ng-repeat="item in vm.currentCount.items">
+                                    <td style="font-weight: bold;">{{ item.itemCode }}</td>
+                                    <td>{{ item.itemNameAr }}</td>
+                                    <td>{{ item.systemQuantity | number: 2 }}</td>
+                                    <td>{{ item.countedQuantity | number: 2 }}</td>
+                                    <td style="font-weight: bold;" ng-class="item.difference > 0 ? {'color': '#1f9d55'} : (item.difference < 0 ? {'color': '#e63946'} : {})">{{ item.difference | number: 2 }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="wh-modal-footer">
+                <button class="wh-btn wh-btn-light" ng-click="vm.closeCountDetail()">إغلاق</button>
+                <button class="wh-btn wh-btn-success" ng-if="vm.currentCount && vm.currentCount.status === 'Draft'" ng-click="vm.postCount(vm.currentCount)">
+                    <i class="fas fa-check-circle"></i>ترحيل الجرد
+                </button>
+                <button class="wh-btn wh-btn-danger" ng-if="vm.currentCount && vm.currentCount.status === 'Posted'" ng-click="vm.reverseCount(vm.currentCount)">
+                    <i class="fas fa-undo"></i>عكس الجرد
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div>

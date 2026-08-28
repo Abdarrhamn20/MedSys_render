@@ -1,0 +1,923 @@
+<!-- Medical Records Page -->
+<div class="stagger-children">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+        <h2 style="margin: 0;"><i class="fas fa-file-medical" style="color: var(--primary);"></i> السجلات الطبية</h2>
+        <button class="btn btn-primary" ng-if="vm.role === 'Doctor'" ng-click="vm.openCreateModal()">
+            <i class="fas fa-plus"></i> إضافة سجل طبي
+        </button>
+    </div>
+
+    <!-- Records List -->
+    <div class="card" ng-repeat="record in vm.records" style="margin-bottom: 16px; transition: all 0.3s;">
+        <div class="card-body" style="padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px;">
+                <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                        <div class="avatar" style="width: 40px; height: 40px; font-size: 0.85rem;">{{(vm.role === 'Patient' ? record.doctorName : record.patientName).charAt(0)}}</div>
+                        <div>
+                            <h4 style="margin: 0; font-size: 1rem;" ng-if="vm.role !== 'Patient'">{{record.patientName}}</h4>
+                            <h4 style="margin: 0; font-size: 1rem;" ng-if="vm.role === 'Patient'">د. {{record.doctorName}}</h4>
+                            <small class="text-muted">{{record.doctorSpecialty}} — {{record.appointmentDate | date:'yyyy/MM/dd'}}</small>
+                        </div>
+                    </div>
+                    <p style="margin: 8px 0 0; color: var(--text-secondary); font-size: 0.9rem;">
+                        <strong>التشخيص:</strong> {{record.diagnosisAr || record.diagnosis || 'غير محدد'}}
+                    </p>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="badge badge-primary" ng-if="record.prescriptionCount > 0">
+                        <i class="fas fa-pills"></i> {{record.prescriptionCount}} وصفة
+                    </span>
+                    <button class="btn btn-sm btn-primary" ng-click="vm.viewRecord(record)"><i class="fas fa-eye"></i> التفاصيل</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card" ng-if="vm.records.length === 0">
+        <div class="card-body">
+            <div class="empty-state">
+                <i class="fas fa-file-medical"></i>
+                <h4>لا توجد سجلات طبية</h4>
+                <p>ستظهر هنا السجلات الطبية بعد إتمام الاستشارات</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Record Detail Modal -->
+    <div class="modal-overlay" ng-if="vm.showDetail" ng-click="vm.showDetail = false">
+        <div class="modal-content" style="max-width: 700px;" ng-click="$event.stopPropagation()">
+            <div class="modal-header" style="background: var(--primary-gradient); color: white; border-radius: 16px 16px 0 0; display: flex; justify-content: space-between; align-items: center;">
+                <h4 style="color: white; margin: 0;"><i class="fas fa-file-medical" style="margin-left: 8px;"></i> سجل طبي #{{vm.detail.recordID}}</h4>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <button class="btn btn-sm btn-success" ng-click="vm.printFullMedicalRecord()" style="padding: 6px 14px; font-weight: bold; border-radius: 6px; display: flex; align-items: center; gap: 6px; border: none; background: #2DC653; color: white; cursor: pointer;">
+                        <i class="fas fa-file-pdf"></i> سحب التقرير الطبي
+                    </button>
+                    <button style="background:none; border:none; font-size:1.2rem; cursor:pointer; color: rgba(255,255,255,0.8); padding: 0;" ng-click="vm.showDetail = false"><i class="fas fa-times"></i></button>
+                </div>
+            </div>
+            <div class="modal-body" ng-if="vm.detail" style="max-height: 70vh; overflow-y: auto;">
+
+                <!-- Detail Tabs Navigation (Psychiatric tabs only in Psychiatric/Hybrid mode or for psychiatric doctor records) -->
+                <div ng-if="vm.isPsychiatricDoctor" style="display: flex; gap: 6px; margin-bottom: 16px; border-bottom: 2px solid var(--border-color); padding-bottom: 10px; flex-wrap: wrap;">
+                    <button class="btn btn-sm" ng-class="vm.activeDetailTab === 'general' ? 'btn-primary' : 'btn-secondary'" ng-click="vm.switchDetailTab('general')" style="padding: 6px 14px;">
+                        <i class="fas fa-file-medical"></i> التقرير العام
+                    </button>
+                    <button class="btn btn-sm" ng-class="vm.activeDetailTab === 'mse' ? 'btn-primary' : 'btn-secondary'" ng-click="vm.switchDetailTab('mse')" style="padding: 6px 14px;" ng-if="vm.isPsychiatricDoctor && vm.role !== 'Patient'">
+                        <i class="fas fa-brain"></i> فحص الحالة العقلية (MSE)
+                    </button>
+                    <button class="btn btn-sm" ng-class="vm.activeDetailTab === 'soap' ? 'btn-primary' : 'btn-secondary'" ng-click="vm.switchDetailTab('soap')" style="padding: 6px 14px;" ng-if="vm.isPsychiatricDoctor && vm.role !== 'Patient'">
+                        <i class="fas fa-notes-medical"></i> SOAP Note
+                    </button>
+                    <button class="btn btn-sm" ng-class="vm.activeDetailTab === 'risk' ? 'btn-primary' : 'btn-secondary'" ng-click="vm.switchDetailTab('risk')" style="padding: 6px 14px;" ng-if="vm.isPsychiatricDoctor && vm.role !== 'Patient'">
+                        <i class="fas fa-exclamation-triangle"></i> مستوى الخطورة
+                    </button>
+                    <button class="btn btn-sm" ng-class="vm.activeDetailTab === 'trend' ? 'btn-primary' : 'btn-secondary'" ng-click="vm.switchDetailTab('trend')" style="padding: 6px 14px;" ng-if="vm.isPsychiatricDoctor && vm.role !== 'Patient'">
+                        <i class="fas fa-chart-line"></i> منحنى التقييمات
+                    </button>
+                    <button class="btn btn-sm" ng-class="vm.activeDetailTab === 'assessments' ? 'btn-primary' : 'btn-secondary'" ng-click="vm.switchDetailTab('assessments')" style="padding: 6px 14px;" ng-if="vm.isPsychiatricDoctor && vm.role !== 'Patient'">
+                        <i class="fas fa-clipboard-list"></i> الاستبيانات
+                    </button>
+                </div>
+
+                <!-- ==================== GENERAL TAB ==================== -->
+                <div ng-if="vm.activeDetailTab === 'general'">
+                <!-- Patient Info -->
+                <div style="background: var(--bg-primary); border-radius: 10px; padding: 16px; margin-bottom: 16px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.9rem;">
+                        <div><i class="fas fa-user" style="color: var(--primary); margin-left: 6px;"></i><strong>المريض:</strong> {{vm.detail.patientName}}</div>
+                        <div><i class="fas fa-user-md" style="color: var(--primary); margin-left: 6px;"></i><strong>الطبيب:</strong> د. {{vm.detail.doctorName}}</div>
+                        <div><i class="fas fa-calendar" style="color: var(--primary); margin-left: 6px;"></i><strong>التاريخ:</strong> {{vm.detail.appointmentDate | date:'yyyy/MM/dd'}}</div>
+                        <div><i class="fas fa-tint" style="color: var(--priority-emergency); margin-left: 6px;"></i><strong>فصيلة الدم:</strong> {{vm.detail.patientBloodType || 'غير محدد'}}</div>
+                    </div>
+                </div>
+
+                <!-- Alerts -->
+                <div class="alert alert-warning" ng-if="vm.detail.patientAllergies || vm.detail.patientChronicDiseases" style="margin-bottom: 16px;">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <div>
+                        <div ng-if="vm.detail.patientAllergies"><strong>حساسية:</strong> {{vm.detail.patientAllergies}}</div>
+                        <div ng-if="vm.detail.patientChronicDiseases"><strong>أمراض مزمنة:</strong> {{vm.detail.patientChronicDiseases}}</div>
+                    </div>
+                </div>
+
+                <!-- Diagnosis -->
+                <div style="margin-bottom: 16px;">
+                    <h4 style="font-size: 0.95rem; color: var(--primary); margin-bottom: 6px;"><i class="fas fa-stethoscope"></i> التشخيص</h4>
+                    <p style="margin: 0; padding: 12px; background: var(--bg-primary); border-radius: 8px;">{{vm.detail.diagnosisAr || vm.detail.diagnosis || 'لم يُحدد بعد'}}</p>
+                </div>
+
+                <!-- Treatment Plan -->
+                <div style="margin-bottom: 16px;" ng-if="vm.detail.treatmentPlan">
+                    <h4 style="font-size: 0.95rem; color: var(--primary); margin-bottom: 6px;"><i class="fas fa-clipboard-list"></i> خطة العلاج</h4>
+                    <p style="margin: 0; padding: 12px; background: var(--bg-primary); border-radius: 8px;">{{vm.detail.treatmentPlan}}</p>
+                </div>
+
+                <!-- Doctor Notes -->
+                <div style="margin-bottom: 16px;" ng-if="vm.detail.doctorNotes">
+                    <h4 style="font-size: 0.95rem; color: var(--primary); margin-bottom: 6px;"><i class="fas fa-sticky-note"></i> ملاحظات الطبيب</h4>
+                    <p style="margin: 0; padding: 12px; background: var(--bg-primary); border-radius: 8px;">{{vm.detail.doctorNotes}}</p>
+                </div>
+
+                <!-- Follow Up -->
+                <div style="margin-bottom: 16px;" ng-if="vm.detail.followUpDate">
+                    <div class="alert alert-info">
+                        <i class="fas fa-calendar-check"></i>
+                        <span><strong>موعد المتابعة:</strong> {{vm.detail.followUpDate | date:'yyyy/MM/dd'}} — {{vm.detail.followUpNotes}}</span>
+                    </div>
+                </div>
+
+                <!-- Prescriptions -->
+                <div ng-if="vm.detail.prescriptions.length > 0">
+                    <!-- زر إرسال الوصفة للصيدلية في حال كانت مسودة -->
+                    <div class="alert alert-warning" ng-if="vm.role === 'Doctor' && vm.hasDraftPrescriptions(vm.detail)" style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 16px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-exclamation-circle" style="font-size: 1.2rem;"></i>
+                            <span>توجد أدوية في الوصفة لم يتم إرسالها للصيدلية بعد.</span>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-primary" ng-click="vm.sendPrescriptionsToPharmacy(vm.detail.recordID)" ng-disabled="vm.sendingRequest" style="padding: 6px 12px; font-size: 0.85rem; font-weight: bold; background: #0077B6; border: none; color: white;">
+                            <span ng-if="!vm.sendingRequest"><i class="fas fa-paper-plane"></i> إرسال الوصفة للصيدلية</span>
+                            <span ng-if="vm.sendingRequest"><span class="spinner" style="border-left-color: white; width: 10px; height: 10px;"></span> جاري الإرسال...</span>
+                        </button>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4 style="font-size: 0.95rem; color: var(--primary); margin: 0;"><i class="fas fa-pills"></i> الوصفات الطبية ({{vm.detail.prescriptions.length}})</h4>
+                        <button class="btn btn-sm btn-secondary" ng-click="vm.printPrescription()" style="padding: 4px 12px; min-height: auto;"><i class="fas fa-print"></i> طباعة</button>
+                    </div>
+                    <div ng-repeat="p in vm.detail.prescriptions" style="border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; margin-bottom: 10px;" ng-style="{'border-right': '3px solid ' + (p.dispenseStatus === 'Draft' ? '#FF9F1C' : (p.dispenseStatus === 'Dispensed' ? '#2DC653' : '#0077B6'))}">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                            <strong style="color: var(--primary);">{{p.medicationName}}</strong>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <!-- شارة الحالة الملونة -->
+                                <span class="badge" ng-class="{'badge-urgent': p.dispenseStatus === 'Draft', 'badge-info': p.dispenseStatus === 'Pending', 'badge-normal': p.dispenseStatus === 'Dispensed'}" style="font-size: 0.72rem; padding: 3px 8px; font-weight: bold; border-radius: 4px;">
+                                    {{vm.getDispenseStatusAr(p.dispenseStatus)}}
+                                </span>
+                                <button class="btn btn-sm btn-danger" ng-if="vm.role === 'Doctor' && p.dispenseStatus === 'Draft'" ng-click="vm.deletePrescription(p)" style="padding: 4px 8px; min-height: auto;"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 0.85rem; color: var(--text-secondary);">
+                            <div ng-if="p.dosage"><i class="fas fa-prescription-bottle"></i> الجرعة: {{p.dosage}}</div>
+                            <div ng-if="p.frequency"><i class="fas fa-clock"></i> التكرار: {{p.frequency}}</div>
+                            <div ng-if="p.duration"><i class="fas fa-hourglass-half"></i> المدة: {{p.duration}}</div>
+                            <div ng-if="p.instructions"><i class="fas fa-info-circle"></i> {{p.instructions}}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add Prescription Button (Doctor only) -->
+                <div ng-if="vm.role === 'Doctor'" style="margin-top: 16px;">
+                    <button class="btn btn-success btn-sm" ng-click="vm.showAddPrescription = !vm.showAddPrescription">
+                        <i class="fas fa-plus"></i> إضافة وصفة
+                    </button>
+
+                    <div ng-if="vm.showAddPrescription" style="margin-top: 12px; padding: 16px; border: 2px dashed var(--border-color); border-radius: 10px;">
+                        <!-- تبديل طريقتي اختيار الدواء -->
+                        <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+                            <button type="button" class="btn btn-sm" ng-class="vm.medicationMode === 'dropdown' ? 'btn-primary' : 'btn-secondary'" ng-click="vm.changeMedicationMode('dropdown')">
+                                <i class="fas fa-list"></i> اختر من المخزون
+                            </button>
+                            <button type="button" class="btn btn-sm" ng-class="vm.medicationMode === 'search' ? 'btn-primary' : 'btn-secondary'" ng-click="vm.changeMedicationMode('search')">
+                                <i class="fas fa-search"></i> بحث عن دواء
+                            </button>
+                        </div>
+
+                        <!-- 1. طريقة القائمة المنسدلة -->
+                        <div class="form-group" ng-if="vm.medicationMode === 'dropdown'" style="margin-bottom: 16px;">
+                            <label>اختر الدواء من الصيدلية</label>
+                            <select class="form-control" ng-model="selectedMed" ng-change="vm.selectMedication(selectedMed)" ng-options="med as (med.nameAr + ' (' + med.name + ') - المتوفر: ' + med.quantityInStock + ' ' + (med.unit || '')) for med in vm.medications">
+                                <option value="">-- اختر الدواء --</option>
+                            </select>
+                        </div>
+
+                        <!-- 2. طريقة البحث -->
+                        <div ng-if="vm.medicationMode === 'search'" style="margin-bottom: 16px;">
+                            <label>البحث عن دواء في الصيدلية</label>
+                            <div style="display: flex; gap: 8px;">
+                                <input class="form-control" ng-model="vm.searchQuery" placeholder="اكتب اسم الدواء هنا باللغة العربية أو الإنجليزية...">
+                                <button type="button" class="btn btn-primary" ng-click="vm.searchMedication('new')">
+                                    <i class="fas fa-search"></i> تحقق
+                                </button>
+                            </div>
+
+                            <!-- رسالة التنبيه وطلب التوفير في حال عدم الوجود -->
+                            <div class="alert alert-danger" ng-if="vm.medicationNotFound" style="margin-top: 12px; display: flex; flex-direction: column; gap: 8px;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <span>عذراً، هذا الدواء غير متوفر في مخزون الصيدلية حالياً.</span>
+                                </div>
+                                <div style="background: rgba(255,255,255,0.15); padding: 10px; border-radius: 8px; margin-top: 4px;">
+                                    <label style="font-size: 0.85rem; margin-bottom: 4px; display: block; font-weight: bold; color: white;">ملاحظات طلب التوفير (اختياري)</label>
+                                    <input class="form-control" ng-model="vm.requestNotes" placeholder="مثال: مطلوب توفيره للمريض بصورة عاجلة..." style="color: #333; font-size: 0.85rem; background: white;">
+                                </div>
+                                <button type="button" class="btn btn-sm btn-light" ng-click="vm.sendMedicationRequest('new')" ng-disabled="vm.sendingRequest" style="align-self: flex-start; margin-top: 4px;">
+                                    <span ng-if="!vm.sendingRequest"><i class="fas fa-paper-plane" style="color: var(--primary);"></i> إرسال طلب توفير للمدير والصيدلاني</span>
+                                    <span ng-if="vm.sendingRequest"><span class="spinner" style="border-left-color: var(--primary);"></span> جاري الإرسال...</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- الحقول المشتركة للوصفة -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                            <div class="form-group" style="margin-bottom: 10px;">
+                                <label>اسم الدواء المحدد</label>
+                                <input class="form-control" ng-model="vm.newPrescription.medicationName" placeholder="اسم الدواء" readonly style="background-color: var(--bg-primary);">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 10px;"><label>الجرعة</label><input class="form-control" ng-model="vm.newPrescription.dosage" placeholder="مثال: 500mg"></div>
+                            <div class="form-group" style="margin-bottom: 10px;"><label>التكرار</label><input class="form-control" ng-model="vm.newPrescription.frequency" placeholder="مثال: مرتين يومياً"></div>
+                            <div class="form-group" style="margin-bottom: 10px;"><label>المدة</label><input class="form-control" ng-model="vm.newPrescription.duration" placeholder="مثال: 7 أيام"></div>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 10px;"><label>تعليمات</label><input class="form-control" ng-model="vm.newPrescription.instructions" placeholder="بعد الأكل..."></div>
+                        <button class="btn btn-primary btn-sm" ng-click="vm.savePrescription()"><i class="fas fa-save"></i> حفظ الوصفة</button>
+                    </div>
+                </div>
+
+                <!-- Attachments -->
+                <div style="margin-top: 24px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+                    <h4 style="font-size: 0.95rem; color: var(--primary); margin-bottom: 12px;"><i class="fas fa-paperclip"></i> المرفقات الطبية ({{vm.attachments.length || 0}})</h4>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                        <div ng-repeat="att in vm.attachments" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; display: flex; align-items: center; justify-content: space-between; background: var(--bg-primary);">
+                            <div style="display: flex; align-items: center; gap: 10px; overflow: hidden;">
+                                <i class="fas fa-file-pdf" style="color: #E63946; font-size: 1.5rem;" ng-if="att.fileType.includes('pdf')"></i>
+                                <i class="fas fa-file-image" style="color: #0077B6; font-size: 1.5rem;" ng-if="att.fileType.includes('image')"></i>
+                                <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    <strong style="font-size: 0.85rem; display: block; overflow: hidden; text-overflow: ellipsis;">{{att.fileName}}</strong>
+                                    <small class="text-muted">{{att.uploadedAt | date:'yyyy/MM/dd'}}</small>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 6px;">
+                                <a href="{{att.fileURL}}" target="_blank" class="btn btn-sm btn-primary" style="padding: 4px 8px; min-height: auto;"><i class="fas fa-download"></i></a>
+                                <button class="btn btn-sm btn-danger" ng-if="vm.role !== 'Patient'" ng-click="vm.deleteAttachment(att)" style="padding: 4px 8px; min-height: auto;"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div ng-if="vm.attachments.length === 0" class="text-muted" style="font-size: 0.9rem; text-align: center; padding: 12px; background: var(--bg-primary); border-radius: 8px; margin-bottom: 16px;">لا توجد مرفقات</div>
+
+                    <div ng-if="vm.role !== 'Patient'" style="background: var(--bg-primary); padding: 16px; border-radius: 10px; border: 1px dashed var(--primary);">
+                        <h5 style="margin-top: 0; font-size: 0.9rem; margin-bottom: 10px;">إضافة مرفق جديد</h5>
+                        <div style="display: flex; gap: 10px; align-items: flex-end;">
+                            <div class="form-group" style="margin-bottom: 0; flex: 1;">
+                                <input type="file" id="attachmentFile" class="form-control" style="padding: 8px; font-size: 0.85rem;" accept=".pdf,.jpg,.jpeg,.png">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0; flex: 1;">
+                                <input type="text" ng-model="vm.newAttachment.description" class="form-control" placeholder="وصف المرفق (اختياري)" style="height: 38px; min-height: 38px;">
+                            </div>
+                            <button class="btn btn-primary" ng-click="vm.uploadAttachment()" style="height: 38px; min-height: 38px; padding: 0 16px;" ng-disabled="vm.uploadingAttachment">
+                                <span ng-if="!vm.uploadingAttachment"><i class="fas fa-upload"></i> رفع</span>
+                                <span ng-if="vm.uploadingAttachment"><span class="spinner" style="width: 14px; height: 14px; border-width: 2px;"></span></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                </div><!-- End of General Tab -->
+
+                <!-- ==================== MSE TAB (Mental Status Examination) ==================== -->
+                <div ng-if="vm.activeDetailTab === 'mse'">
+                    <div ng-if="vm.mseLoading" style="text-align: center; padding: 40px;">
+                        <span class="spinner" style="width: 30px; height: 30px;"></span>
+                        <p style="margin-top: 12px; color: var(--text-secondary);">جاري تحميل بيانات فحص الحالة العقلية...</p>
+                    </div>
+
+                    <div ng-if="!vm.mseLoading">
+                        <div style="background: linear-gradient(135deg, rgba(0,119,182,0.05), rgba(0,180,216,0.05)); border-radius: 12px; padding: 16px; margin-bottom: 20px; border: 1px solid rgba(0,119,182,0.1);">
+                            <h4 style="margin: 0 0 4px; color: var(--primary); font-size: 1rem;"><i class="fas fa-brain" style="margin-left: 6px;"></i> فحص الحالة العقلية (Mental Status Examination)</h4>
+                            <p style="margin: 0; font-size: 0.82rem; color: var(--text-secondary);">نموذج MSE الشامل لتقييم الحالة النفسية للمريض — يشمل 9 محاور أساسية</p>
+                        </div>
+
+                        <!-- MSE Fields Grid with Quick-Pick Buttons -->
+                        <div style="display: grid; grid-template-columns: 1fr; gap: 14px;">
+                            <!-- 1. Appearance -->
+                            <div style="background: var(--bg-primary); border-radius: 10px; padding: 14px; border-right: 3px solid #6C5CE7;">
+                                <label style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary); display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                                    <span style="background: #6C5CE7; color: white; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem;">1</span>
+                                    المظهر العام والهيئة (Appearance)
+                                    <div style="margin-right: auto; display: flex; gap: 6px;">
+                                        <button class="btn btn-sm" ng-if="vm.role === 'Doctor'" ng-click="vm.toggleDictation('appearance')" style="padding: 2px 8px; min-height: auto; background: none; border: 1px solid var(--border-color);" title="إملاء صوتي">
+                                            <i class="fas fa-microphone" ng-class="vm.isDictating && vm.dictationField === 'appearance' ? 'text-danger' : ''"></i>
+                                        </button>
+                                        <button class="btn btn-sm" ng-if="vm.role === 'Doctor'" ng-click="vm.clearMSEField('appearance')" style="padding: 2px 8px; min-height: auto; background: none; border: 1px solid var(--border-color);" title="مسح">
+                                            <i class="fas fa-eraser"></i>
+                                        </button>
+                                    </div>
+                                </label>
+                                <!-- Quick-Pick Buttons -->
+                                <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px;" ng-if="vm.role === 'Doctor'">
+                                    <button ng-repeat="pick in vm.mseQuickPicks.appearance" type="button" class="btn btn-sm btn-secondary" ng-click="vm.appendMSEField('appearance', pick.value)" style="padding: 2px 8px; font-size: 0.72rem; min-height: auto;">{{pick.label}}</button>
+                                </div>
+                                <textarea class="form-control" ng-model="vm.mseData.appearance" rows="2" placeholder="وصف المظهر العام: النظافة، الملابس، الوضعية، التواصل البصري..." ng-disabled="vm.role === 'Patient'" style="resize: vertical; font-size: 0.85rem;"></textarea>
+                            </div>
+
+                            <!-- 2. Behavior -->
+                            <div style="background: var(--bg-primary); border-radius: 10px; padding: 14px; border-right: 3px solid #0984E3;">
+                                <label style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary); display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                                    <span style="background: #0984E3; color: white; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem;">2</span>
+                                    السلوك والنشاط الحركي (Behavior)
+                                    <div style="margin-right: auto; display: flex; gap: 6px;">
+                                        <button class="btn btn-sm" ng-if="vm.role === 'Doctor'" ng-click="vm.toggleDictation('behavior')" style="padding: 2px 8px; min-height: auto; background: none; border: 1px solid var(--border-color);"><i class="fas fa-microphone"></i></button>
+                                        <button class="btn btn-sm" ng-if="vm.role === 'Doctor'" ng-click="vm.clearMSEField('behavior')" style="padding: 2px 8px; min-height: auto; background: none; border: 1px solid var(--border-color);"><i class="fas fa-eraser"></i></button>
+                                    </div>
+                                </label>
+                                <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px;" ng-if="vm.role === 'Doctor'">
+                                    <button ng-repeat="pick in vm.mseQuickPicks.behavior" type="button" class="btn btn-sm btn-secondary" ng-click="vm.appendMSEField('behavior', pick.value)" style="padding: 2px 8px; font-size: 0.72rem; min-height: auto;">{{pick.label}}</button>
+                                </div>
+                                <textarea class="form-control" ng-model="vm.mseData.behavior" rows="2" placeholder="مستوى النشاط، التعاون، التوتر، السلوك الحركي الزائد أو البطيء..." ng-disabled="vm.role === 'Patient'" style="resize: vertical; font-size: 0.85rem;"></textarea>
+                            </div>
+
+                            <!-- 3. Speech -->
+                            <div style="background: var(--bg-primary); border-radius: 10px; padding: 14px; border-right: 3px solid #00B894;">
+                                <label style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary); display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                                    <span style="background: #00B894; color: white; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem;">3</span>
+                                    الكلام ونبرة الصوت (Speech)
+                                    <div style="margin-right: auto; display: flex; gap: 6px;">
+                                        <button class="btn btn-sm" ng-if="vm.role === 'Doctor'" ng-click="vm.toggleDictation('speech')" style="padding: 2px 8px; min-height: auto; background: none; border: 1px solid var(--border-color);"><i class="fas fa-microphone"></i></button>
+                                        <button class="btn btn-sm" ng-if="vm.role === 'Doctor'" ng-click="vm.clearMSEField('speech')" style="padding: 2px 8px; min-height: auto; background: none; border: 1px solid var(--border-color);"><i class="fas fa-eraser"></i></button>
+                                    </div>
+                                </label>
+                                <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px;" ng-if="vm.role === 'Doctor'">
+                                    <button ng-repeat="pick in vm.mseQuickPicks.speech" type="button" class="btn btn-sm btn-secondary" ng-click="vm.appendMSEField('speech', pick.value)" style="padding: 2px 8px; font-size: 0.72rem; min-height: auto;">{{pick.label}}</button>
+                                </div>
+                                <textarea class="form-control" ng-model="vm.mseData.speech" rows="2" placeholder="سرعة الكلام، حجم الصوت، النبرة، الطلاقة، التأتأة..." ng-disabled="vm.role === 'Patient'" style="resize: vertical; font-size: 0.85rem;"></textarea>
+                            </div>
+
+                            <!-- 4. Mood and Affect -->
+                            <div style="background: var(--bg-primary); border-radius: 10px; padding: 14px; border-right: 3px solid #FDCB6E;">
+                                <label style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary); display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                                    <span style="background: #FDCB6E; color: #333; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem;">4</span>
+                                    المزاج والوجدان (Mood & Affect)
+                                    <div style="margin-right: auto; display: flex; gap: 6px;">
+                                        <button class="btn btn-sm" ng-if="vm.role === 'Doctor'" ng-click="vm.toggleDictation('moodAndAffect')" style="padding: 2px 8px; min-height: auto; background: none; border: 1px solid var(--border-color);"><i class="fas fa-microphone"></i></button>
+                                        <button class="btn btn-sm" ng-if="vm.role === 'Doctor'" ng-click="vm.clearMSEField('moodAndAffect')" style="padding: 2px 8px; min-height: auto; background: none; border: 1px solid var(--border-color);"><i class="fas fa-eraser"></i></button>
+                                    </div>
+                                </label>
+                                <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px;" ng-if="vm.role === 'Doctor'">
+                                    <button ng-repeat="pick in vm.mseQuickPicks.moodAndAffect" type="button" class="btn btn-sm btn-secondary" ng-click="vm.appendMSEField('moodAndAffect', pick.value)" style="padding: 2px 8px; font-size: 0.72rem; min-height: auto;">{{pick.label}}</button>
+                                </div>
+                                <textarea class="form-control" ng-model="vm.mseData.moodAndAffect" rows="2" placeholder="المزاج المُبلَّغ (ما يقوله المريض) والوجدان المُلاحَظ (ما تراه)، التطابق..." ng-disabled="vm.role === 'Patient'" style="resize: vertical; font-size: 0.85rem;"></textarea>
+                            </div>
+
+                            <!-- 5. Thought Process -->
+                            <div style="background: var(--bg-primary); border-radius: 10px; padding: 14px; border-right: 3px solid #E17055;">
+                                <label style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary); display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                                    <span style="background: #E17055; color: white; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem;">5</span>
+                                    مجرى التفكير (Thought Process)
+                                    <div style="margin-right: auto; display: flex; gap: 6px;">
+                                        <button class="btn btn-sm" ng-if="vm.role === 'Doctor'" ng-click="vm.toggleDictation('thoughtProcess')" style="padding: 2px 8px; min-height: auto; background: none; border: 1px solid var(--border-color);"><i class="fas fa-microphone"></i></button>
+                                        <button class="btn btn-sm" ng-if="vm.role === 'Doctor'" ng-click="vm.clearMSEField('thoughtProcess')" style="padding: 2px 8px; min-height: auto; background: none; border: 1px solid var(--border-color);"><i class="fas fa-eraser"></i></button>
+                                    </div>
+                                </label>
+                                <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px;" ng-if="vm.role === 'Doctor'">
+                                    <button ng-repeat="pick in vm.mseQuickPicks.thoughtProcess" type="button" class="btn btn-sm btn-secondary" ng-click="vm.appendMSEField('thoughtProcess', pick.value)" style="padding: 2px 8px; font-size: 0.72rem; min-height: auto;">{{pick.label}}</button>
+                                </div>
+                                <textarea class="form-control" ng-model="vm.mseData.thoughtProcess" rows="2" placeholder="التسلسل المنطقي، تطاير الأفكار، التفكير الظرفي، الإطناب..." ng-disabled="vm.role === 'Patient'" style="resize: vertical; font-size: 0.85rem;"></textarea>
+                            </div>
+
+                            <!-- 6. Thought Content -->
+                            <div style="background: var(--bg-primary); border-radius: 10px; padding: 14px; border-right: 3px solid #D63031;">
+                                <label style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary); display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                                    <span style="background: #D63031; color: white; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem;">6</span>
+                                    محتوى التفكير (Thought Content)
+                                    <div style="margin-right: auto; display: flex; gap: 6px;">
+                                        <button class="btn btn-sm" ng-if="vm.role === 'Doctor'" ng-click="vm.toggleDictation('thoughtContent')" style="padding: 2px 8px; min-height: auto; background: none; border: 1px solid var(--border-color);"><i class="fas fa-microphone"></i></button>
+                                        <button class="btn btn-sm" ng-if="vm.role === 'Doctor'" ng-click="vm.clearMSEField('thoughtContent')" style="padding: 2px 8px; min-height: auto; background: none; border: 1px solid var(--border-color);"><i class="fas fa-eraser"></i></button>
+                                    </div>
+                                </label>
+                                <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px;" ng-if="vm.role === 'Doctor'">
+                                    <button ng-repeat="pick in vm.mseQuickPicks.thoughtContent" type="button" class="btn btn-sm btn-secondary" ng-click="vm.appendMSEField('thoughtContent', pick.value)" style="padding: 2px 8px; font-size: 0.72rem; min-height: auto;">{{pick.label}}</button>
+                                </div>
+                                <textarea class="form-control" ng-model="vm.mseData.thoughtContent" rows="2" placeholder="الأوهام، الوسواس، أفكار الانتحار أو إيذاء النفس، الرهاب..." ng-disabled="vm.role === 'Patient'" style="resize: vertical; font-size: 0.85rem;"></textarea>
+                            </div>
+
+                            <!-- 7. Perception -->
+                            <div style="background: var(--bg-primary); border-radius: 10px; padding: 14px; border-right: 3px solid #A29BFE;">
+                                <label style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary); display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                                    <span style="background: #A29BFE; color: white; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem;">7</span>
+                                    الإدراك الحسي (Perception)
+                                    <div style="margin-right: auto; display: flex; gap: 6px;">
+                                        <button class="btn btn-sm" ng-if="vm.role === 'Doctor'" ng-click="vm.toggleDictation('perception')" style="padding: 2px 8px; min-height: auto; background: none; border: 1px solid var(--border-color);"><i class="fas fa-microphone"></i></button>
+                                        <button class="btn btn-sm" ng-if="vm.role === 'Doctor'" ng-click="vm.clearMSEField('perception')" style="padding: 2px 8px; min-height: auto; background: none; border: 1px solid var(--border-color);"><i class="fas fa-eraser"></i></button>
+                                    </div>
+                                </label>
+                                <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px;" ng-if="vm.role === 'Doctor'">
+                                    <button ng-repeat="pick in vm.mseQuickPicks.perception" type="button" class="btn btn-sm btn-secondary" ng-click="vm.appendMSEField('perception', pick.value)" style="padding: 2px 8px; font-size: 0.72rem; min-height: auto;">{{pick.label}}</button>
+                                </div>
+                                <textarea class="form-control" ng-model="vm.mseData.perception" rows="2" placeholder="الهلاوس السمعية/البصرية/اللمسية، الأوهام الحسية، التبدد..." ng-disabled="vm.role === 'Patient'" style="resize: vertical; font-size: 0.85rem;"></textarea>
+                            </div>
+
+                            <!-- 8. Cognition -->
+                            <div style="background: var(--bg-primary); border-radius: 10px; padding: 14px; border-right: 3px solid #00CEC9;">
+                                <label style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary); display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                                    <span style="background: #00CEC9; color: white; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem;">8</span>
+                                    الإدراك المعرفي والتركيز (Cognition)
+                                    <div style="margin-right: auto; display: flex; gap: 6px;">
+                                        <button class="btn btn-sm" ng-if="vm.role === 'Doctor'" ng-click="vm.toggleDictation('cognition')" style="padding: 2px 8px; min-height: auto; background: none; border: 1px solid var(--border-color);"><i class="fas fa-microphone"></i></button>
+                                        <button class="btn btn-sm" ng-if="vm.role === 'Doctor'" ng-click="vm.clearMSEField('cognition')" style="padding: 2px 8px; min-height: auto; background: none; border: 1px solid var(--border-color);"><i class="fas fa-eraser"></i></button>
+                                    </div>
+                                </label>
+                                <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px;" ng-if="vm.role === 'Doctor'">
+                                    <button ng-repeat="pick in vm.mseQuickPicks.cognition" type="button" class="btn btn-sm btn-secondary" ng-click="vm.appendMSEField('cognition', pick.value)" style="padding: 2px 8px; font-size: 0.72rem; min-height: auto;">{{pick.label}}</button>
+                                </div>
+                                <textarea class="form-control" ng-model="vm.mseData.cognition" rows="2" placeholder="التوجه (الزمان/المكان/الشخص)، الذاكرة، التركيز، الانتباه..." ng-disabled="vm.role === 'Patient'" style="resize: vertical; font-size: 0.85rem;"></textarea>
+                            </div>
+
+                            <!-- 9. Insight and Judgment -->
+                            <div style="background: var(--bg-primary); border-radius: 10px; padding: 14px; border-right: 3px solid #636E72;">
+                                <label style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary); display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                                    <span style="background: #636E72; color: white; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem;">9</span>
+                                    الاستبصار والحكم (Insight & Judgment)
+                                    <div style="margin-right: auto; display: flex; gap: 6px;">
+                                        <button class="btn btn-sm" ng-if="vm.role === 'Doctor'" ng-click="vm.toggleDictation('insightAndJudgment')" style="padding: 2px 8px; min-height: auto; background: none; border: 1px solid var(--border-color);"><i class="fas fa-microphone"></i></button>
+                                        <button class="btn btn-sm" ng-if="vm.role === 'Doctor'" ng-click="vm.clearMSEField('insightAndJudgment')" style="padding: 2px 8px; min-height: auto; background: none; border: 1px solid var(--border-color);"><i class="fas fa-eraser"></i></button>
+                                    </div>
+                                </label>
+                                <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px;" ng-if="vm.role === 'Doctor'">
+                                    <button ng-repeat="pick in vm.mseQuickPicks.insightAndJudgment" type="button" class="btn btn-sm btn-secondary" ng-click="vm.appendMSEField('insightAndJudgment', pick.value)" style="padding: 2px 8px; font-size: 0.72rem; min-height: auto;">{{pick.label}}</button>
+                                </div>
+                                <textarea class="form-control" ng-model="vm.mseData.insightAndJudgment" rows="2" placeholder="إدراك المريض لحالته، تقبل العلاج، القدرة على اتخاذ القرارات..." ng-disabled="vm.role === 'Patient'" style="resize: vertical; font-size: 0.85rem;"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Save MSE Button (Doctor only) -->
+                        <div ng-if="vm.role === 'Doctor'" style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px; padding-top: 16px; border-top: 1px solid var(--border-color);">
+                            <button class="btn btn-primary" ng-click="vm.saveMSE()" ng-disabled="vm.mseSaving" style="padding: 8px 24px;">
+                                <span ng-if="!vm.mseSaving"><i class="fas fa-save"></i> حفظ فحص الحالة العقلية</span>
+                                <span ng-if="vm.mseSaving"><span class="spinner" style="width: 14px; height: 14px; border-width: 2px;"></span> جاري الحفظ...</span>
+                            </button>
+                        </div>
+                    </div>
+                </div><!-- End of MSE Tab -->
+
+                <!-- ==================== SOAP NOTE TAB ==================== -->
+                <div ng-if="vm.activeDetailTab === 'soap'">
+                    <div ng-if="vm.soapLoading" style="text-align: center; padding: 40px;">
+                        <span class="spinner" style="width: 30px; height: 30px;"></span>
+                        <p style="margin-top: 12px; color: var(--text-secondary);">جاري تحميل بيانات SOAP Note...</p>
+                    </div>
+
+                    <div ng-if="!vm.soapLoading">
+                        <div style="background: linear-gradient(135deg, rgba(108,92,231,0.05), rgba(162,155,254,0.05)); border-radius: 12px; padding: 16px; margin-bottom: 20px; border: 1px solid rgba(108,92,231,0.1);">
+                            <h4 style="margin: 0 0 4px; color: #6C5CE7; font-size: 1rem;"><i class="fas fa-notes-medical" style="margin-left: 6px;"></i> سجل التوثيق السريري (SOAP Note)</h4>
+                            <p style="margin: 0; font-size: 0.82rem; color: var(--text-secondary);">
+                                <strong>S</strong> — Subjective | <strong>O</strong> — Objective | <strong>A</strong> — Assessment | <strong>P</strong> — Plan
+                                <span ng-if="vm.isDictating" style="color: #E63946; margin-right: 12px; font-weight: bold;"><i class="fas fa-microphone"></i> جاري التسجيل...</span>
+                            </p>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr; gap: 14px;">
+                            <!-- S - Subjective -->
+                            <div style="background: var(--bg-primary); border-radius: 10px; padding: 14px; border-right: 3px solid #0984E3;">
+                                <label style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary); display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                                    <span style="background: #0984E3; color: white; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem;">S</span>
+                                    Subjective — شعور المريض وشكواه
+                                    <button class="btn btn-sm" ng-if="vm.role === 'Doctor'" ng-click="vm.toggleDictation('soap.subjective')" style="padding: 2px 8px; min-height: auto; margin-right: auto; background: none; border: 1px solid var(--border-color);">
+                                        <i class="fas fa-microphone" ng-class="vm.isDictating && vm.dictationField === 'soap.subjective' ? 'text-danger' : ''"></i>
+                                    </button>
+                                </label>
+                                <textarea class="form-control" ng-model="vm.soapData.subjective" rows="3" placeholder="شكوى المريض الرئيسية، التاريخ المرضي الحالي، الأعراض كما يصفها المريض..." ng-disabled="vm.role === 'Patient'" style="resize: vertical; font-size: 0.85rem;"></textarea>
+                            </div>
+
+                            <!-- O - Objective -->
+                            <div style="background: var(--bg-primary); border-radius: 10px; padding: 14px; border-right: 3px solid #00B894;">
+                                <label style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary); display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                                    <span style="background: #00B894; color: white; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem;">O</span>
+                                    Objective — الملاحظات السريرية والفحص
+                                    <button class="btn btn-sm" ng-if="vm.role === 'Doctor'" ng-click="vm.toggleDictation('soap.objective')" style="padding: 2px 8px; min-height: auto; margin-right: auto; background: none; border: 1px solid var(--border-color);">
+                                        <i class="fas fa-microphone" ng-class="vm.isDictating && vm.dictationField === 'soap.objective' ? 'text-danger' : ''"></i>
+                                    </button>
+                                </label>
+                                <textarea class="form-control" ng-model="vm.soapData.objective" rows="3" placeholder="نتائج الفحص السريري، العلامات الحيوية، ملاحظات MSE من التبويب السابق..." ng-disabled="vm.role === 'Patient'" style="resize: vertical; font-size: 0.85rem;"></textarea>
+                            </div>
+
+                            <!-- A - Assessment -->
+                            <div style="background: var(--bg-primary); border-radius: 10px; padding: 14px; border-right: 3px solid #E17055;">
+                                <label style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary); display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                                    <span style="background: #E17055; color: white; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem;">A</span>
+                                    Assessment — التشخيص والتقييم
+                                    <button class="btn btn-sm" ng-if="vm.role === 'Doctor'" ng-click="vm.toggleDictation('soap.assessment')" style="padding: 2px 8px; min-height: auto; margin-right: auto; background: none; border: 1px solid var(--border-color);">
+                                        <i class="fas fa-microphone" ng-class="vm.isDictating && vm.dictationField === 'soap.assessment' ? 'text-danger' : ''"></i>
+                                    </button>
+                                </label>
+                                <textarea class="form-control" ng-model="vm.soapData.assessment" rows="3" placeholder="التشخيص التفريقي، التقييم السريري، نتائج الاستبيانات (PHQ-9/GAD-7), تحليل الحالة..." ng-disabled="vm.role === 'Patient'" style="resize: vertical; font-size: 0.85rem;"></textarea>
+                            </div>
+
+                            <!-- P - Plan -->
+                            <div style="background: var(--bg-primary); border-radius: 10px; padding: 14px; border-right: 3px solid #6C5CE7;">
+                                <label style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary); display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                                    <span style="background: #6C5CE7; color: white; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem;">P</span>
+                                    Plan — خطة العلاج
+                                    <button class="btn btn-sm" ng-if="vm.role === 'Doctor'" ng-click="vm.toggleDictation('soap.plan')" style="padding: 2px 8px; min-height: auto; margin-right: auto; background: none; border: 1px solid var(--border-color);">
+                                        <i class="fas fa-microphone" ng-class="vm.isDictating && vm.dictationField === 'soap.plan' ? 'text-danger' : ''"></i>
+                                    </button>
+                                </label>
+                                <textarea class="form-control" ng-model="vm.soapData.plan" rows="3" placeholder="الخطة العلاجية، الأدوية الموصوفة، جلسات المتابعة، الإحالات..." ng-disabled="vm.role === 'Patient'" style="resize: vertical; font-size: 0.85rem;"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Save Soap Note Button -->
+                        <div ng-if="vm.role === 'Doctor'" style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px; padding-top: 16px; border-top: 1px solid var(--border-color);">
+                            <button class="btn btn-primary" ng-click="vm.saveSoapNote()" ng-disabled="vm.soapSaving" style="padding: 8px 24px;">
+                                <span ng-if="!vm.soapSaving"><i class="fas fa-save"></i> حفظ SOAP Note</span>
+                                <span ng-if="vm.soapSaving"><span class="spinner" style="width: 14px; height: 14px; border-width: 2px;"></span> جاري الحفظ...</span>
+                            </button>
+                        </div>
+                    </div>
+                </div><!-- End of SOAP Note Tab -->
+
+                <!-- ==================== RISK LEVEL TAB ==================== -->
+                <div ng-if="vm.activeDetailTab === 'risk'">
+                    <div style="background: linear-gradient(135deg, rgba(230,57,70,0.05), rgba(255,159,28,0.05)); border-radius: 12px; padding: 16px; margin-bottom: 20px; border: 1px solid rgba(230,57,70,0.1);">
+                        <h4 style="margin: 0 0 4px; color: #E63946; font-size: 1rem;"><i class="fas fa-exclamation-triangle" style="margin-left: 6px;"></i> مستوى الخطورة السريرية</h4>
+                        <p style="margin: 0; font-size: 0.82rem; color: var(--text-secondary);">تقييم مستوى خطورة الحالة النفسية للمريض — يُحدّث من قبل الطبيب المعالج</p>
+                    </div>
+
+                    <div ng-if="vm.riskLoading" style="text-align: center; padding: 40px;">
+                        <span class="spinner" style="width: 30px; height: 30px;"></span>
+                        <p style="margin-top: 12px; color: var(--text-secondary);">جاري تحميل بيانات مستوى الخطورة...</p>
+                    </div>
+
+                    <div ng-if="!vm.riskLoading">
+                        <!-- Current Risk Level Display -->
+                        <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color); margin-bottom: 16px; text-align: center;">
+                            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px;">المستوى الحالي للخطورة</div>
+                            <div style="display: flex; align-items: center; justify-content: center; gap: 12px;">
+                                <span class="badge" ng-class="vm.getRiskBadgeClass(vm.patientRisk.riskLevel)" style="font-size: 1.1rem; padding: 8px 20px; border-radius: 8px;">
+                                    {{vm.getRiskBadgeText(vm.patientRisk.riskLevel)}}
+                                </span>
+                            </div>
+                            <div style="margin-top: 8px; font-size: 0.85rem; color: var(--text-secondary);">
+                                <span ng-if="vm.patientRisk.riskLevelUpdatedAt">
+                                    <i class="fas fa-clock"></i> آخر تحديث: {{vm.patientRisk.riskLevelUpdatedAt | date:'yyyy/MM/dd hh:mm a'}}
+                                </span>
+                            </div>
+                            <div ng-if="vm.patientRisk.riskLevelNotes" style="margin-top: 12px; padding: 12px; background: rgba(255,159,28,0.1); border-radius: 8px; font-size: 0.88rem;">
+                                <i class="fas fa-sticky-note"></i> {{vm.patientRisk.riskLevelNotes}}
+                            </div>
+                        </div>
+
+                        <!-- Update Risk Level Form (Doctor only) -->
+                        <div ng-if="vm.role === 'Doctor'">
+                            <button class="btn btn-primary btn-sm" ng-click="vm.showRiskUpdateForm = !vm.showRiskUpdateForm" style="margin-bottom: 12px;">
+                                <i class="fas fa-edit"></i> {{vm.showRiskUpdateForm ? 'إلغاء' : 'تحديث مستوى الخطورة'}}
+                            </button>
+
+                            <div ng-if="vm.showRiskUpdateForm" style="background: var(--bg-primary); border-radius: 12px; padding: 20px; border: 2px dashed var(--priority-urgent);">
+                                <h5 style="margin: 0 0 12px; color: #E63946; font-size: 0.95rem;"><i class="fas fa-edit"></i> تحديث مستوى الخطورة للمريض: {{vm.detail.patientName}}</h5>
+                                <div style="display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;">
+                                    <button type="button" class="btn" ng-class="vm.riskUpdateData.riskLevel === 'Stable' ? 'btn-success' : 'btn-secondary'" ng-click="vm.riskUpdateData.riskLevel = 'Stable'" style="padding: 8px 16px;">
+                                        <i class="fas fa-check-circle"></i> مستقر 🟢
+                                    </button>
+                                    <button type="button" class="btn" ng-class="vm.riskUpdateData.riskLevel === 'Monitoring' ? 'btn-warning' : 'btn-secondary'" ng-click="vm.riskUpdateData.riskLevel = 'Monitoring'" style="padding: 8px 16px;">
+                                        <i class="fas fa-clock"></i> تحت الملاحظة 🟡
+                                    </button>
+                                    <button type="button" class="btn" ng-class="vm.riskUpdateData.riskLevel === 'Critical' ? 'btn-danger' : 'btn-secondary'" ng-click="vm.riskUpdateData.riskLevel = 'Critical'" style="padding: 8px 16px;">
+                                        <i class="fas fa-exclamation-triangle"></i> حرج 🔴
+                                    </button>
+                                </div>
+                                <div class="form-group" style="margin-bottom: 12px;">
+                                    <label>ملاحظات (اختياري)</label>
+                                    <textarea class="form-control" ng-model="vm.riskUpdateData.notes" rows="2" placeholder="سبب تغيير مستوى الخطورة، ملاحظات إضافية..."></textarea>
+                                </div>
+                                <button class="btn btn-primary" ng-click="vm.updatePatientRisk()" ng-disabled="vm.riskSaving">
+                                    <span ng-if="!vm.riskSaving"><i class="fas fa-save"></i> حفظ التحديث</span>
+                                    <span ng-if="vm.riskSaving"><span class="spinner" style="width: 14px; height: 14px; border-width: 2px;"></span> جاري الحفظ...</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- End of Risk Level Tab -->
+
+                <!-- ==================== TREND GRAPH TAB ==================== -->
+                <div ng-if="vm.activeDetailTab === 'trend'">
+                    <div style="background: linear-gradient(135deg, rgba(108,92,231,0.05), rgba(0,184,148,0.05)); border-radius: 12px; padding: 16px; margin-bottom: 20px; border: 1px solid rgba(108,92,231,0.1);">
+                        <h4 style="margin: 0 0 4px; color: #6C5CE7; font-size: 1rem;"><i class="fas fa-chart-line" style="margin-left: 6px;"></i> منحنى تطور التقييمات النفسية</h4>
+                        <p style="margin: 0; font-size: 0.82rem; color: var(--text-secondary);">يعرض تطور نتائج استبيانات PHQ-9 (الاكتئاب) و GAD-7 (القلق) عبر الزمن لتقييم الاستجابة العلاجية</p>
+                    </div>
+
+                    <!-- Risk Level Summary Bar -->
+                    <div style="margin-bottom: 16px;">
+                        <div style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--bg-primary); border-radius: 10px;">
+                            <i class="fas fa-exclamation-triangle" style="color: {{vm.patientRisk.riskLevel === 'Critical' ? '#E63946' : vm.patientRisk.riskLevel === 'Monitoring' ? '#FF9F1C' : '#2DC653'}}; font-size: 1.2rem;"></i>
+                            <span style="font-size: 0.9rem;">
+                                مستوى الخطورة الحالي:
+                                <strong style="margin-right: 4px;">
+                                    <span class="badge" ng-class="vm.getRiskBadgeClass(vm.patientRisk.riskLevel)" style="font-size: 0.8rem; padding: 4px 10px;">
+                                        {{vm.getRiskBadgeText(vm.patientRisk.riskLevel)}}
+                                    </span>
+                                </strong>
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Trend Chart -->
+                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; border: 1px solid var(--border-color); margin-bottom: 16px;">
+                        <canvas id="assessmentTrendChart" height="250" style="width: 100%; max-height: 300px;"></canvas>
+                    </div>
+
+                    <!-- Assessment History Table -->
+                    <div ng-if="vm.assessmentTrend.length > 0">
+                        <h5 style="font-size: 0.92rem; color: var(--text-primary); margin-bottom: 10px;"><i class="fas fa-history" style="color: var(--primary); margin-left: 6px;"></i> سجل التقييمات</h5>
+                        <div class="table-wrapper">
+                            <table class="table">
+                                <thead>
+                                    <tr><th>التاريخ</th><th>الاستبيان</th><th>الدرجة</th><th>التقييم</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr ng-repeat="a in vm.assessmentTrend | orderBy:'completedAt':true">
+                                        <td>{{a.completedAt | date:'yyyy/MM/dd'}}</td>
+                                        <td>{{a.templateTitle}}</td>
+                                        <td><strong ng-style="{color: a.score <= 4 ? '#2DC653' : a.score <= 9 ? '#FF9F1C' : a.score <= 14 ? '#FF6B35' : '#E63946'}">{{a.score || 0}}</strong></td>
+                                        <td>
+                                            <span ng-if="a.templateTitle.indexOf('PHQ') !== -1">
+                                                {{a.score <= 4 ? 'أدنى' : a.score <= 9 ? 'خفيف' : a.score <= 14 ? 'متوسط' : a.score <= 19 ? 'متوسط الشدة' : 'شديد'}}
+                                            </span>
+                                            <span ng-if="a.templateTitle.indexOf('GAD') !== -1">
+                                                {{a.score <= 4 ? 'أدنى' : a.score <= 9 ? 'خفيف' : a.score <= 14 ? 'متوسط' : 'شديد'}}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div ng-if="vm.assessmentTrend.length === 0">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="empty-state">
+                                    <i class="fas fa-chart-line" style="font-size: 2.5rem; opacity: 0.5;"></i>
+                                    <h4>لا توجد تقييمات كافية</h4>
+                                    <p style="color: var(--text-secondary);">يجب أن يكون لدى المريض تقييمان على الأقل من PHQ-9 أو GAD-7 لظهور المنحنى البياني</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- End of Trend Graph Tab -->
+
+                <!-- ==================== ASSESSMENTS TAB ==================== -->
+                <div ng-if="vm.activeDetailTab === 'assessments'">
+                    <div style="background: linear-gradient(135deg, rgba(0,119,182,0.05), rgba(0,180,216,0.05)); border-radius: 12px; padding: 16px; margin-bottom: 16px; border: 1px solid rgba(0,119,182,0.1);">
+                        <h4 style="margin: 0 0 4px; color: var(--primary); font-size: 1rem;"><i class="fas fa-clipboard-list" style="margin-left: 6px;"></i> الاستبيانات والتقييمات المخصصة</h4>
+                        <p style="margin: 0; font-size: 0.82rem; color: var(--text-secondary);">إنشاء استبيانات مخصصة وإسنادها للمريض لتعبئتها ذاتياً</p>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div ng-if="vm.role === 'Doctor'" style="display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;">
+                        <button class="btn btn-sm btn-primary" ng-click="vm.showCreateTemplate = !vm.showCreateTemplate">
+                            <i class="fas fa-plus-circle"></i> إنشاء قالب استبيان جديد
+                        </button>
+                        <button class="btn btn-sm btn-success" ng-click="vm.showAssignAssessment = !vm.showAssignAssessment" ng-if="vm.assessmentTemplates.length > 0">
+                            <i class="fas fa-paper-plane"></i> إسناد استبيان للمريض
+                        </button>
+                    </div>
+
+                    <!-- Create Template Form -->
+                    <div ng-if="vm.showCreateTemplate" style="background: var(--bg-primary); border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 2px dashed var(--primary);">
+                        <h5 style="color: var(--primary); margin: 0 0 12px; font-size: 0.95rem;"><i class="fas fa-edit"></i> إنشاء قالب استبيان جديد</h5>
+                        <div class="form-group" style="margin-bottom: 10px;">
+                            <label>عنوان الاستبيان</label>
+                            <input class="form-control" ng-model="vm.newTemplate.title" placeholder="مثال: مقياس الاكتئاب، تقييم القلق..." style="font-size: 0.9rem;">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 12px;">
+                            <label>وصف مختصر (اختياري)</label>
+                            <input class="form-control" ng-model="vm.newTemplate.description" placeholder="وصف مختصر لمحتوى الاستبيان..." style="font-size: 0.9rem;">
+                        </div>
+
+                        <!-- Questions List -->
+                        <div ng-if="vm.newTemplate.questions.length > 0" style="margin-bottom: 12px;">
+                            <label style="font-weight: bold; margin-bottom: 6px; display: block;">الأسئلة المضافة ({{vm.newTemplate.questions.length}}):</label>
+                            <div ng-repeat="q in vm.newTemplate.questions track by $index" style="background: var(--bg-card); padding: 10px 12px; border-radius: 6px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border-color);">
+                                <div>
+                                    <span style="color: var(--primary); font-weight: bold; margin-left: 6px;">{{$index + 1}}.</span>
+                                    <span style="font-size: 0.88rem;">{{q.text}}</span>
+                                    <span class="badge badge-primary" style="font-size: 0.7rem; margin-right: 6px; padding: 2px 6px;">{{q.type === 'text' ? 'نصي' : q.type === 'rating' ? 'تقييم 1-10' : q.type === 'yesno' ? 'نعم/لا' : 'اختيارات'}}</span>
+                                </div>
+                                <button class="btn btn-sm btn-danger" ng-click="vm.removeQuestion($index)" style="padding: 2px 8px; min-height: auto;"><i class="fas fa-times"></i></button>
+                            </div>
+                        </div>
+
+                        <!-- Add Question -->
+                        <div style="border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; background: var(--bg-card);">
+                            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 8px; margin-bottom: 8px;">
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label style="font-size: 0.82rem;">نص السؤال</label>
+                                    <input class="form-control" ng-model="vm.newQuestion.text" placeholder="اكتب السؤال هنا..." style="font-size: 0.85rem;">
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label style="font-size: 0.82rem;">نوع الإجابة</label>
+                                    <select class="form-control" ng-model="vm.newQuestion.type" style="font-size: 0.85rem;">
+                                        <option value="text">نص حر</option>
+                                        <option value="rating">تقييم (1-10)</option>
+                                        <option value="yesno">نعم / لا</option>
+                                        <option value="choice">اختيار من متعدد</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group" ng-if="vm.newQuestion.type === 'choice'" style="margin-bottom: 8px;">
+                                <label style="font-size: 0.82rem;">الخيارات (افصل بين كل خيار بفاصلة)</label>
+                                <input class="form-control" ng-model="vm.newQuestion.optionsText" placeholder="مثال: ممتاز, جيد, متوسط, ضعيف" style="font-size: 0.85rem;">
+                            </div>
+                            <button class="btn btn-sm btn-success" ng-click="vm.addQuestionToTemplate()" style="width: 100%;"><i class="fas fa-plus"></i> إضافة السؤال</button>
+                        </div>
+
+                        <div style="display: flex; gap: 8px; margin-top: 12px;">
+                            <button class="btn btn-primary" ng-click="vm.createTemplate()" ng-disabled="vm.templateSaving">
+                                <span ng-if="!vm.templateSaving"><i class="fas fa-save"></i> حفظ القالب</span>
+                                <span ng-if="vm.templateSaving"><span class="spinner" style="width: 14px; height: 14px; border-width: 2px;"></span> جاري الحفظ...</span>
+                            </button>
+                            <button class="btn btn-secondary" ng-click="vm.showCreateTemplate = false">إلغاء</button>
+                        </div>
+                    </div>
+
+                    <!-- Assign Assessment Form -->
+                    <div ng-if="vm.showAssignAssessment" style="background: var(--bg-primary); border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 2px dashed var(--priority-normal);">
+                        <h5 style="color: var(--priority-normal); margin: 0 0 12px; font-size: 0.95rem;"><i class="fas fa-paper-plane"></i> إسناد استبيان للمريض: {{vm.detail.patientName}}</h5>
+                        <div class="form-group" style="margin-bottom: 12px;">
+                            <label>اختر الاستبيان</label>
+                            <select class="form-control" ng-model="vm.assignData.templateID" ng-options="t.templateID as t.title for t in vm.assessmentTemplates">
+                                <option value="">-- اختر قالب الاستبيان --</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn btn-success" ng-click="vm.assignAssessment()" ng-disabled="vm.assignSaving">
+                                <span ng-if="!vm.assignSaving"><i class="fas fa-paper-plane"></i> إرسال للمريض</span>
+                                <span ng-if="vm.assignSaving"><span class="spinner" style="width: 14px; height: 14px; border-width: 2px;"></span> جاري الإرسال...</span>
+                            </button>
+                            <button class="btn btn-secondary" ng-click="vm.showAssignAssessment = false">إلغاء</button>
+                        </div>
+                    </div>
+
+                    <!-- Available Templates -->
+                    <div ng-if="vm.assessmentTemplates.length > 0" style="margin-bottom: 16px;">
+                        <h5 style="color: var(--text-primary); font-size: 0.92rem; margin-bottom: 10px;"><i class="fas fa-folder-open" style="color: var(--primary); margin-left: 6px;"></i> قوالب الاستبيانات المتاحة</h5>
+                        <div ng-repeat="t in vm.assessmentTemplates" style="background: var(--bg-primary); border-radius: 8px; padding: 10px 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border-color);">
+                            <div>
+                                <strong style="font-size: 0.88rem; color: var(--text-primary);">{{t.title}}</strong>
+                                <small style="display: block; color: var(--text-secondary); font-size: 0.78rem;">{{t.description || 'بدون وصف'}}</small>
+                            </div>
+                            <button class="btn btn-sm btn-danger" ng-click="vm.deleteTemplate(t)" style="padding: 3px 8px; min-height: auto;" ng-if="vm.role === 'Doctor' || vm.role === 'Admin'"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Patient's Assessments History -->
+                    <div>
+                        <h5 style="color: var(--text-primary); font-size: 0.92rem; margin-bottom: 10px;"><i class="fas fa-history" style="color: var(--primary); margin-left: 6px;"></i> سجل استبيانات المريض</h5>
+                        <div ng-repeat="pa in vm.patientAssessments" style="background: var(--bg-primary); border-radius: 8px; padding: 12px 14px; margin-bottom: 8px; border: 1px solid var(--border-color); border-right: 3px solid;" ng-style="{'border-right-color': pa.status === 'Completed' ? 'var(--priority-normal)' : '#FF9F1C'}">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <strong style="font-size: 0.88rem;">{{pa.templateTitle}}</strong>
+                                    <div style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px;">
+                                        <span ng-if="pa.status === 'Pending'" style="color: #FF9F1C;"><i class="fas fa-hourglass-half"></i> بانتظار التعبئة</span>
+                                        <span ng-if="pa.status === 'Completed'" style="color: var(--priority-normal);"><i class="fas fa-check-circle"></i> مكتمل — {{pa.completedAt | date:'yyyy/MM/dd'}}</span>
+                                    </div>
+                                </div>
+                                <button class="btn btn-sm btn-primary" ng-click="vm.viewAssessmentResult(pa)" ng-if="pa.status === 'Completed'" style="padding: 4px 10px; min-height: auto;"><i class="fas fa-eye"></i> النتائج</button>
+                            </div>
+                        </div>
+                        <div ng-if="vm.patientAssessments.length === 0" style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 0.85rem;">
+                            <i class="fas fa-inbox" style="font-size: 1.5rem; display: block; margin-bottom: 8px;"></i>
+                            لم يتم إسناد أي استبيانات لهذا المريض بعد
+                        </div>
+                    </div>
+                </div><!-- End of Assessments Tab -->
+
+                <!-- Assessment Result Modal (inside detail modal) -->
+                <div ng-if="vm.showAssessmentResult && vm.assessmentResult" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1050; display: flex; align-items: center; justify-content: center;" ng-click="vm.showAssessmentResult = false">
+                    <div style="background: var(--bg-card); border-radius: 16px; max-width: 550px; width: 90%; max-height: 70vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3);" ng-click="$event.stopPropagation()">
+                        <div style="background: var(--primary-gradient); color: white; padding: 16px 20px; border-radius: 16px 16px 0 0; display: flex; justify-content: space-between; align-items: center;">
+                            <h4 style="margin: 0; color: white; font-size: 1rem;"><i class="fas fa-chart-bar" style="margin-left: 6px;"></i> نتائج الاستبيان</h4>
+                            <button style="background:none; border:none; color: rgba(255,255,255,0.8); font-size: 1.2rem; cursor: pointer;" ng-click="vm.showAssessmentResult = false"><i class="fas fa-times"></i></button>
+                        </div>
+                        <div style="padding: 20px;">
+                            <h5 style="color: var(--primary); margin-bottom: 4px;">{{vm.assessmentResult.templateTitle}}</h5>
+                            <p style="color: var(--text-secondary); font-size: 0.82rem; margin-bottom: 16px;">المريض: {{vm.assessmentResult.patientName}} — اكتمل: {{vm.assessmentResult.completedAt | date:'yyyy/MM/dd hh:mm a'}}</p>
+                            <div ng-repeat="q in vm.assessmentResult.parsedSchema track by $index" style="background: var(--bg-primary); padding: 12px 14px; border-radius: 8px; margin-bottom: 8px; border-right: 3px solid var(--primary);">
+                                <div style="font-weight: 600; font-size: 0.88rem; color: var(--text-primary); margin-bottom: 4px;">{{$index + 1}}. {{q.text}}</div>
+                                <div style="color: var(--primary); font-weight: bold; font-size: 0.92rem;">{{vm.assessmentResult.parsedAnswers[q.text] || 'لا إجابة'}}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Medical Record Modal -->
+    <div class="modal-overlay" ng-if="vm.showCreateModal" ng-click="vm.showCreateModal = false">
+        <div class="modal-content" style="max-width: 600px;" ng-click="$event.stopPropagation()">
+            <div class="modal-header">
+                <h4 ng-if="$root.facilityMode !== 'Psychiatric'"><i class="fas fa-file-medical" style="color: var(--primary); margin-left: 8px;"></i> إنشاء سجل طبي</h4>
+                <h4 ng-if="$root.facilityMode === 'Psychiatric'"><i class="fas fa-brain" style="color: #7209b7; margin-left: 8px;"></i> إنشاء سجل جلسة نفسية وتقييم حالة</h4>
+                <button style="background:none; border:none; font-size:1.2rem; cursor:pointer; color: var(--text-muted);" ng-click="vm.showCreateModal = false"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>الموعد (المرضى الذين اكتمل موعدهم فقط)</label>
+                    <select class="form-control" ng-model="vm.newRecord.appID" ng-options="app.appID as ('موعد #' + app.appID + ' - المريض: ' + app.patientName + ' (بتاريخ ' + (app.appointmentDate | date:'yyyy/MM/dd') + ' الساعة ' + app.appointmentTime + ')') for app in vm.doctorAppointments" required>
+                        <option value="">-- اختر الموعد --</option>
+                    </select>
+                    <small class="text-muted" ng-if="vm.loadingAppointments"><i class="fas fa-spinner fa-spin"></i> جاري تحميل مواعيدك...</small>
+                    <small class="text-muted" ng-if="!vm.loadingAppointments && vm.doctorAppointments.length === 0">لا توجد مواعيد مكتملة بانتظار كتابة سجل طبي حالياً.</small>
+                </div>
+                <div class="form-group">
+                    <label>{{$root.facilityMode === 'Psychiatric' ? 'التشخيص السلوكي والنفسي (DSM-5 / ICD-11)' : 'التشخيص الطبي'}}</label>
+                    <textarea class="form-control" ng-model="vm.newRecord.diagnosisAr" rows="2" ng-placeholder="$root.facilityMode === 'Psychiatric' ? 'مثال: اضطراب القلق العام GAD، نوبة اكتئاب حادة...' : 'التشخيص بالعربية...'"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>{{$root.facilityMode === 'Psychiatric' ? 'خطة العلاج النفسي والجلسات السلوكية (CBT Plan)' : 'خطة العلاج الطبي'}}</label>
+                    <textarea class="form-control" ng-model="vm.newRecord.treatmentPlan" rows="2" ng-placeholder="$root.facilityMode === 'Psychiatric' ? 'خطة العلاج السلوكي المعرفي CBT، الواجبات المنزلية، أهداف الجلسة القادمة...' : 'خطة العلاج الموصى بها...'"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>{{$root.facilityMode === 'Psychiatric' ? 'ملاحظات المعالج وفحص الحالة العقلية (MSE Notes)' : 'ملاحظات الطبيب'}}</label>
+                    <textarea class="form-control" ng-model="vm.newRecord.doctorNotes" rows="2" placeholder="ملاحظات إضافية..."></textarea>
+                </div>
+                <div style="display: flex; gap: 12px;">
+                    <div class="form-group" style="flex: 1;"><label>موعد المتابعة</label><input type="date" class="form-control" ng-model="vm.newRecord.followUpDate"></div>
+                    <div class="form-group" style="flex: 1;"><label>ملاحظات المتابعة</label><input class="form-control" ng-model="vm.newRecord.followUpNotes" placeholder="..."></div>
+                </div>
+                <div class="form-group" style="margin-top: 10px; display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" id="sendToPharmacy" ng-model="vm.newRecord.sendToPharmacy" style="width: 18px; height: 18px; cursor: pointer;">
+                    <label for="sendToPharmacy" style="font-weight: bold; cursor: pointer; color: var(--primary);">إرسال الوصفة الطبية مباشرة إلى الصيدلية الإلكترونية فور الحفظ</label>
+                </div>
+
+                <!-- Inline Prescriptions -->
+                <h4 style="font-size: 0.95rem; margin: 16px 0 8px;"><i class="fas fa-pills" style="color: var(--primary);"></i> الوصفات الطبية</h4>
+                <div ng-repeat="p in vm.newRecord.prescriptions" style="padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <strong>{{p.medicationName}}</strong> — {{p.dosage}}
+                        <button class="btn btn-sm btn-danger" ng-click="vm.newRecord.prescriptions.splice($index, 1)" style="padding: 2px 6px; min-height: auto;"><i class="fas fa-times"></i></button>
+                    </div>
+                </div>
+                <div style="padding: 16px; border: 2px dashed var(--border-color); border-radius: 8px;">
+                    <!-- تبديل طريقتي اختيار الدواء -->
+                    <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                        <button type="button" class="btn btn-sm" ng-class="vm.medicationMode === 'dropdown' ? 'btn-primary' : 'btn-secondary'" ng-click="vm.changeMedicationMode('dropdown')" style="padding: 4px 10px; font-size: 0.8rem; min-height: auto;">
+                            <i class="fas fa-list"></i> اختر من المخزون
+                        </button>
+                        <button type="button" class="btn btn-sm" ng-class="vm.medicationMode === 'search' ? 'btn-primary' : 'btn-secondary'" ng-click="vm.changeMedicationMode('search')" style="padding: 4px 10px; font-size: 0.8rem; min-height: auto;">
+                            <i class="fas fa-search"></i> بحث عن دواء
+                        </button>
+                    </div>
+
+                    <!-- 1. طريقة القائمة المنسدلة -->
+                    <div class="form-group" ng-if="vm.medicationMode === 'dropdown'" style="margin-bottom: 12px;">
+                        <label style="font-size: 0.85rem;">اختر الدواء من الصيدلية</label>
+                        <select class="form-control" ng-model="selectedTempMed" ng-change="vm.selectMedication(selectedTempMed)" ng-options="med as (med.nameAr + ' (' + med.name + ') - المتوفر: ' + med.quantityInStock + ' ' + (med.unit || '')) for med in vm.medications" style="font-size: 0.85rem; height: 36px;">
+                            <option value="">-- اختر الدواء --</option>
+                        </select>
+                    </div>
+
+                    <!-- 2. طريقة البحث -->
+                    <div ng-if="vm.medicationMode === 'search'" style="margin-bottom: 12px;">
+                        <label style="font-size: 0.85rem;">البحث عن دواء في الصيدلية</label>
+                        <div style="display: flex; gap: 6px;">
+                            <input class="form-control" ng-model="vm.searchQuery" placeholder="اكتب اسم الدواء هنا..." style="font-size: 0.85rem; height: 36px;">
+                            <button type="button" class="btn btn-primary btn-sm" ng-click="vm.searchMedication('temp')" style="min-height: 36px; padding: 0 12px;">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+
+                        <!-- رسالة التنبيه وطلب التوفير في حال عدم الوجود -->
+                        <div class="alert alert-danger" ng-if="vm.medicationNotFound" style="margin-top: 10px; padding: 10px; font-size: 0.85rem; display: flex; flex-direction: column; gap: 6px;">
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <span>عذراً، هذا الدواء غير متوفر في الصيدلية حالياً.</span>
+                            </div>
+                            <div style="background: rgba(255,255,255,0.15); padding: 8px; border-radius: 6px; margin-top: 2px;">
+                                <input class="form-control" ng-model="vm.requestNotes" placeholder="ملاحظات طلب التوفير (اختياري)..." style="color: #333; font-size: 0.8rem; height: 28px; background: white; padding: 4px 8px;">
+                            </div>
+                            <button type="button" class="btn btn-sm btn-light" ng-click="vm.sendMedicationRequest('temp')" ng-disabled="vm.sendingRequest" style="align-self: flex-start; padding: 2px 8px; min-height: auto; font-size: 0.8rem;">
+                                <span ng-if="!vm.sendingRequest"><i class="fas fa-paper-plane" style="color: var(--primary);"></i> إرسال طلب توفير</span>
+                                <span ng-if="vm.sendingRequest"><span class="spinner" style="border-left-color: var(--primary); width: 10px; height: 10px;"></span> جاري الإرسال...</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- الحقول المشتركة للوصفة -->
+                    <div style="display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 8px; margin-top: 10px;">
+                        <div>
+                            <label style="font-size: 0.8rem; margin-bottom: 2px;">اسم الدواء المحدد</label>
+                            <input class="form-control" ng-model="vm.tempPrescription.medicationName" placeholder="اسم الدواء" readonly style="font-size: 0.85rem; height: 34px; background-color: var(--bg-primary);">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.8rem; margin-bottom: 2px;">الجرعة</label>
+                            <input class="form-control" ng-model="vm.tempPrescription.dosage" placeholder="مثال: 500mg" style="font-size: 0.85rem; height: 34px;">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.8rem; margin-bottom: 2px;">التكرار</label>
+                            <input class="form-control" ng-model="vm.tempPrescription.frequency" placeholder="مثال: مرتين" style="font-size: 0.85rem; height: 34px;">
+                        </div>
+                    </div>
+                    <button class="btn btn-sm btn-success" ng-click="vm.addTempPrescription()" style="margin-top: 10px; width: 100%;"><i class="fas fa-plus"></i> إضافة الدواء إلى قائمة الوصفات</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" ng-click="vm.createRecord()" ng-disabled="vm.saving">
+                    <span ng-if="!vm.saving"><i class="fas fa-save"></i> حفظ السجل</span>
+                    <span ng-if="vm.saving"><span class="spinner"></span> جاري الحفظ...</span>
+                </button>
+                <button class="btn btn-secondary" ng-click="vm.showCreateModal = false">إلغاء</button>
+            </div>
+        </div>
+    </div>
+</div>

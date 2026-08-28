@@ -1,0 +1,452 @@
+<div class="stagger-children">
+
+    <!-- ======== MODE TABS ======== -->
+    <div style="display: flex; gap: 0; margin-bottom: 24px; background: var(--card-bg); border-radius: 14px; overflow: hidden; border: 2px solid var(--border-color);" ng-if="$root.facilityMode === 'Hybrid'">
+        <button class="btn" ng-class="vm.bookingMode === 'medical' ? 'btn-primary' : 'btn-secondary'"
+                ng-click="vm.switchMode('medical')"
+                style="flex: 1; border-radius: 0; padding: 14px; font-size: 0.95rem; border: none; transition: all 0.3s;">
+            <i class="fas fa-stethoscope" style="margin-left: 8px;"></i> حجز موعد طبي
+        </button>
+        <button class="btn" ng-class="vm.bookingMode === 'psychiatric' ? 'btn-primary' : 'btn-secondary'"
+                ng-click="vm.switchMode('psychiatric')"
+                style="flex: 1; border-radius: 0; padding: 14px; font-size: 0.95rem; border: none; transition: all 0.3s;">
+            <i class="fas fa-brain" style="margin-left: 8px;"></i> حجز موعد نفسي
+        </button>
+    </div>
+
+    <!-- ================================================================ -->
+    <!--  MEDICAL BOOKING (الطب العام)                                     -->
+    <!-- ================================================================ -->
+    <div ng-if="vm.bookingMode === 'medical'">
+
+        <!-- Stepper -->
+        <div class="card" style="margin-bottom: 24px;">
+            <div class="card-body" style="padding: 16px 20px;">
+                <div style="display: flex; align-items: center; justify-content: center; gap: 0; flex-wrap: wrap;">
+                    <div ng-repeat="step in vm.med.steps" style="display: flex; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 6px; cursor: pointer;" ng-click="vm.med.currentStep >= $index + 1 ? vm.med.currentStep = $index + 1 : null">
+                            <div style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem; transition: all 0.3s;"
+                                 ng-style="{'background': vm.med.currentStep >= $index + 1 ? 'var(--primary)' : '#e8ecf0', 'color': vm.med.currentStep >= $index + 1 ? 'white' : 'var(--text-muted)'}">
+                                <i ng-if="vm.med.currentStep > $index + 1" class="fas fa-check"></i>
+                                <span ng-if="vm.med.currentStep <= $index + 1">{{$index + 1}}</span>
+                            </div>
+                            <span style="font-size: 0.8rem; font-weight: 600; white-space: nowrap;" ng-style="{'color': vm.med.currentStep >= $index + 1 ? 'var(--text-primary)' : 'var(--text-muted)'}">{{step}}</span>
+                        </div>
+                        <div ng-if="!$last" style="width: 30px; height: 2px; margin: 0 6px;" ng-style="{'background': vm.med.currentStep > $index + 1 ? 'var(--primary)' : '#e8ecf0'}"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 1: Medical Triage -->
+        <div ng-if="vm.med.currentStep === 1" class="card">
+            <div class="card-header">
+                <h4><i class="fas fa-clipboard-list" style="color: var(--primary); margin-left: 8px;"></i> تقييم الحالة الصحية العامة</h4>
+                <span class="badge badge-info">{{vm.med.questions.length}} أسئلة</span>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info" style="margin-bottom: 20px;">
+                    <i class="fas fa-info-circle"></i>
+                    <span>أجب على الأسئلة التالية بدقة لتحديد مستوى أولوية حالتك الصحية</span>
+                </div>
+                <div style="display: flex; gap: 8px; margin-bottom: 20px; background: var(--bg-primary); border-radius: 10px; padding: 10px;">
+                    <button type="button" class="btn" ng-class="vm.med.appointmentType === 'Online' ? 'btn-primary' : 'btn-secondary'" ng-click="vm.med.appointmentType = 'Online'" style="flex: 1;">
+                        <i class="fas fa-video" style="margin-left: 6px;"></i> استشارة عن بعد (فيديو)
+                    </button>
+                    <button type="button" class="btn" ng-class="vm.med.appointmentType === 'WalkIn' ? 'btn-primary' : 'btn-secondary'" ng-click="vm.med.appointmentType = 'WalkIn'" style="flex: 1;">
+                        <i class="fas fa-building-medical" style="margin-left: 6px;"></i> حضور للعيادة
+                    </button>
+                </div>
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label style="font-weight: 700;"><i class="fas fa-pen" style="margin-left: 6px; color: var(--primary);"></i> وصف الحالة / الشكوى <span style="color: var(--text-muted); font-weight: normal; font-size: 0.8rem;">(يساعد الطبيب في الاستعداد لحالتك)</span></label>
+                    <textarea class="form-control" ng-model="vm.med.notes" rows="3" placeholder="اذكر باختصار ما تشعر به، منذ متى، وهل توجد أعراض مصاحبة..." style="resize: vertical;"></textarea>
+                </div>
+                <div ng-repeat="q in vm.med.questions" style="padding: 14px; border: 2px solid var(--border-color); border-radius: 10px; margin-bottom: 10px; transition: all 0.3s;"
+                     ng-style="{'border-color': vm.med.answers[q.questionID] !== undefined ? 'var(--primary)' : 'var(--border-color)'}">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+                        <span style="font-weight: 500; font-size: 0.9rem; flex: 1;">{{q.questionTextAr}}</span>
+                        <div style="display: flex; gap: 6px; flex-shrink: 0;">
+                            <button class="btn btn-sm" ng-click="vm.medSetAnswer(q, true)"
+                                    ng-class="vm.med.answers[q.questionID] === true ? 'btn-danger' : 'btn-secondary'" style="min-width: 50px;">نعم</button>
+                            <button class="btn btn-sm" ng-click="vm.medSetAnswer(q, false)"
+                                    ng-class="vm.med.answers[q.questionID] === false ? 'btn-success' : 'btn-secondary'" style="min-width: 50px;">لا</button>
+                        </div>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 24px;">
+                    <button class="btn btn-primary btn-lg" ng-click="vm.medEvaluate()" ng-disabled="vm.med.evaluating">
+                        <span ng-if="!vm.med.evaluating"><i class="fas fa-stethoscope"></i> تقييم الحالة</span>
+                        <span ng-if="vm.med.evaluating"><span class="spinner"></span> جاري التقييم...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: Medical Doctor Selection -->
+        <div ng-if="vm.med.currentStep === 2">
+            <div class="card" style="margin-bottom: 20px; border-top: 4px solid {{vm.med.triageResult.colorCode}};">
+                <div class="card-body" style="text-align: center; padding: 24px;">
+                    <div style="width: 60px; height: 60px; border-radius: 50%; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; color: white;"
+                         ng-style="{'background': vm.med.triageResult.colorCode}">
+                        <i class="fas" ng-class="{'fa-check-circle': vm.med.triageResult.priorityId === 1, 'fa-exclamation-triangle': vm.med.triageResult.priorityId === 2, 'fa-ambulance': vm.med.triageResult.priorityId === 3}"></i>
+                    </div>
+                    <h4 style="margin-bottom: 4px;">نتيجة التقييم: <span ng-style="{'color': vm.med.triageResult.colorCode}">{{vm.med.triageResult.levelNameAr}}</span></h4>
+                    <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 0;">نقاط الفرز: <strong>{{vm.med.triageResult.triageScore}}</strong></p>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-user-md" style="color: var(--primary); margin-left: 8px;"></i> اختر الطبيب</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info" ng-if="vm.med.specialtyFilterActive" style="margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                        <span><i class="fas fa-stethoscope" style="margin-left: 6px;"></i> تم اختيار الأطباء المناسبين لحالتك تلقائياً من تخصصات: <strong>{{vm.med.recommendedSpecialties.join('، ')}}</strong></span>
+                        <button class="btn btn-sm btn-secondary" ng-click="vm.medShowAllDoctors()" style="white-space: nowrap;"><i class="fas fa-list"></i> عرض جميع الأطباء</button>
+                    </div>
+                    <div class="form-group" ng-if="!vm.med.specialtyFilterActive">
+                        <label>التخصص المطلوب</label>
+                        <select class="form-control" ng-model="vm.med.selectedSpecialty" ng-change="vm.medLoadDoctors()">
+                            <option value="">كل التخصصات</option>
+                            <option ng-repeat="s in vm.med.specialties" value="{{s}}">{{s}}</option>
+                        </select>
+                    </div>
+                    <div ng-repeat="doc in vm.med.doctors" style="padding: 14px; border: 2px solid var(--border-color); border-radius: 10px; margin-bottom: 10px; cursor: pointer; transition: all 0.3s;"
+                         ng-class="{'active-doctor': vm.med.selectedDoctor && vm.med.selectedDoctor.doctorID === doc.doctorID}"
+                         ng-style="vm.med.selectedDoctor && vm.med.selectedDoctor.doctorID === doc.doctorID ? {'border-color': 'var(--primary)'} : {}"
+                         ng-click="vm.medSelectDoctor(doc)">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div class="avatar avatar-lg" style="font-size: 1rem;">{{doc.fullName.charAt(0)}}</div>
+                            <div style="flex: 1;">
+                                <h4 style="margin: 0 0 2px; font-size: 0.95rem;">د. {{doc.fullName}}</h4>
+                                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                    <span class="badge badge-primary" style="font-size: 0.7rem;">{{doc.specialty}}</span>
+                                    <span class="badge" style="background: rgba(45,198,83,0.1); color: #2DC653; font-size: 0.7rem; font-weight: bold;">
+                                        <i class="fas fa-money-bill-wave" style="margin-left: 4px;"></i>{{doc.consultationFee | number:2}} د.ل
+                                    </span>
+                                    <span class="badge" ng-class="vm.getDoctorStatus(doc).cls" style="font-size: 0.7rem; font-weight: bold;">
+                                        <i class="fas" ng-class="vm.getDoctorStatus(doc).icon" style="margin-left: 4px;"></i>{{vm.getDoctorStatus(doc).label}}
+                                    </span>
+                                </div>
+                                <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px;">
+                                    <span class="badge" style="background: rgba(67,97,238,0.08); color: var(--primary); font-size: 0.7rem;">
+                                        <i class="fas fa-clock" style="margin-left: 4px;"></i>{{vm.formatTime(doc.workStartTime)}} - {{vm.formatTime(doc.workEndTime)}}
+                                    </span>
+                                    <span class="badge" style="background: rgba(255,159,67,0.12); color: #FF9F43; font-size: 0.7rem;">
+                                        <i class="fas fa-calendar-week" style="margin-left: 4px;"></i>{{vm.formatWorkingDays(doc.availableDays)}}
+                                    </span>
+                                </div>
+                            </div>
+                            <i class="fas fa-check-circle" ng-if="vm.med.selectedDoctor && vm.med.selectedDoctor.doctorID === doc.doctorID" style="color: var(--primary); font-size: 1.2rem;"></i>
+                        </div>
+                    </div>
+                    <div class="empty-state" ng-if="vm.med.doctors.length === 0">
+                        <i class="fas fa-user-md"></i>
+                        <h4>لا يوجد أطباء في هذه التخصصات</h4>
+                        <p style="color: var(--text-secondary);" ng-if="vm.med.specialtyFilterActive">لم نجد أطباء مطابقين لحالتك ضمن التخصصات الموصى بها حالياً.</p>
+                    </div>
+                    <div style="text-align: center; margin-top: 20px;" ng-if="vm.med.selectedDoctor">
+                        <button class="btn btn-primary" ng-click="vm.med.currentStep = 3"><i class="fas fa-calendar-alt"></i> اختيار الموعد</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3: Medical Date & Time -->
+        <div ng-if="vm.med.currentStep === 3" class="card">
+            <div class="card-header">
+                <h4><i class="fas fa-calendar-alt" style="color: var(--primary); margin-left: 8px;"></i> اختر التاريخ والوقت</h4>
+            </div>
+            <div class="card-body">
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; padding: 12px 16px; background: var(--bg-primary); border-radius: 10px;">
+                    <span class="badge badge-primary" style="font-size: 0.78rem;"><i class="fas fa-user-md" style="margin-left: 4px;"></i>د. {{vm.med.selectedDoctor.fullName}}</span>
+                    <span class="badge" style="background: rgba(67,97,238,0.08); color: var(--primary); font-size: 0.78rem;"><i class="fas fa-clock" style="margin-left: 4px;"></i>ساعات العمل: {{vm.formatTime(vm.med.selectedDoctor.workStartTime)}} - {{vm.formatTime(vm.med.selectedDoctor.workEndTime)}}</span>
+                    <span class="badge" style="background: rgba(255,159,67,0.12); color: #FF9F43; font-size: 0.78rem;"><i class="fas fa-calendar-week" style="margin-left: 4px;"></i>أيام العمل: {{vm.formatWorkingDays(vm.med.selectedDoctor.availableDays)}}</span>
+                    <span class="badge" ng-class="vm.getDoctorStatus(vm.med.selectedDoctor).cls" style="font-size: 0.78rem;"><i class="fas" ng-class="vm.getDoctorStatus(vm.med.selectedDoctor).icon" style="margin-left: 4px;"></i>{{vm.getDoctorStatus(vm.med.selectedDoctor).label}}</span>
+                </div>
+                <div class="form-group">
+                    <label>تاريخ الموعد</label>
+                    <input type="date" class="form-control" ng-model="vm.med.selectedDate" ng-change="vm.medLoadSlots()" min="{{vm.minDate}}" max="{{vm.maxDate}}">
+                </div>
+                <div class="alert alert-warning" ng-if="vm.med.selectedDate && !vm.isDoctorWorkingDay(vm.med.selectedDate, vm.med.selectedDoctor)" style="margin-bottom: 16px;">
+                    <i class="fas fa-exclamation-triangle"></i> الطبيب لا يعمل في هذا اليوم — يرجى اختيار تاريخ آخر.
+                </div>
+                <div ng-if="vm.med.slots.length > 0">
+                    <label style="margin-bottom: 8px; display: block; font-weight: 600;">المواعيد المتاحة:</label>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                        <button ng-repeat="slot in vm.med.slots" class="btn btn-sm"
+                                ng-class="slot.isAvailable ? (vm.med.selectedSlot === slot.time ? 'btn-primary' : 'btn-secondary') : 'btn-danger'"
+                                ng-disabled="!slot.isAvailable" ng-click="vm.med.selectedSlot = slot.time"
+                                style="min-width: 90px; display: flex; flex-direction: column; align-items: center; gap: 2px;">
+                            <span><i class="fas" ng-class="slot.isAvailable ? 'fa-clock' : 'fa-times-circle'"></i> {{slot.timeFormatted}}</span>
+                            <small style="font-size: 0.65rem; font-weight: bold; opacity: 0.9;">{{slot.isAvailable ? 'متاح' : 'مشغول'}}</small>
+                        </button>
+                    </div>
+                </div>
+                <div ng-if="vm.med.selectedDate && vm.med.slots.length === 0" class="alert alert-info" style="margin-top: 12px;">
+                    <i class="fas fa-info-circle"></i> {{vm.med.slotsMessage || 'لا توجد فتحات متاحة في هذا اليوم'}}
+                </div>
+                <div class="form-group" style="margin-top: 16px;">
+                    <label>ملاحظات إضافية (اختياري)</label>
+                    <textarea class="form-control" ng-model="vm.med.notes" rows="2" placeholder="أي تفاصيل إضافية تود إخبار الطبيب بها..." style="resize: vertical;"></textarea>
+                </div>
+                <!-- Fee Summary -->
+                <div style="margin: 20px 0; background: rgba(67,97,238,0.03); border: 1.5px dashed #4361ee; border-radius: 12px; padding: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 1.1rem; color: #2DC653; font-weight: 700;">
+                        <span>قيمة الكشف الطبي:</span>
+                        <span>{{vm.med.selectedDoctor.consultationFee | number:2}} دينار ليبي</span>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="btn btn-secondary" ng-click="vm.med.currentStep = 2" style="margin-left: 8px;"><i class="fas fa-arrow-right"></i> رجوع</button>
+                    <button class="btn btn-primary btn-lg" ng-click="vm.medBook()" ng-disabled="!vm.med.selectedSlot || vm.med.booking">
+                        <span ng-if="!vm.med.booking"><i class="fas fa-check-circle"></i> تأكيد الحجز</span>
+                        <span ng-if="vm.med.booking"><span class="spinner"></span> جاري الحجز...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 4: Medical Confirmation -->
+        <div ng-if="vm.med.currentStep === 4" class="card" style="border-top: 4px solid var(--priority-normal);">
+            <div class="card-body" style="text-align: center; padding: 40px 24px;">
+                <div style="width: 70px; height: 70px; border-radius: 50%; background: rgba(45,198,83,0.1); margin: 0 auto 16px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-check-circle" style="font-size: 2rem; color: var(--priority-normal);"></i>
+                </div>
+                <h2 style="margin-bottom: 6px; color: var(--priority-normal);">تم حجز الموعد الطبي بنجاح!</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 20px;">رقم الموعد: <strong>#{{vm.med.bookedAppointmentId}}</strong></p>
+                <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; text-align: right; max-width: 380px; margin: 0 auto 20px;">
+                    <div style="margin-bottom: 8px;"><strong>الطبيب:</strong> د. {{vm.med.selectedDoctor.fullName}}</div>
+                    <div style="margin-bottom: 8px;"><strong>التخصص:</strong> {{vm.med.selectedDoctor.specialty}}</div>
+                    <div style="margin-bottom: 8px;"><strong>التاريخ:</strong> {{vm.med.selectedDate | date:'yyyy/MM/dd'}}</div>
+                    <div style="border-top: 1px solid rgba(0,0,0,0.06); padding-top: 8px; color: #2DC653; font-weight: bold;">
+                        قيمة الفاتورة: {{vm.med.selectedDoctor.consultationFee | number:2}} د.ل
+                    </div>
+                </div>
+                <button class="btn btn-success" ui-sref="app.billing" style="margin-left: 8px;"><i class="fas fa-credit-card"></i> الدفع الآن</button>
+                <button class="btn btn-primary" ui-sref="app.appointments"><i class="fas fa-calendar-alt"></i> عرض مواعيدي</button>
+                <button class="btn btn-secondary" ng-click="vm.medReset()" style="margin-right: 8px;"><i class="fas fa-plus"></i> حجز آخر</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================ -->
+    <!--  PSYCHIATRIC BOOKING (الطب النفسي)                                -->
+    <!-- ================================================================ -->
+    <div ng-if="vm.bookingMode === 'psychiatric'">
+
+        <!-- Stepper -->
+        <div class="card" style="margin-bottom: 24px; border-right: 4px solid #6C5CE7;">
+            <div class="card-body" style="padding: 16px 20px;">
+                <div style="display: flex; align-items: center; justify-content: center; gap: 0; flex-wrap: wrap;">
+                    <div ng-repeat="step in vm.psych.steps" style="display: flex; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 6px; cursor: pointer;" ng-click="vm.psych.currentStep >= $index + 1 ? vm.psych.currentStep = $index + 1 : null">
+                            <div style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem; transition: all 0.3s;"
+                                 ng-style="{'background': vm.psych.currentStep >= $index + 1 ? '#6C5CE7' : '#e8ecf0', 'color': vm.psych.currentStep >= $index + 1 ? 'white' : 'var(--text-muted)'}">
+                                <i ng-if="vm.psych.currentStep > $index + 1" class="fas fa-check"></i>
+                                <span ng-if="vm.psych.currentStep <= $index + 1">{{$index + 1}}</span>
+                            </div>
+                            <span style="font-size: 0.8rem; font-weight: 600; white-space: nowrap;" ng-style="{'color': vm.psych.currentStep >= $index + 1 ? 'var(--text-primary)' : 'var(--text-muted)'}">{{step}}</span>
+                        </div>
+                        <div ng-if="!$last" style="width: 30px; height: 2px; margin: 0 6px;" ng-style="{'background': vm.psych.currentStep > $index + 1 ? '#6C5CE7' : '#e8ecf0'}"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 1: Psychiatric Triage -->
+        <div ng-if="vm.psych.currentStep === 1" class="card" style="border-right: 4px solid #6C5CE7;">
+            <div class="card-header" style="background: linear-gradient(135deg, #6C5CE7, #a29bfe); color: white;">
+                <h4 style="color: white;"><i class="fas fa-brain" style="margin-left: 8px;"></i> تقييم الحالة النفسية</h4>
+                <span class="badge" style="background: rgba(255,255,255,0.2); color: white;">{{vm.psych.questions.length}} أسئلة</span>
+            </div>
+            <div class="card-body">
+                <div class="alert" style="background: rgba(108,92,231,0.08); border: 1px solid rgba(108,92,231,0.2); border-radius: 10px; padding: 14px; margin-bottom: 20px;">
+                    <i class="fas fa-heart" style="color: #6C5CE7; margin-left: 8px;"></i>
+                    <span style="color: #6C5CE7;">هذه الأسئلة خاصة بالتقييم النفسي. ستساعدنا في تحديد مدى استعجال حالتك وتحويلك للطبيب النفسي المناسب.</span>
+                </div>
+                <div style="display: flex; gap: 8px; margin-bottom: 20px; background: rgba(108,92,231,0.04); border-radius: 10px; padding: 10px;">
+                    <button type="button" class="btn" ng-class="vm.psych.appointmentType === 'Online' ? 'btn-primary' : 'btn-secondary'" ng-click="vm.psych.appointmentType = 'Online'" style="flex: 1;">
+                        <i class="fas fa-video" style="margin-left: 6px;"></i> جلسة عن بعد (فيديو)
+                    </button>
+                    <button type="button" class="btn" ng-class="vm.psych.appointmentType === 'WalkIn' ? 'btn-primary' : 'btn-secondary'" ng-click="vm.psych.appointmentType = 'WalkIn'" style="flex: 1;">
+                        <i class="fas fa-building-medical" style="margin-left: 6px;"></i> حضور للعيادة
+                    </button>
+                </div>
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label style="font-weight: 700; color: #6C5CE7;"><i class="fas fa-pen" style="margin-left: 6px;"></i> وصف الحالة / الشكوى <span style="color: var(--text-muted); font-weight: normal; font-size: 0.8rem;">(يساعد الطبيب النفسي في الاستعداد لجلساتك)</span></label>
+                    <textarea class="form-control" ng-model="vm.psych.notes" rows="3" placeholder="اذكر باختصار ما تشعر به أو ما تمر به حالياً..." style="resize: vertical; border-color: rgba(108,92,231,0.35);"></textarea>
+                </div>
+                <div ng-repeat="q in vm.psych.questions" style="padding: 14px; border: 2px solid var(--border-color); border-radius: 10px; margin-bottom: 10px; transition: all 0.3s;"
+                     ng-style="{'border-color': vm.psych.answers[q.questionID] !== undefined ? '#6C5CE7' : 'var(--border-color)'}">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+                        <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+                            <div style="width: 8px; height: 8px; border-radius: 50%; background: #6C5CE7; flex-shrink: 0;"></div>
+                            <span style="font-weight: 500; font-size: 0.9rem;">{{q.questionTextAr}}</span>
+                        </div>
+                        <div style="display: flex; gap: 6px; flex-shrink: 0;">
+                            <button class="btn btn-sm" ng-click="vm.psychSetAnswer(q, true)"
+                                    ng-class="vm.psych.answers[q.questionID] === true ? 'btn-danger' : 'btn-secondary'" style="min-width: 50px;">نعم</button>
+                            <button class="btn btn-sm" ng-click="vm.psychSetAnswer(q, false)"
+                                    ng-class="vm.psych.answers[q.questionID] === false ? 'btn-success' : 'btn-secondary'" style="min-width: 50px;">لا</button>
+                        </div>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 24px;">
+                    <button class="btn btn-lg" ng-click="vm.psychEvaluate()" ng-disabled="vm.psych.evaluating"
+                            style="background: linear-gradient(135deg, #6C5CE7, #a29bfe); color: white; border: none; padding: 12px 36px;">
+                        <span ng-if="!vm.psych.evaluating"><i class="fas fa-brain"></i> تقييم الحالة النفسية</span>
+                        <span ng-if="vm.psych.evaluating"><span class="spinner"></span> جاري التقييم...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: Psychiatric Doctor Selection -->
+        <div ng-if="vm.psych.currentStep === 2">
+            <div class="card" style="margin-bottom: 20px; border-top: 4px solid {{vm.psych.triageResult.colorCode}};">
+                <div class="card-body" style="text-align: center; padding: 24px;">
+                    <div style="width: 60px; height: 60px; border-radius: 50%; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; color: white;"
+                         ng-style="{'background': vm.psych.triageResult.colorCode}">
+                        <i class="fas" ng-class="{'fa-check-circle': vm.psych.triageResult.priorityId === 1, 'fa-exclamation-triangle': vm.psych.triageResult.priorityId === 2, 'fa-ambulance': vm.psych.triageResult.priorityId === 3}"></i>
+                    </div>
+                    <h4 style="margin-bottom: 4px;">نتيجة التقييم النفسي: <span ng-style="{'color': vm.psych.triageResult.colorCode}">{{vm.psych.triageResult.levelNameAr}}</span></h4>
+                    <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 0;">نقاط الفرز: <strong>{{vm.psych.triageResult.triageScore}}</strong></p>
+                </div>
+            </div>
+            <div class="card" style="border-right: 4px solid #6C5CE7;">
+                <div class="card-header" style="background: linear-gradient(135deg, #6C5CE7, #a29bfe); color: white;">
+                    <h4 style="color: white;"><i class="fas fa-user-md" style="margin-left: 8px;"></i> اختر الطبيب النفسي</h4>
+                </div>
+                <div class="card-body">
+                    <div ng-repeat="doc in vm.psych.doctors" style="padding: 14px; border: 2px solid var(--border-color); border-radius: 10px; margin-bottom: 10px; cursor: pointer; transition: all 0.3s;"
+                         ng-class="{'active-doctor': vm.psych.selectedDoctor && vm.psych.selectedDoctor.doctorID === doc.doctorID}"
+                         ng-style="vm.psych.selectedDoctor && vm.psych.selectedDoctor.doctorID === doc.doctorID ? {'border-color': '#6C5CE7', 'background': 'rgba(108,92,231,0.03)'} : {}"
+                         ng-click="vm.psychSelectDoctor(doc)">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div class="avatar avatar-lg" style="font-size: 1rem; background: #6C5CE7; color: white;">{{doc.fullName.charAt(0)}}</div>
+                            <div style="flex: 1;">
+                                <h4 style="margin: 0 0 2px; font-size: 0.95rem;">د. {{doc.fullName}}</h4>
+                                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                    <span class="badge" style="background: rgba(108,92,231,0.1); color: #6C5CE7; font-size: 0.7rem; font-weight: bold;">
+                                        <i class="fas fa-brain" style="margin-left: 4px;"></i>{{doc.specialty}}
+                                    </span>
+                                    <span class="badge" style="background: rgba(45,198,83,0.1); color: #2DC653; font-size: 0.7rem; font-weight: bold;">
+                                        <i class="fas fa-money-bill-wave" style="margin-left: 4px;"></i>{{doc.consultationFee | number:2}} د.ل
+                                    </span>
+                                    <span class="badge" ng-class="vm.getDoctorStatus(doc).cls" style="font-size: 0.7rem; font-weight: bold;">
+                                        <i class="fas" ng-class="vm.getDoctorStatus(doc).icon" style="margin-left: 4px;"></i>{{vm.getDoctorStatus(doc).label}}
+                                    </span>
+                                </div>
+                                <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px;">
+                                    <span class="badge" style="background: rgba(108,92,231,0.08); color: #6C5CE7; font-size: 0.7rem;">
+                                        <i class="fas fa-clock" style="margin-left: 4px;"></i>{{vm.formatTime(doc.workStartTime)}} - {{vm.formatTime(doc.workEndTime)}}
+                                    </span>
+                                    <span class="badge" style="background: rgba(255,159,67,0.12); color: #FF9F43; font-size: 0.7rem;">
+                                        <i class="fas fa-calendar-week" style="margin-left: 4px;"></i>{{vm.formatWorkingDays(doc.availableDays)}}
+                                    </span>
+                                </div>
+                            </div>
+                            <i class="fas fa-check-circle" ng-if="vm.psych.selectedDoctor && vm.psych.selectedDoctor.doctorID === doc.doctorID" style="color: #6C5CE7; font-size: 1.2rem;"></i>
+                        </div>
+                    </div>
+                    <div class="empty-state" ng-if="vm.psych.doctors.length === 0">
+                        <i class="fas fa-user-md"></i>
+                        <h4>لا يوجد أطباء نفسيون متاحون حالياً</h4>
+                        <p style="color: var(--text-secondary);">يرجى المحاولة لاحقاً أو حجز موعد طبي عام بدلاً من ذلك</p>
+                    </div>
+                    <div style="text-align: center; margin-top: 20px;" ng-if="vm.psych.selectedDoctor">
+                        <button class="btn" ng-click="vm.psych.currentStep = 3"
+                                style="background: linear-gradient(135deg, #6C5CE7, #a29bfe); color: white; border: none; padding: 10px 28px;">
+                            <i class="fas fa-calendar-alt"></i> اختيار الموعد
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3: Psychiatric Date & Time -->
+        <div ng-if="vm.psych.currentStep === 3" class="card" style="border-right: 4px solid #6C5CE7;">
+            <div class="card-header" style="background: linear-gradient(135deg, #6C5CE7, #a29bfe); color: white;">
+                <h4 style="color: white;"><i class="fas fa-calendar-alt" style="margin-left: 8px;"></i> اختر التاريخ والوقت</h4>
+                <span class="badge" style="background: rgba(255,255,255,0.2); color: white;">د. {{vm.psych.selectedDoctor.fullName}}</span>
+            </div>
+            <div class="card-body">
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; padding: 12px 16px; background: rgba(108,92,231,0.04); border: 1px solid rgba(108,92,231,0.15); border-radius: 10px;">
+                    <span class="badge" style="background: rgba(108,92,231,0.1); color: #6C5CE7; font-size: 0.78rem;"><i class="fas fa-user-md" style="margin-left: 4px;"></i>د. {{vm.psych.selectedDoctor.fullName}}</span>
+                    <span class="badge" style="background: rgba(108,92,231,0.1); color: #6C5CE7; font-size: 0.78rem;"><i class="fas fa-clock" style="margin-left: 4px;"></i>ساعات العمل: {{vm.formatTime(vm.psych.selectedDoctor.workStartTime)}} - {{vm.formatTime(vm.psych.selectedDoctor.workEndTime)}}</span>
+                    <span class="badge" style="background: rgba(255,159,67,0.12); color: #FF9F43; font-size: 0.78rem;"><i class="fas fa-calendar-week" style="margin-left: 4px;"></i>أيام العمل: {{vm.formatWorkingDays(vm.psych.selectedDoctor.availableDays)}}</span>
+                    <span class="badge" ng-class="vm.getDoctorStatus(vm.psych.selectedDoctor).cls" style="font-size: 0.78rem;"><i class="fas" ng-class="vm.getDoctorStatus(vm.psych.selectedDoctor).icon" style="margin-left: 4px;"></i>{{vm.getDoctorStatus(vm.psych.selectedDoctor).label}}</span>
+                </div>
+                <div class="form-group">
+                    <label>تاريخ الموعد النفسي</label>
+                    <input type="date" class="form-control" ng-model="vm.psych.selectedDate" ng-change="vm.psychLoadSlots()" min="{{vm.minDate}}" max="{{vm.maxDate}}">
+                </div>
+                <div class="alert alert-warning" ng-if="vm.psych.selectedDate && !vm.isDoctorWorkingDay(vm.psych.selectedDate, vm.psych.selectedDoctor)" style="margin-bottom: 16px;">
+                    <i class="fas fa-exclamation-triangle"></i> الطبيب لا يعمل في هذا اليوم — يرجى اختيار تاريخ آخر.
+                </div>
+                <div ng-if="vm.psych.slots.length > 0">
+                    <label style="margin-bottom: 8px; display: block; font-weight: 600;">المواعيد المتاحة:</label>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                        <button ng-repeat="slot in vm.psych.slots" class="btn btn-sm"
+                                ng-class="slot.isAvailable ? (vm.psych.selectedSlot === slot.time ? 'btn-primary' : 'btn-secondary') : 'btn-danger'"
+                                ng-disabled="!slot.isAvailable" ng-click="vm.psych.selectedSlot = slot.time"
+                                style="min-width: 90px; display: flex; flex-direction: column; align-items: center; gap: 2px;">
+                            <span><i class="fas" ng-class="slot.isAvailable ? 'fa-clock' : 'fa-times-circle'"></i> {{slot.timeFormatted}}</span>
+                            <small style="font-size: 0.65rem; font-weight: bold; opacity: 0.9;">{{slot.isAvailable ? 'متاح' : 'مشغول'}}</small>
+                        </button>
+                    </div>
+                </div>
+                <div ng-if="vm.psych.selectedDate && vm.psych.slots.length === 0" class="alert alert-info" style="margin-top: 12px;">
+                    <i class="fas fa-info-circle"></i> {{vm.psych.slotsMessage || 'لا توجد فتحات متاحة في هذا اليوم'}}
+                </div>
+                <div class="form-group" style="margin-top: 16px;">
+                    <label>ملاحظات إضافية (اختياري)</label>
+                    <textarea class="form-control" ng-model="vm.psych.notes" rows="3" placeholder="أي تفاصيل إضافية تود مشاركتها مع الطبيب..." style="resize: vertical;"></textarea>
+                </div>
+                <!-- Fee Summary -->
+                <div style="margin: 20px 0; background: rgba(108,92,231,0.03); border: 1.5px dashed #6C5CE7; border-radius: 12px; padding: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 1.1rem; color: #6C5CE7; font-weight: 700;">
+                        <span><i class="fas fa-brain" style="margin-left: 6px;"></i> رسوم الكشف النفسي:</span>
+                        <span>{{vm.psych.selectedDoctor.consultationFee | number:2}} دينار ليبي</span>
+                    </div>
+                    <div style="margin-top: 8px; font-size: 0.8rem; color: #888; display: flex; align-items: flex-start; gap: 6px;">
+                        <i class="fas fa-info-circle" style="color: #6C5CE7; margin-top: 2px;"></i>
+                        <span>سيتم إنشاء فاتورة بقيمة الكشف في صفحة الفواتير بعد التأكيد</span>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="btn btn-secondary" ng-click="vm.psych.currentStep = 2" style="margin-left: 8px;"><i class="fas fa-arrow-right"></i> رجوع</button>
+                    <button class="btn btn-lg" ng-click="vm.psychBook()" ng-disabled="!vm.psych.selectedSlot || vm.psych.booking"
+                            style="background: linear-gradient(135deg, #6C5CE7, #a29bfe); color: white; border: none; padding: 10px 32px;">
+                        <span ng-if="!vm.psych.booking"><i class="fas fa-check-circle"></i> تأكيد الحجز النفسي</span>
+                        <span ng-if="vm.psych.booking"><span class="spinner"></span> جاري الحجز...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 4: Psychiatric Confirmation -->
+        <div ng-if="vm.psych.currentStep === 4" class="card" style="border-top: 4px solid #6C5CE7;">
+            <div class="card-body" style="text-align: center; padding: 40px 24px;">
+                <div style="width: 70px; height: 70px; border-radius: 50%; background: rgba(108,92,231,0.1); margin: 0 auto 16px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-brain" style="font-size: 2rem; color: #6C5CE7;"></i>
+                </div>
+                <h2 style="margin-bottom: 6px; color: #6C5CE7;">تم حجز الموعد النفسي بنجاح! 🧠</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 20px;">رقم الموعد: <strong>#{{vm.psych.bookedAppointmentId}}</strong></p>
+                <div style="background: rgba(108,92,231,0.04); border: 1px solid rgba(108,92,231,0.15); border-radius: 12px; padding: 16px; text-align: right; max-width: 380px; margin: 0 auto 20px;">
+                    <div style="margin-bottom: 8px;"><strong>الطبيب النفسي:</strong> د. {{vm.psych.selectedDoctor.fullName}}</div>
+                    <div style="margin-bottom: 8px;"><strong>التخصص:</strong> {{vm.psych.selectedDoctor.specialty}}</div>
+                    <div style="margin-bottom: 8px;"><strong>التاريخ:</strong> {{vm.psych.selectedDate | date:'yyyy/MM/dd'}}</div>
+                    <div style="border-top: 1px solid rgba(0,0,0,0.06); padding-top: 8px; color: #6C5CE7; font-weight: bold;">
+                        قيمة الفاتورة: {{vm.psych.selectedDoctor.consultationFee | number:2}} د.ل
+                    </div>
+                </div>
+                <button class="btn btn-success" ui-sref="app.billing" style="margin-left: 8px;"><i class="fas fa-credit-card"></i> الدفع الآن</button>
+                <button class="btn btn-primary" ui-sref="app.appointments"><i class="fas fa-calendar-alt"></i> عرض مواعيدي</button>
+                <button class="btn" ng-click="vm.psychReset()" style="margin-right: 8px; background: linear-gradient(135deg, #6C5CE7, #a29bfe); color: white; border: none;">
+                    <i class="fas fa-plus"></i> حجز موعد نفسي آخر
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,1180 @@
+<!-- Employee & HR Management Page -->
+<style>
+    .emp-tabs { display: flex; gap: 4px; border-bottom: 2px solid rgba(0,0,0,0.06); margin-bottom: 24px; flex-wrap: wrap; }
+    .emp-tab {
+        display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px;
+        border: none; background: transparent; font-family: var(--font-family);
+        font-size: 0.95rem; font-weight: 700; color: var(--text-secondary);
+        cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px;
+        border-radius: 10px 10px 0 0; transition: all 0.2s ease;
+    }
+    .emp-tab:hover { color: var(--primary); background: rgba(0,119,182,0.06); }
+    .emp-tab.active { color: var(--primary); border-bottom-color: var(--primary); background: rgba(0,119,182,0.08); }
+
+    /* Modal Overlay - Solid high contrast, global top z-index, centered, scroll-safe */
+    .emp-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(15, 23, 42, 0.75);
+        -webkit-backdrop-filter: blur(6px);
+        backdrop-filter: blur(6px);
+        z-index: 99999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px 16px;
+        opacity: 1;
+        animation: empOverlayFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    @keyframes empOverlayFadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    /* Modal Dialog Window - 100% Solid white background, structured height and internal scroll */
+    .emp-modal {
+        background: #ffffff !important;
+        background-color: #ffffff !important;
+        color: #1e293b;
+        border-radius: 18px;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(0, 0, 0, 0.06);
+        width: 100%;
+        max-width: 620px;
+        max-height: min(90vh, 840px);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        margin: auto;
+        position: relative;
+        animation: empModalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes empModalPop {
+        from { opacity: 0; transform: translateY(16px) scale(0.97); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .emp-modal.lg { max-width: 820px; }
+    .emp-modal.xl { max-width: 1100px; }
+
+    /* Modal Header */
+    .emp-modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 24px;
+        border-bottom: 1px solid #e2e8f0;
+        background: #f8fafc !important;
+        background-color: #f8fafc !important;
+        flex-shrink: 0;
+        position: relative;
+        z-index: 2;
+    }
+    .emp-modal-title {
+        margin: 0;
+        font-size: 1.12rem;
+        font-weight: 800;
+        color: #0f172a;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .emp-modal-title i {
+        font-size: 1.25rem;
+    }
+
+    /* Modal Body - Internal Scrollable Container */
+    .emp-modal-body {
+        padding: 22px 24px;
+        flex: 1 1 auto;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        background: #ffffff !important;
+        background-color: #ffffff !important;
+        color: #334155;
+    }
+    .emp-modal-body::-webkit-scrollbar {
+        width: 6px;
+    }
+    .emp-modal-body::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+    }
+    .emp-modal-body::-webkit-scrollbar-track {
+        background: #f1f5f9;
+    }
+
+    /* Modal Footer */
+    .emp-modal-footer {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 12px;
+        padding: 16px 24px;
+        border-top: 1px solid #e2e8f0;
+        background: #f8fafc !important;
+        background-color: #f8fafc !important;
+        flex-shrink: 0;
+        position: relative;
+        z-index: 2;
+    }
+    .emp-close {
+        width: 36px;
+        height: 36px;
+        border: none;
+        border-radius: 50%;
+        background: #f1f5f9;
+        color: #64748b;
+        cursor: pointer;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+    }
+    .emp-close:hover {
+        background: #fee2e2;
+        color: #dc2626;
+        transform: rotate(90deg);
+    }
+
+    /* Visual Section Cards inside Form */
+    .emp-section-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 18px;
+        margin-bottom: 18px;
+    }
+    .emp-section-title {
+        font-size: 0.92rem;
+        font-weight: 800;
+        color: #1e293b;
+        margin-bottom: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border-bottom: 1px dashed #cbd5e1;
+        padding-bottom: 8px;
+    }
+
+    .emp-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .emp-grid .full { grid-column: 1 / -1; }
+    .emp-field { display: flex; flex-direction: column; gap: 6px; }
+    .emp-label { font-size: 0.82rem; font-weight: 700; color: #475569; display: flex; align-items: center; gap: 4px; }
+    .emp-label .req { color: #e63946; font-weight: 800; }
+    .emp-hr { border: none; border-top: 1px dashed #e2e8f0; margin: 18px 0; }
+
+    .emp-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .emp-action-btn {
+        width: 34px; height: 34px; border: none; border-radius: 9px;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 0.85rem; cursor: pointer; transition: all 0.2s;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.08); flex-shrink: 0;
+    }
+    .emp-action-btn:active { transform: translateY(0) scale(0.92); }
+    .emp-action-btn.view { background: rgba(0,119,182,0.12); color: #0077b6; }
+    .emp-action-btn.view:hover { background: #0077b6; color: #fff; }
+    .emp-action-btn.edit { background: rgba(230,126,34,0.14); color: #a05a12; }
+    .emp-action-btn.edit:hover { background: #e67e22; color: #fff; }
+    .emp-action-btn.toggle { background: rgba(108,117,125,0.13); color: #5a6268; }
+    .emp-action-btn.toggle:hover { background: #6c757d; color: #fff; }
+    .emp-action-btn.danger { background: rgba(230,57,70,0.12); color: #c0392b; }
+    .emp-action-btn.danger:hover { background: #e63946; color: #fff; }
+    .emp-action-btn.approve { background: rgba(45,198,83,0.13); color: #1f9d55; }
+    .emp-action-btn.approve:hover { background: #2dc653; color: #fff; }
+    .emp-action-btn.reject { background: rgba(230,57,70,0.12); color: #c0392b; }
+    .emp-action-btn.reject:hover { background: #e63946; color: #fff; }
+    .emp-action-btn.add { background: rgba(0,119,182,0.1); color: #0077b6; }
+    .emp-action-btn.add:hover { background: #0077b6; color: #fff; }
+
+    .emp-table { margin-bottom: 0; }
+    .emp-table thead th {
+        background: #f7fafc; color: var(--text-secondary); font-size: 0.75rem;
+        font-weight: 800; text-transform: uppercase; letter-spacing: 0.4px;
+        padding: 12px 14px; border-bottom: 2px solid var(--border-color, #e5e7eb);
+        white-space: nowrap;
+    }
+    .emp-table tbody td { padding: 12px 14px; font-size: 0.88rem; }
+    .emp-table tbody tr { transition: background 0.15s ease; }
+    .emp-table tbody tr:hover td { background: rgba(0,119,182,0.03); }
+    .emp-table .emp-num { font-family: monospace; font-weight: 600; text-align: left; }
+    .emp-table .badge { padding: 5px 10px; font-size: 0.72rem; font-weight: 700; border-radius: 20px; }
+
+    .emp-empty {
+        text-align: center; padding: 32px 16px; color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+
+    .emp-pager { display: flex; justify-content: center; margin-top: 16px; }
+    .emp-pager .pagination { margin-bottom: 0; }
+    .emp-pager .page-link {
+        border-radius: 8px; margin: 0 3px; padding: 7px 14px;
+        font-size: 0.85rem; color: var(--primary); border: 1px solid var(--border-color, #e5e7eb);
+        transition: all 0.2s;
+    }
+    .emp-pager .page-link:hover { background: rgba(0,119,182,0.08); color: var(--primary); }
+    .emp-pager .page-item.disabled .page-link { color: #adb5bd; background: #f8f9fa; }
+
+    .emp-detail-tabs { display: flex; gap: 4px; border-bottom: 2px solid rgba(0,0,0,0.06); margin-bottom: 18px; flex-wrap: wrap; }
+    .emp-detail-tab {
+        display: inline-flex; align-items: center; gap: 7px; padding: 9px 16px;
+        border: none; background: transparent; font-family: var(--font-family);
+        font-size: 0.85rem; font-weight: 700; color: var(--text-secondary);
+        cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px;
+        border-radius: 8px 8px 0 0; transition: all 0.2s ease;
+    }
+    .emp-detail-tab:hover { color: var(--primary); background: rgba(0,119,182,0.06); }
+    .emp-detail-tab.active { color: var(--primary); border-bottom-color: var(--primary); background: rgba(0,119,182,0.08); }
+
+    .emp-stat-card { text-align: center; padding: 16px 12px; border-radius: 14px; background: var(--bg-card, #fff); border: 1px solid var(--border-color, #eee); box-shadow: 0 4px 14px rgba(0,0,0,0.05); }
+    .emp-stat-card .emp-stat-label { font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px; }
+    .emp-stat-card .emp-stat-value { font-size: 1.15rem; font-weight: 800; color: var(--primary); }
+
+    .emp-filter-bar { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 18px; }
+    .emp-filter-bar .emp-search {
+        position: relative; flex: 1; min-width: 240px;
+    }
+    .emp-filter-bar .emp-search input { width: 100%; padding: 10px 38px 10px 12px; }
+    .emp-filter-bar .emp-search i { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 0.85rem; }
+
+    @media (max-width: 768px) {
+        .emp-myinfo { grid-template-columns: 1fr 1fr !important; }
+        .emp-tabs { gap: 0; }
+        .emp-tab { flex: 1; justify-content: center; padding: 10px 8px; font-size: 0.85rem; }
+        .emp-stat-grid { grid-template-columns: 1fr 1fr !important; }
+        .emp-detail-info { grid-template-columns: 1fr 1fr !important; }
+
+        .emp-filter-bar .emp-search { min-width: 100%; }
+        .emp-filter-bar select { width: 100% !important; min-width: 0 !important; }
+        .emp-filter-bar .btn { width: 100%; }
+        .emp-action-btn { width: 36px; height: 36px; }
+        .emp-table thead th { padding: 10px 10px; font-size: 0.7rem; }
+        .emp-table tbody td { padding: 10px 10px; font-size: 0.82rem; }
+        
+        .emp-modal-overlay { padding: 12px 8px; }
+        .emp-modal { max-height: 94vh; width: 100%; border-radius: 16px; margin: auto; }
+        .emp-modal-header { padding: 14px 16px; }
+        .emp-modal-title { font-size: 0.98rem; }
+        .emp-modal-body { padding: 16px 14px; }
+        .emp-modal-footer { padding: 14px 16px 20px; gap: 8px; }
+        .emp-modal-footer .btn { flex: 1; }
+        .emp-grid { grid-template-columns: 1fr; gap: 12px; }
+        .emp-section-card { padding: 14px 12px; margin-bottom: 14px; }
+        
+        .emp-detail-tab { flex: 1; justify-content: center; padding: 8px 6px; font-size: 0.78rem; }
+        .emp-stat-card { padding: 12px 8px; }
+        .emp-stat-card .emp-stat-value { font-size: 1rem; }
+        .emp-actions { gap: 4px; }
+    }
+
+</style>
+
+<div class="stagger-children">
+
+    <!-- Self-Service View (employee-linked account) -->
+    <div ng-if="!vm.canManage && vm.me" style="max-width: 900px; margin: 0 auto;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+            <div>
+                <h2 style="margin-bottom: 4px;">ملفي الوظيفي</h2>
+                <p class="text-muted" style="font-size: 0.85rem;">بطاقتي وإجازاتي ورواتبي</p>
+            </div>
+            <button class="btn btn-primary" ng-click="vm.openMyLeaveModal()">
+                <i class="fas fa-calendar-plus"></i> طلب إجازة
+            </button>
+        </div>
+
+        <div class="card" style="margin-bottom: 20px;">
+            <div class="card-body">
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;" class="emp-myinfo">
+                    <div>
+                        <div class="text-muted" style="font-size: 0.8rem;">رقم الموظف</div>
+                        <div style="font-weight: 700; font-family: monospace;">{{vm.me.employeeNumber}}</div>
+                    </div>
+                    <div>
+                        <div class="text-muted" style="font-size: 0.8rem;">الاسم الكامل</div>
+                        <div style="font-weight: 700;">{{vm.me.fullName}}</div>
+                    </div>
+                    <div>
+                        <div class="text-muted" style="font-size: 0.8rem;">القسم / المسمى</div>
+                        <div style="font-weight: 700;">{{vm.me.department || '-'}} — {{vm.me.position || '-'}}</div>
+                    </div>
+                    <div>
+                        <div class="text-muted" style="font-size: 0.8rem;">تاريخ التعيين</div>
+                        <div style="font-weight: 700;">{{vm.me.hireDate | date: 'yyyy/MM/dd'}}</div>
+                    </div>
+                    <div>
+                        <div class="text-muted" style="font-size: 0.8rem;">نموذج التعويض</div>
+                        <div style="font-weight: 700;">{{vm.getCompensationLabel(vm.me.compensationModel)}}</div>
+                    </div>
+                    <div>
+                        <div class="text-muted" style="font-size: 0.8rem;">الراتب الأساسي</div>
+                        <div style="font-weight: 700;">{{vm.me.baseSalary | number: 2}} د.ل</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-bottom: 20px;">
+            <div class="card-body" style="padding: 16px;">
+                <h6 style="margin-bottom: 12px;"><i class="fas fa-calendar-check" style="margin-left: 6px;"></i> إجازاتي</h6>
+                <div style="overflow-x: auto;">
+                    <table class="table table-hover align-middle mb-0 emp-table">
+                        <thead>
+                            <tr>
+                                <th>النوع</th>
+                                <th>البداية</th>
+                                <th>النهاية</th>
+                                <th>الأيام</th>
+                                <th>الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr ng-repeat="l in vm.me.leaves">
+                                <td>{{vm.getLeaveTypeLabel(l.leaveType)}}</td>
+                                <td>{{l.startDate | date: 'yyyy/MM/dd'}}</td>
+                                <td>{{l.endDate | date: 'yyyy/MM/dd'}}</td>
+                                <td>{{l.days}}</td>
+                                <td><span class="badge" ng-class="{'badge-warning': l.status === 'Pending', 'badge-success': l.status === 'Approved', 'badge-danger': l.status === 'Rejected'}">{{vm.getStatusLabel(l.status)}}</span></td>
+                            </tr>
+                            <tr ng-if="!vm.me.leaves || vm.me.leaves.length === 0">
+                                <td colspan="5" class="emp-empty">لا توجد إجازات مسجلة</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body" style="padding: 16px;">
+                <h6 style="margin-bottom: 12px;"><i class="fas fa-money-check-alt" style="margin-left: 6px;"></i> رواتبي</h6>
+                <div style="overflow-x: auto;">
+                    <table class="table table-hover align-middle mb-0 emp-table">
+                        <thead>
+                            <tr>
+                                <th>الفترة</th>
+                                <th>الأساسي</th>
+                                <th>العمولات</th>
+                                <th>المكافأة</th>
+                                <th>الخصم</th>
+                                <th>الصافي</th>
+                                <th>الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr ng-repeat="s in vm.me.salaryRecords">
+                                <td>{{s.periodMonth}}/{{s.periodYear}}</td>
+                                <td>{{s.baseSalary | number: 2}}</td>
+                                <td>{{s.commissionAmount | number: 2}}</td>
+                                <td>{{s.bonus | number: 2}}</td>
+                                <td>{{s.deduction | number: 2}}</td>
+                                <td style="font-weight: 700;">{{s.netSalary | number: 2}} د.ل</td>
+                                <td><span class="badge" ng-class="{'badge-warning': s.status === 'Draft', 'badge-success': s.status === 'Posted', 'badge-danger': s.status === 'Reversed'}">{{vm.getStatusLabel(s.status)}}</span></td>
+                            </tr>
+                            <tr ng-if="!vm.me.salaryRecords || vm.me.salaryRecords.length === 0">
+                                <td colspan="7" class="emp-empty">لا توجد رواتب مسجلة</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- My Leave Request Modal -->
+        <div class="emp-modal-overlay" ng-if="vm.showMyLeaveModal" ng-click="vm.closeMyLeaveModal()">
+            <div class="emp-modal" ng-click="$event.stopPropagation()">
+                <div class="emp-modal-header">
+                    <h5 class="emp-modal-title"><i class="fas fa-calendar-plus" style="color: var(--primary);"></i> طلب إجازة</h5>
+                    <button class="emp-close" ng-click="vm.closeMyLeaveModal()"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="emp-modal-body">
+                    <div class="emp-grid">
+                        <div class="emp-field full">
+                            <label class="emp-label">نوع الإجازة</label>
+                            <select class="form-control" ng-model="vm.myLeaveForm.leaveType" ng-options="t.value as t.label for t in vm.leaveTypes"></select>
+                        </div>
+                        <div class="emp-field">
+                            <label class="emp-label">من تاريخ</label>
+                            <input type="date" class="form-control" ng-model="vm.myLeaveForm.startDate">
+                        </div>
+                        <div class="emp-field">
+                            <label class="emp-label">إلى تاريخ</label>
+                            <input type="date" class="form-control" ng-model="vm.myLeaveForm.endDate">
+                        </div>
+                        <div class="emp-field full">
+                            <label class="emp-label">السبب</label>
+                            <textarea class="form-control" rows="2" ng-model="vm.myLeaveForm.reason"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="emp-modal-footer">
+                    <button type="button" class="btn btn-secondary" ng-click="vm.closeMyLeaveModal()">إلغاء</button>
+                    <button type="button" class="btn btn-primary" ng-click="vm.submitMyLeave()"><i class="fas fa-paper-plane"></i> إرسال الطلب</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Self-Service: Loading -->
+    <div ng-if="!vm.canManage && vm.meLoading" style="text-align: center; padding: 70px 16px;">
+        <i class="fas fa-spinner fa-spin" style="color: var(--primary); font-size: 1.8rem;"></i>
+        <div class="text-muted" style="margin-top: 14px;">جارٍ تحميل بطاقتي الوظيفية...</div>
+    </div>
+
+    <!-- Self-Service: No employee card linked yet -->
+    <div ng-if="!vm.canManage && !vm.me && !vm.meLoading" style="max-width: 720px; margin: 40px auto;">
+        <div class="card">
+            <div class="card-body" style="padding: 52px 24px; text-align: center;">
+                <i class="fas fa-id-card" style="font-size: 3rem; color: #cbd5e1; margin-bottom: 18px; display: block;"></i>
+                <h4 style="margin-bottom: 10px; font-weight: 800;">لا توجد بطاقة موظف مرتبطة بحسابك بعد</h4>
+                <p class="text-muted" style="font-size: 0.9rem; margin-bottom: 0; max-width: 460px; margin-left: auto; margin-right: auto;">
+                    لم تُنشأ بطاقة موظف لهذا الحساب أو لم تُربط به بعد. تواصل مع مدير النظام لإنشاء بطاقتك الوظيفية وربطها بحسابك
+                    لتظهر لك بياناتك (الإجازات والرواتب) وتتمكن من طلب الإجازة ذاتياً.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Management View -->
+    <div ng-if="vm.canManage">
+
+        <!-- Page Header -->
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+            <div>
+                <h2 style="margin-bottom: 4px;">الموارد البشرية</h2>
+                <p class="text-muted" style="font-size: 0.85rem;">بطاقات الموظفين — الدورات التدريبية — الإجازات — الرواتب والتسوية الشهرية</p>
+            </div>
+            <button class="btn btn-primary" ng-if="vm.isAdmin" ng-click="vm.openAddModal()">
+                <i class="fas fa-user-plus"></i> بطاقة موظف جديدة
+            </button>
+        </div>
+
+        <!-- Tabs -->
+        <div class="emp-tabs no-print">
+            <button class="emp-tab" ng-class="{active: vm.activeTab === 'employees'}" ng-click="vm.setTab('employees')">
+                <i class="fas fa-id-card"></i> بطاقات الموظفين
+            </button>
+            <button class="emp-tab" ng-class="{active: vm.activeTab === 'leaves'}" ng-click="vm.setTab('leaves')">
+                <i class="fas fa-calendar-minus"></i> الإجازات
+            </button>
+            <button class="emp-tab" ng-class="{active: vm.activeTab === 'payroll'}" ng-click="vm.setTab('payroll')">
+                <i class="fas fa-money-check-alt"></i> الرواتب
+            </button>
+        </div>
+
+        <!-- Employees Tab -->
+        <div ng-if="vm.activeTab === 'employees'">
+            <div class="emp-filter-bar">
+                <div class="emp-search">
+                    <input type="text" class="form-control" ng-model="vm.searchQuery" ng-change="vm.loadEmployees()"
+                           placeholder="بحث برقم الموظف أو الاسم أو المسمى أو الرقم الوطني...">
+                    <i class="fas fa-search"></i>
+                </div>
+                <select class="form-control" style="width: auto; min-width: 180px;" ng-model="vm.departmentFilter" ng-change="vm.loadEmployees()">
+                    <option value="">كل الأقسام</option>
+                    <option ng-repeat="d in vm.departments" value="{{d}}">{{d}}</option>
+                </select>
+            </div>
+
+            <div class="card">
+                <div class="card-body" style="padding: 0;">
+                    <div style="overflow-x: auto;">
+                        <table class="table table-hover align-middle mb-0 emp-table">
+                            <thead>
+                                <tr>
+                                    <th>رقم الموظف</th>
+                                    <th>الاسم</th>
+                                    <th>القسم / المسمى</th>
+                                    <th>التعويض</th>
+                                    <th>التعيين</th>
+                                    <th>الحالة</th>
+                                    <th style="width: 130px;">إجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ng-repeat="e in vm.employees">
+                                    <td>
+                                        <span class="badge badge-primary" style="font-family: monospace;">{{e.employeeNumber}}</span>
+                                    </td>
+                                    <td style="font-weight: 600;">{{e.fullName}}</td>
+                                    <td style="font-size: 0.8rem; color: #666;">
+                                        <div>{{e.department || '-'}}</div>
+                                        <div class="text-muted">{{e.position || '-'}}</div>
+                                    </td>
+                                    <td style="font-size: 0.8rem;">
+                                        <div>{{vm.getCompensationLabel(e.compensationModel)}}</div>
+                                        <div class="text-muted">{{e.baseSalary | number: 2}} د.ل</div>
+                                    </td>
+                                    <td>{{e.hireDate | date: 'yyyy/MM/dd'}}</td>
+                                    <td>
+                                        <span class="badge" ng-class="e.isActive ? 'badge-success' : 'badge-danger'">
+                                            {{e.isActive ? 'نشط' : 'موقوف'}}
+                                        </span>
+                                        <span class="badge badge-warning" ng-if="e.pendingLeaves > 0" title="إجازات معلقة" style="margin-right: 4px;">{{e.pendingLeaves}} إجازة</span>
+                                    </td>
+                                    <td>
+                                        <div class="emp-actions">
+                                            <button class="emp-action-btn view" ng-click="vm.openDetail(e)" title="عرض التفاصيل">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="emp-action-btn edit" ng-if="vm.isAdmin" ng-click="vm.openEditModal(e)" title="تعديل">
+                                                <i class="fas fa-pen"></i>
+                                            </button>
+                                            <button class="emp-action-btn toggle" ng-if="vm.isAdmin" ng-click="vm.toggleActive(e)" title="تفعيل/تعطيل">
+                                                <i class="fas fa-power-off"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr ng-if="!vm.loadingEmployees && vm.employees.length === 0">
+                                    <td colspan="7" class="emp-empty">لا توجد بطاقات موظفين مطابقة</td>
+                                </tr>
+                                <tr ng-if="vm.loadingEmployees">
+                                    <td colspan="7" class="text-center" style="padding: 28px;">
+                                        <i class="fas fa-spinner fa-spin" style="color: var(--primary);"></i> جارٍ التحميل...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div ng-if="vm.totalPages > 1" class="emp-pager">
+                <nav>
+                    <ul class="pagination pagination-sm">
+                        <li class="page-item" ng-class="{disabled: vm.page === 1}">
+                            <button class="page-link" ng-click="vm.goPage(vm.page - 1)">السابق</button>
+                        </li>
+                        <li class="page-item disabled"><span class="page-link">صفحة {{vm.page}} / {{vm.totalPages}}</span></li>
+                        <li class="page-item" ng-class="{disabled: vm.page === vm.totalPages}">
+                            <button class="page-link" ng-click="vm.goPage(vm.page + 1)">التالي</button>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Leaves Tab -->
+        <div ng-if="vm.activeTab === 'leaves'">
+            <div class="emp-filter-bar">
+                <select class="form-control" style="width: auto; min-width: 180px;" ng-model="vm.leaveFilter" ng-change="vm.loadLeaves()">
+                    <option value="">كل الحالات</option>
+                    <option value="Pending">قيد الانتظار</option>
+                    <option value="Approved">معتمدة</option>
+                    <option value="Rejected">مرفوضة</option>
+                </select>
+                <span class="text-muted" style="font-size: 0.85rem;">اعتماد الإجازات المتاحة للأدمن</span>
+            </div>
+
+            <div class="card">
+                <div class="card-body" style="padding: 0;">
+                    <div style="overflow-x: auto;">
+                        <table class="table table-hover align-middle mb-0 emp-table">
+                            <thead>
+                                <tr>
+                                    <th>الموظف</th>
+                                    <th>النوع</th>
+                                    <th>البداية</th>
+                                    <th>النهاية</th>
+                                    <th>الأيام</th>
+                                    <th>الحالة</th>
+                                    <th style="width: 100px;">إجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ng-repeat="l in vm.leaves">
+                                    <td>
+                                        <div style="font-weight: 600;">{{l.employeeName}}</div>
+                                        <div class="text-muted" style="font-size: 0.75rem; font-family: monospace;">{{l.employeeNumber}}</div>
+                                    </td>
+                                    <td>{{vm.getLeaveTypeLabel(l.leaveType)}}</td>
+                                    <td>{{l.startDate | date: 'yyyy/MM/dd'}}</td>
+                                    <td>{{l.endDate | date: 'yyyy/MM/dd'}}</td>
+                                    <td>{{l.days}}</td>
+                                    <td>
+                                        <span class="badge" ng-class="{'badge-warning': l.status === 'Pending', 'badge-success': l.status === 'Approved', 'badge-danger': l.status === 'Rejected'}">
+                                            {{vm.getStatusLabel(l.status)}}
+                                        </span>
+                                        <div class="text-muted" style="font-size: 0.7rem;" ng-if="l.approvedByName">بواسطة {{l.approvedByName}}</div>
+                                    </td>
+                                    <td>
+                                        <div class="emp-actions">
+                                            <button class="emp-action-btn approve" ng-if="l.status === 'Pending' && vm.isAdmin" ng-click="vm.updateLeaveStatus(l, 'Approved')" title="اعتماد">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                            <button class="emp-action-btn reject" ng-if="l.status === 'Pending' && vm.isAdmin" ng-click="vm.updateLeaveStatus(l, 'Rejected')" title="رفض">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr ng-if="!vm.loadingLeaves && vm.leaves.length === 0">
+                                    <td colspan="7" class="emp-empty">لا توجد إجازات مطابقة</td>
+                                </tr>
+                                <tr ng-if="vm.loadingLeaves">
+                                    <td colspan="7" class="text-center" style="padding: 28px;">
+                                        <i class="fas fa-spinner fa-spin" style="color: var(--primary);"></i> جارٍ التحميل...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div ng-if="vm.leavesTotalPages > 1" class="emp-pager">
+                <nav>
+                    <ul class="pagination pagination-sm">
+                        <li class="page-item" ng-class="{disabled: vm.leavesPage === 1}">
+                            <button class="page-link" ng-click="vm.leavesGoPage(vm.leavesPage - 1)">السابق</button>
+                        </li>
+                        <li class="page-item disabled"><span class="page-link">صفحة {{vm.leavesPage}} / {{vm.leavesTotalPages}}</span></li>
+                        <li class="page-item" ng-class="{disabled: vm.leavesPage === vm.leavesTotalPages}">
+                            <button class="page-link" ng-click="vm.leavesGoPage(vm.leavesPage + 1)">التالي</button>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Payroll Tab -->
+        <div ng-if="vm.activeTab === 'payroll'">
+            <div class="emp-filter-bar">
+                <select class="form-control" style="width: auto; min-width: 130px;" ng-model="vm.payrollYear" ng-change="vm.loadPayroll(); vm.loadPayrollSummary();">
+                    <option ng-repeat="y in [vm.payrollYear, vm.payrollYear - 1, vm.payrollYear - 2, vm.payrollYear + 1]" value="{{y}}">{{y}}</option>
+                </select>
+                <select class="form-control" style="width: auto; min-width: 130px;" ng-model="vm.payrollMonth" ng-change="vm.loadPayroll(); vm.loadPayrollSummary();">
+                    <option ng-repeat="m in vm.months" value="{{m.value}}">{{m.label}}</option>
+                </select>
+                <select class="form-control" style="width: auto; min-width: 150px;" ng-model="vm.payrollStatus" ng-change="vm.loadPayroll()">
+                    <option value="">كل الحالات</option>
+                    <option value="Draft">مسودات</option>
+                    <option value="Posted">مرحّلة</option>
+                    <option value="Reversed">معكوسة</option>
+                </select>
+                <button class="btn btn-secondary" style="padding: 10px 18px;" ng-click="vm.loadPayroll(); vm.loadPayrollSummary();">
+                    <i class="fas fa-sync"></i>
+                </button>
+                <button class="btn btn-primary" ng-if="vm.isAdmin" ng-click="vm.runPayroll()">
+                    <i class="fas fa-cogs"></i> توليد مسودات الشهر
+                </button>
+            </div>
+
+            <!-- Payroll Summary Cards -->
+            <div class="emp-stat-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px;" ng-if="vm.payrollSummary">
+                <div class="emp-stat-card">
+                    <div class="emp-stat-label">إجمالي الصافي</div>
+                    <div class="emp-stat-value">{{vm.payrollSummary.totalNet | number: 2}} د.ل</div>
+                </div>
+                <div class="emp-stat-card">
+                    <div class="emp-stat-label">الأساسي</div>
+                    <div class="emp-stat-value" style="color: var(--primary);">{{vm.payrollSummary.totalBaseSalary | number: 2}}</div>
+                </div>
+                <div class="emp-stat-card">
+                    <div class="emp-stat-label">العمولات</div>
+                    <div class="emp-stat-value" style="color: #e67e22;">{{vm.payrollSummary.totalCommissions | number: 2}}</div>
+                </div>
+                <div class="emp-stat-card">
+                    <div class="emp-stat-label">السجلات</div>
+                    <div class="emp-stat-value" style="color: var(--text-primary);">{{vm.payrollSummary.totalRecords}}
+                        <span class="badge badge-warning" ng-if="vm.payrollSummary.draftCount > 0" style="margin-right: 4px;">{{vm.payrollSummary.draftCount}} مسودة</span>
+                        <span class="badge badge-success" ng-if="vm.payrollSummary.postedCount > 0" style="margin-right: 4px;">{{vm.payrollSummary.postedCount}} مرحّلة</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body" style="padding: 0;">
+                    <div style="overflow-x: auto;">
+                        <table class="table table-hover align-middle mb-0 emp-table">
+                            <thead>
+                                <tr>
+                                    <th>الموظف</th>
+                                    <th>الفترة</th>
+                                    <th>الأساسي</th>
+                                    <th>العمولات</th>
+                                    <th>المكافأة</th>
+                                    <th>الخصم</th>
+                                    <th>الصافي</th>
+                                    <th>الحالة</th>
+                                    <th style="width: 160px;">إجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ng-repeat="s in vm.payroll">
+                                    <td>
+                                        <div style="font-weight: 600;">{{s.employeeName}}</div>
+                                        <div class="text-muted" style="font-size: 0.75rem; font-family: monospace;">{{s.employeeNumber}}</div>
+                                    </td>
+                                    <td>{{s.periodMonth}}/{{s.periodYear}}</td>
+                                    <td>{{s.baseSalary | number: 2}}</td>
+                                    <td>{{s.commissionAmount | number: 2}}</td>
+                                    <td class="text-success">{{s.bonus | number: 2}}</td>
+                                    <td class="text-danger">{{s.deduction | number: 2}}</td>
+                                    <td style="font-weight: 700;">{{s.netSalary | number: 2}} د.ل</td>
+                                    <td>
+                                        <span class="badge" ng-class="{'badge-warning': s.status === 'Draft', 'badge-success': s.status === 'Posted', 'badge-danger': s.status === 'Reversed'}">
+                                            {{vm.getStatusLabel(s.status)}}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="emp-actions">
+                                            <button class="emp-action-btn edit" ng-if="s.status === 'Draft'" ng-click="vm.openAdjustModal(s)" title="مكافأة/خصم">
+                                                <i class="fas fa-sliders-h"></i>
+                                            </button>
+                                            <button class="emp-action-btn approve" ng-if="s.status === 'Draft' && vm.currentUser.role !== 'Accountant'" ng-click="vm.postPayroll(s)" title="ترحيل قيد محاسبي">
+                                                <i class="fas fa-check-double"></i>
+                                            </button>
+                                            <button class="emp-action-btn toggle" ng-if="s.status === 'Posted'" ng-click="vm.reversePayroll(s)" title="عكس القيد">
+                                                <i class="fas fa-undo"></i>
+                                            </button>
+                                            <button class="emp-action-btn danger" ng-if="s.status === 'Draft' && vm.isAdmin" ng-click="vm.deletePayrollDraft(s)" title="حذف مسودة">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr ng-if="!vm.loadingPayroll && vm.payroll.length === 0">
+                                    <td colspan="9" class="emp-empty">لا توجد سجلات رواتب لهذه الفترة — اضغط "توليد مسودات الشهر"</td>
+                                </tr>
+                                <tr ng-if="vm.loadingPayroll">
+                                    <td colspan="9" class="text-center" style="padding: 28px;">
+                                        <i class="fas fa-spinner fa-spin" style="color: var(--primary);"></i> جارٍ التحميل...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div ng-if="vm.payrollTotalPages > 1" class="emp-pager">
+                <nav>
+                    <ul class="pagination pagination-sm">
+                        <li class="page-item" ng-class="{disabled: vm.payrollPage === 1}">
+                            <button class="page-link" ng-click="vm.payrollGoPage(vm.payrollPage - 1)">السابق</button>
+                        </li>
+                        <li class="page-item disabled"><span class="page-link">صفحة {{vm.payrollPage}} / {{vm.payrollTotalPages}}</span></li>
+                        <li class="page-item" ng-class="{disabled: vm.payrollPage === vm.payrollTotalPages}">
+                            <button class="page-link" ng-click="vm.payrollGoPage(vm.payrollPage + 1)">التالي</button>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Add/Edit Employee Modal -->
+        <div class="emp-modal-overlay" ng-if="vm.showFormModal" ng-click="vm.closeFormModal()">
+            <div class="emp-modal lg" ng-click="$event.stopPropagation()">
+                <div class="emp-modal-header">
+                    <h5 class="emp-modal-title">
+                        <i class="fas fa-id-card" style="color: var(--primary);"></i>
+                        <span>{{vm.editMode ? 'تعديل بطاقة موظف' : 'بطاقة موظف جديدة'}}</span>
+                    </h5>
+                    <button class="emp-close" ng-click="vm.closeFormModal()" title="إغلاق"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="emp-modal-body">
+                    <!-- Form Section 1: Basic Information -->
+                    <div class="emp-section-card">
+                        <div class="emp-section-title">
+                            <i class="fas fa-user-tag text-primary"></i> البيانات الشخصية والوظيفية
+                        </div>
+                        <div class="emp-grid">
+                            <div class="emp-field full">
+                                <label class="emp-label">الاسم الكامل <span class="req">*</span></label>
+                                <input type="text" class="form-control" ng-model="vm.form.fullName" required placeholder="أدخل الاسم الرباعي للموظف">
+                            </div>
+                            <div class="emp-field">
+                                <label class="emp-label">القسم / الإدارة</label>
+                                <input type="text" class="form-control" ng-model="vm.form.department" placeholder="مثال: الاستقبال، الصيدلية، الطوارئ">
+                            </div>
+                            <div class="emp-field">
+                                <label class="emp-label">المسمى الوظيفي</label>
+                                <input type="text" class="form-control" ng-model="vm.form.position" placeholder="مثال: موظف استقبال، فني، إداري">
+                            </div>
+                            <div class="emp-field">
+                                <label class="emp-label">تاريخ التعيين</label>
+                                <input type="date" class="form-control" ng-model="vm.form.hireDate">
+                            </div>
+                            <div class="emp-field">
+                                <label class="emp-label">الجنس</label>
+                                <select class="form-control" ng-model="vm.form.gender">
+                                    <option value="">— اختر الجنس —</option>
+                                    <option value="Male">ذكر</option>
+                                    <option value="Female">أنثى</option>
+                                </select>
+                            </div>
+                            <div class="emp-field full">
+                                <label class="emp-label">الرقم الوطني</label>
+                                <input type="text" class="form-control" ng-model="vm.form.nationalID" placeholder="الرقم الوطني المكون من 12 رقم">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form Section 2: Compensation & Financials -->
+                    <div class="emp-section-card">
+                        <div class="emp-section-title">
+                            <i class="fas fa-money-bill-wave text-success"></i> البيانات المالية ونظام التعويض
+                        </div>
+                        <div class="emp-grid">
+                            <div class="emp-field">
+                                <label class="emp-label">نموذج التعويض</label>
+                                <select class="form-control" ng-model="vm.form.compensationModel" ng-options="m.value as m.label for m in vm.compensationModels"></select>
+                            </div>
+                            <div class="emp-field">
+                                <label class="emp-label">الراتب الأساسي (د.ل)</label>
+                                <input type="number" class="form-control" ng-model="vm.form.baseSalary" min="0" step="0.01" placeholder="0.00">
+                            </div>
+                            <div class="emp-field">
+                                <label class="emp-label">رقم الحساب البنكي / المصرف</label>
+                                <input type="text" class="form-control" ng-model="vm.form.bankAccount" placeholder="رقم الحساب المصرفي">
+                            </div>
+                            <div class="emp-field">
+                                <label class="emp-label">حالة الموظف</label>
+                                <select class="form-control" ng-model="vm.form.isActive">
+                                    <option ng-value="true">نشط</option>
+                                    <option ng-value="false">موقوف / غير مفعّل</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form Section 3: Login Account Linking -->
+                    <div class="emp-section-card" style="background: #f0fdf4; border-color: #bbf7d0;">
+                        <div class="emp-section-title" style="color: #166534; border-bottom-color: #bbf7d0;">
+                            <i class="fas fa-key" style="color: #16a34a;"></i> حساب الدخول للمنظومة (اختياري)
+                        </div>
+                        <p class="text-muted" style="font-size: 0.82rem; margin-bottom: 12px; line-height: 1.5;">
+                            يمكن ربط بطاقة الموظف بحساب مستخدم مسجل مسبقاً، أو إنشاء حساب جديد فوراً لتمكينه من الدخول لبوابة "ملفي الوظيفي" وطلب الإجازات ذاتياً.
+                        </p>
+
+                        <!-- Existing user link -->
+                        <div class="emp-field full" ng-if="!vm.createAccount">
+                            <label class="emp-label">ربط بحساب دخول مسجل مسبقاً</label>
+                            <select class="form-control" ng-model="vm.form.userID"
+                                    ng-options="u.userID as (u.fullName + ' — ' + u.email + ' (' + vm.getRoleLabel(u.role) + ')') for u in vm.linkableUsers">
+                                <option value="">بدون حساب (بطاقة وظيفية بدون دخول)</option>
+                            </select>
+                            <div class="alert alert-success" style="font-size: 0.8rem; margin: 10px 0 0; padding: 10px 14px;" ng-if="vm.form.userID && !vm.editMode">
+                                <i class="fas fa-check-circle me-1"></i> سيتم ربط هذه البطاقة بالحساب المختار ليتمكن الموظف من متابعة إجازاته ورواتبه ذاتياً.
+                            </div>
+                        </div>
+
+                        <!-- Create new account toggle -->
+                        <div style="display: flex; align-items: center; gap: 10px; margin: 14px 0 10px; padding: 10px 14px; background: #ffffff; border-radius: 8px; border: 1px solid #dcfce7;">
+                            <input type="checkbox" id="linkUserCheck" ng-model="vm.createAccount" ng-click="vm.toggleCreateAccount()" ng-disabled="vm.editMode && vm.form.userID" style="width: 18px; height: 18px; cursor: pointer;">
+                            <label for="linkUserCheck" style="margin: 0; font-size: 0.9rem; font-weight: 700; color: #166534; cursor: pointer;">
+                                إنشاء حساب دخول جديد لهذا الموظف
+                            </label>
+                        </div>
+
+                        <div class="emp-grid" ng-if="vm.createAccount" style="margin-top: 12px; padding: 14px; background: #ffffff; border-radius: 10px; border: 1px solid #bbf7d0;">
+                            <div class="emp-field">
+                                <label class="emp-label">البريد الإلكتروني <span class="req">*</span></label>
+                                <input type="email" class="form-control" ng-model="vm.form.email" placeholder="employee@clinic.com">
+                            </div>
+                            <div class="emp-field">
+                                <label class="emp-label">كلمة المرور <span class="req">*</span></label>
+                                <input type="password" class="form-control" ng-model="vm.form.password" placeholder="••••••••">
+                            </div>
+                            <div class="emp-field full">
+                                <label class="emp-label">الدور الوظيفي في المنظومة <span class="req">*</span></label>
+                                <select class="form-control" ng-model="vm.form.role" ng-options="r for r in vm.employeeRoles">
+                                    <option value="">— اختر الدور —</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div ng-if="vm.editMode && vm.form.userID" class="alert alert-secondary" style="font-size: 0.8rem; margin: 10px 0 0; padding: 10px 14px;">
+                            مرتبط حالياً بالحساب: <strong>{{vm.form.userEmail || 'حساب موجود'}}</strong>{{vm.form.userRole ? ' (' + vm.getRoleLabel(vm.form.userRole) + ')' : ''}}
+                            — يمكنك تعديل الحساب المرتبط أو اختيار "بدون حساب" لإلغاء الربط.
+                        </div>
+                    </div>
+
+                    <!-- Form Section 4: General Notes -->
+                    <div class="emp-section-card" style="margin-bottom: 0;">
+                        <div class="emp-field full" style="margin-bottom: 0;">
+                            <label class="emp-label"><i class="fas fa-sticky-note text-muted"></i> ملاحظات إضافية</label>
+                            <textarea class="form-control" rows="2" ng-model="vm.form.notes" placeholder="أي ملاحظات أو تفاصيل إضافية حول الموظف..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="emp-modal-footer">
+                    <button type="button" class="btn btn-primary" ng-click="vm.submitForm()" style="min-width: 140px;">
+                        <i class="fas fa-save"></i> حفظ البيانات
+                    </button>
+                    <button type="button" class="btn btn-secondary" ng-click="vm.closeFormModal()">
+                        إلغاء
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Employee Detail Modal -->
+        <div class="emp-modal-overlay" ng-if="vm.showDetailModal" ng-click="vm.closeDetail()">
+            <div class="emp-modal xl" ng-click="$event.stopPropagation()">
+                <div class="emp-modal-header">
+                    <h5 class="emp-modal-title"><i class="fas fa-user" style="color: var(--primary);"></i> {{vm.selectedEmployee.fullName}} <span style="font-family: monospace; font-weight: 600; color: var(--text-secondary); font-size: 0.9rem;">— {{vm.selectedEmployee.employeeNumber}}</span></h5>
+                    <button class="emp-close" ng-click="vm.closeDetail()"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="emp-modal-body">
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 22px;" class="emp-detail-info">
+                        <div>
+                            <div class="text-muted" style="font-size: 0.75rem;">القسم</div>
+                            <div style="font-weight: 700;">{{vm.selectedEmployee.department || '-'}}</div>
+                        </div>
+                        <div>
+                            <div class="text-muted" style="font-size: 0.75rem;">المسمى</div>
+                            <div style="font-weight: 700;">{{vm.selectedEmployee.position || '-'}}</div>
+                        </div>
+                        <div>
+                            <div class="text-muted" style="font-size: 0.75rem;">نموذج التعويض</div>
+                            <div style="font-weight: 700;">{{vm.getCompensationLabel(vm.selectedEmployee.compensationModel)}}</div>
+                        </div>
+                        <div>
+                            <div class="text-muted" style="font-size: 0.75rem;">الراتب الأساسي</div>
+                            <div style="font-weight: 700;">{{vm.selectedEmployee.baseSalary | number: 2}} د.ل</div>
+                        </div>
+                        <div>
+                            <div class="text-muted" style="font-size: 0.75rem;">التعيين</div>
+                            <div style="font-weight: 700;">{{vm.selectedEmployee.hireDate | date: 'yyyy/MM/dd'}}</div>
+                        </div>
+                        <div>
+                            <div class="text-muted" style="font-size: 0.75rem;">الرابط</div>
+                            <div style="font-weight: 700;">{{vm.selectedEmployee.userEmail || (vm.selectedEmployee.userID ? 'مرتبط' : 'بدون حساب')}}</div>
+                        </div>
+                    </div>
+
+                    <div class="emp-detail-tabs">
+                        <button class="emp-detail-tab" ng-class="{active: vm.detailTab === 'courses'}" ng-click="vm.detailTab = 'courses'">
+                            <i class="fas fa-graduation-cap"></i> الدورات التدريبية
+                        </button>
+                        <button class="emp-detail-tab" ng-class="{active: vm.detailTab === 'leaves'}" ng-click="vm.detailTab = 'leaves'">
+                            <i class="fas fa-calendar-minus"></i> الإجازات
+                        </button>
+                        <button class="emp-detail-tab" ng-class="{active: vm.detailTab === 'salaries'}" ng-click="vm.detailTab = 'salaries'">
+                            <i class="fas fa-money-check-alt"></i> الرواتب
+                        </button>
+                    </div>
+
+                    <!-- Courses -->
+                    <div ng-if="vm.detailTab === 'courses'">
+                        <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
+                            <button class="btn btn-sm btn-primary" ng-if="vm.isAdmin" ng-click="vm.openCourseModal()">
+                                <i class="fas fa-plus"></i> إضافة دورة
+                            </button>
+                        </div>
+                        <div style="overflow-x: auto;">
+                            <table class="table table-sm table-hover align-middle mb-0 emp-table">
+                                <thead>
+                                    <tr>
+                                        <th>اسم الدورة</th>
+                                        <th>الجهة</th>
+                                        <th>التاريخ</th>
+                                        <th>رقم الشهادة</th>
+                                        <th>الانتهاء</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr ng-repeat="c in vm.courses">
+                                        <td style="font-weight: 700;">{{c.courseName}}</td>
+                                        <td>{{c.provider || '-'}}</td>
+                                        <td>{{c.courseDate | date: 'yyyy/MM/dd'}}</td>
+                                        <td>{{c.certificateNumber || '-'}}</td>
+                                        <td>{{c.expiryDate ? (c.expiryDate | date: 'yyyy/MM/dd') : '-'}}</td>
+                                        <td>
+                                            <button class="emp-action-btn danger" ng-if="vm.isAdmin" ng-click="vm.deleteCourse(c)" title="حذف">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr ng-if="vm.courses.length === 0">
+                                        <td colspan="6" class="emp-empty">لا توجد دورات مسجلة</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Leaves -->
+                    <div ng-if="vm.detailTab === 'leaves'">
+                        <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
+                            <button class="btn btn-sm btn-primary" ng-if="vm.isAdmin" ng-click="vm.openLeaveModal()">
+                                <i class="fas fa-plus"></i> تسجيل إجازة
+                            </button>
+                        </div>
+                        <div style="overflow-x: auto;">
+                            <table class="table table-sm table-hover align-middle mb-0 emp-table">
+                                <thead>
+                                    <tr>
+                                        <th>النوع</th>
+                                        <th>البداية</th>
+                                        <th>النهاية</th>
+                                        <th>الأيام</th>
+                                        <th>الحالة</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr ng-repeat="l in vm.selectedEmployee.leaves">
+                                        <td>{{vm.getLeaveTypeLabel(l.leaveType)}}</td>
+                                        <td>{{l.startDate | date: 'yyyy/MM/dd'}}</td>
+                                        <td>{{l.endDate | date: 'yyyy/MM/dd'}}</td>
+                                        <td>{{l.days}}</td>
+                                        <td><span class="badge" ng-class="{'badge-warning': l.status === 'Pending', 'badge-success': l.status === 'Approved', 'badge-danger': l.status === 'Rejected'}">{{vm.getStatusLabel(l.status)}}</span></td>
+                                    </tr>
+                                    <tr ng-if="vm.selectedEmployee.leaves.length === 0">
+                                        <td colspan="5" class="emp-empty">لا توجد إجازات مسجلة</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Salaries -->
+                    <div ng-if="vm.detailTab === 'salaries'">
+                        <div style="overflow-x: auto;">
+                            <table class="table table-sm table-hover align-middle mb-0 emp-table">
+                                <thead>
+                                    <tr>
+                                        <th>الفترة</th>
+                                        <th>الأساسي</th>
+                                        <th>العمولات</th>
+                                        <th>المكافأة</th>
+                                        <th>الخصم</th>
+                                        <th>الصافي</th>
+                                        <th>الحالة</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr ng-repeat="s in vm.selectedEmployee.salaryRecords">
+                                        <td>{{s.periodMonth}}/{{s.periodYear}}</td>
+                                        <td>{{s.baseSalary | number: 2}}</td>
+                                        <td>{{s.commissionAmount | number: 2}}</td>
+                                        <td>{{s.bonus | number: 2}}</td>
+                                        <td>{{s.deduction | number: 2}}</td>
+                                        <td style="font-weight: 700;">{{s.netSalary | number: 2}} د.ل</td>
+                                        <td><span class="badge" ng-class="{'badge-warning': s.status === 'Draft', 'badge-success': s.status === 'Posted', 'badge-danger': s.status === 'Reversed'}">{{vm.getStatusLabel(s.status)}}</span></td>
+                                    </tr>
+                                    <tr ng-if="vm.selectedEmployee.salaryRecords.length === 0">
+                                        <td colspan="7" class="emp-empty">لا توجد رواتب مسجلة</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Course Modal -->
+        <div class="emp-modal-overlay" ng-if="vm.showCourseModal" ng-click="vm.closeCourseModal()">
+            <div class="emp-modal" ng-click="$event.stopPropagation()">
+                <div class="emp-modal-header">
+                    <h5 class="emp-modal-title"><i class="fas fa-graduation-cap" style="color: var(--primary);"></i> إضافة دورة تدريبية</h5>
+                    <button class="emp-close" ng-click="vm.closeCourseModal()"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="emp-modal-body">
+                    <div class="emp-grid">
+                        <div class="emp-field full">
+                            <label class="emp-label">اسم الدورة *</label>
+                            <input type="text" class="form-control" ng-model="vm.courseForm.courseName">
+                        </div>
+                        <div class="emp-field full">
+                            <label class="emp-label">الجهة المنظمة</label>
+                            <input type="text" class="form-control" ng-model="vm.courseForm.provider">
+                        </div>
+                        <div class="emp-field">
+                            <label class="emp-label">تاريخ الدورة</label>
+                            <input type="date" class="form-control" ng-model="vm.courseForm.courseDate">
+                        </div>
+                        <div class="emp-field">
+                            <label class="emp-label">رقم الشهادة</label>
+                            <input type="text" class="form-control" ng-model="vm.courseForm.certificateNumber">
+                        </div>
+                        <div class="emp-field">
+                            <label class="emp-label">تاريخ الانتهاء</label>
+                            <input type="date" class="form-control" ng-model="vm.courseForm.expiryDate">
+                        </div>
+                        <div class="emp-field full">
+                            <label class="emp-label">ملاحظات</label>
+                            <textarea class="form-control" rows="2" ng-model="vm.courseForm.notes"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="emp-modal-footer">
+                    <button type="button" class="btn btn-secondary" ng-click="vm.closeCourseModal()">إلغاء</button>
+                    <button type="button" class="btn btn-primary" ng-click="vm.submitCourse()"><i class="fas fa-save"></i> حفظ</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Leave Modal -->
+        <div class="emp-modal-overlay" ng-if="vm.showLeaveModal" ng-click="vm.closeLeaveModal()">
+            <div class="emp-modal" ng-click="$event.stopPropagation()">
+                <div class="emp-modal-header">
+                    <h5 class="emp-modal-title"><i class="fas fa-calendar-plus" style="color: var(--primary);"></i> تسجيل إجازة</h5>
+                    <button class="emp-close" ng-click="vm.closeLeaveModal()"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="emp-modal-body">
+                    <div class="emp-grid">
+                        <div class="emp-field full">
+                            <label class="emp-label">نوع الإجازة</label>
+                            <select class="form-control" ng-model="vm.leaveForm.leaveType" ng-options="t.value as t.label for t in vm.leaveTypes"></select>
+                        </div>
+                        <div class="emp-field">
+                            <label class="emp-label">من تاريخ</label>
+                            <input type="date" class="form-control" ng-model="vm.leaveForm.startDate">
+                        </div>
+                        <div class="emp-field">
+                            <label class="emp-label">إلى تاريخ</label>
+                            <input type="date" class="form-control" ng-model="vm.leaveForm.endDate">
+                        </div>
+                        <div class="emp-field full">
+                            <label class="emp-label">السبب</label>
+                            <textarea class="form-control" rows="2" ng-model="vm.leaveForm.reason"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="emp-modal-footer">
+                    <button type="button" class="btn btn-secondary" ng-click="vm.closeLeaveModal()">إلغاء</button>
+                    <button type="button" class="btn btn-primary" ng-click="vm.submitLeave()"><i class="fas fa-save"></i> حفظ</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Adjust Payroll Modal -->
+        <div class="emp-modal-overlay" ng-if="vm.showAdjustModal" ng-click="vm.closeAdjustModal()">
+            <div class="emp-modal" ng-click="$event.stopPropagation()">
+                <div class="emp-modal-header">
+                    <h5 class="emp-modal-title"><i class="fas fa-sliders-h" style="color: var(--primary);"></i> تعديل مكافأة / خصم</h5>
+                    <button class="emp-close" ng-click="vm.closeAdjustModal()"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="emp-modal-body">
+                    <div class="emp-grid">
+                        <div class="emp-field">
+                            <label class="emp-label">المكافأة (د.ل)</label>
+                            <input type="number" class="form-control" ng-model="vm.adjustForm.bonus" min="0" step="0.01">
+                        </div>
+                        <div class="emp-field">
+                            <label class="emp-label">الخصم (د.ل)</label>
+                            <input type="number" class="form-control" ng-model="vm.adjustForm.deduction" min="0" step="0.01">
+                        </div>
+                    </div>
+                </div>
+                <div class="emp-modal-footer">
+                    <button type="button" class="btn btn-secondary" ng-click="vm.closeAdjustModal()">إلغاء</button>
+                    <button type="button" class="btn btn-primary" ng-click="vm.submitAdjust()"><i class="fas fa-save"></i> حفظ</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

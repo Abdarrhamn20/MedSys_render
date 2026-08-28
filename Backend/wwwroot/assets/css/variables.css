@@ -1,0 +1,113 @@
+/* ========================================
+   CSS Variables - Design System
+   ======================================== */
+:root {
+    /* Primary Colors */
+    --primary: #0077B6;
+    --primary-light: #00B4D8;
+    --primary-dark: #005F8A;
+    --primary-gradient: linear-gradient(135deg, #0077B6, #00B4D8);
+    --primary-gradient-hover: linear-gradient(135deg, #005F8A, #0096B4);
+
+    /* Accent Colors */
+    --accent: #90E0EF;
+    --accent-light: #CAF0F8;
+
+    /* Priority Colors */
+    --priority-normal: #2DC653;
+    --priority-urgent: #FF9F1C;
+    --priority-emergency: #E63946;
+
+    /* Neutral Colors */
+    --bg-primary: #F0F4F8;
+    --bg-secondary: #FFFFFF;
+    --bg-card: #FFFFFF;
+    --bg-sidebar: #1A1D2E;
+    --bg-sidebar-hover: #252840;
+    --bg-sidebar-active: #0077B6;
+
+    /* Text Colors */
+    --text-primary: #2D3436;
+    --text-secondary: #636E72;
+    --text-muted: #B2BEC3;
+    --text-white: #FFFFFF;
+    --text-sidebar: #A4A6B3;
+
+    /* Border */
+    --border-color: #E8ECF0;
+    --border-radius-sm: 8px;
+    --border-radius-md: 12px;
+    --border-radius-lg: 16px;
+    --border-radius-xl: 24px;
+    --border-radius-full: 50%;
+
+    /* Shadows */
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 8px 32px rgba(0, 119, 182, 0.1);
+    --shadow-xl: 0 16px 48px rgba(0, 119, 182, 0.15);
+    --shadow-glow: 0 0 20px rgba(0, 119, 182, 0.2);
+
+    /* Glassmorphism */
+    --glass-bg: rgba(255, 255, 255, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.3);
+    --glass-blur: blur(20px);
+
+    /* Typography */
+    --font-family: 'Cairo', sans-serif;
+    --font-size-xs: 0.75rem;
+    --font-size-sm: 0.875rem;
+    --font-size-base: 0.9375rem;
+    --font-size-md: 1rem;
+    --font-size-lg: 1.125rem;
+    --font-size-xl: 1.25rem;
+    --font-size-2xl: 1.5rem;
+    --font-size-3xl: 1.875rem;
+    --font-size-4xl: 2.25rem;
+
+    /* Spacing */
+    --space-xs: 0.25rem;
+    --space-sm: 0.5rem;
+    --space-md: 1rem;
+    --space-lg: 1.5rem;
+    --space-xl: 2rem;
+    --space-2xl: 3rem;
+
+    /* Sidebar */
+    --sidebar-width: 260px;
+    --sidebar-collapsed: 70px;
+    --navbar-height: 65px;
+
+    /* Transitions */
+    --transition-fast: 0.15s ease;
+    --transition-base: 0.3s ease;
+    --transition-slow: 0.5s ease;
+    --transition-spring: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* ========================================
+   Dark Mode Variables
+   ======================================== */
+[data-theme="dark"] {
+    --bg-primary: #12141c;
+    --bg-secondary: #1a1d2e;
+    --bg-card: #202438;
+    
+    --text-primary: #f0f4f8;
+    --text-secondary: #a4a6b3;
+    --text-muted: #636e72;
+    
+    --border-color: #2e334d;
+    
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.4);
+    
+    --glass-bg: rgba(32, 36, 56, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.05);
+
+    /* Slightly adjust priorities for dark mode visibility */
+    --priority-normal: #34d05c;
+    --priority-urgent: #ffaa33;
+    --priority-emergency: #f04754;
+}

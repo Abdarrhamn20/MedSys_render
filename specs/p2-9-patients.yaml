@@ -1,0 +1,55 @@
+# Spec — P2/9 ملفات المرضى المحسّنة (Enhanced Patient Files)
+
+## الهدف
+- التركيبة الاسمية الليبية (الأب/الجد/اللقب)
+- رقم ملف تسلسلي (FileNumber) لكل مريض
+- دمج ملفين (Merge) مع نقل كل السجلات المرتبطة
+
+## البيانات (PatientProfile)
+إضافة أعمدة:
+- `FirstName` string? (الاسم الأول)
+- `FatherName` string? (اسم الأب)
+- `GrandfatherName` string? (اسم الجد)
+- `FamilyName` string? (اللقب/العائلة)
+- `FileNumber` string? (رقم الملف — نمط `PT-YYYY-NNNN`، فهرس فريد)
+- `MergedIntoPatientID` int? (إشارة إلى الملف المندمج فيه — للمسار التاريخي)
+- `MergedAt` DateTime?
+
+يُحتفظ بـ `User.FullName` كحقل عرض (يُبنى من مكونات الاسم عند الإدخال). النمط: `FirstName + FatherName + GrandfatherName + FamilyName` بمسافات، مع تجاهل الفارغ.
+
+## توليد رقم الملف
+- Helper `FileNumberHelper.GenerateNextAsync(context)` مثل نمط `MV-{year}-{n:0000}` في WarehouseController.
+- عداد: عدد ملفات السنة الحالية + 1.
+- يُخصّص عند: إنشاء مريض عبر register، UsersController.Create، express booking.
+- تحديث قيم backlog للمرضى الحاليين (سكربت SQL في migration أو عند الطلب).
+
+## الدمج (Merge)
+`POST /api/patients/merge` — المدخلات: `{ sourcePatientID, targetPatientID }` (Admin/Doctor).
+السلوك:
+1. التحقق من وجود المصدر والهدف وأنهما مختلفان وأن المصدر غير مندمج مسبقاً.
+2. نقل السجلات المرتبطة بالمصدر إلى الهدف:
+   - `Appointments.PatientID`
+   - `Attachments.PatientID`
+   - `Admissions.PatientID`
+   - جداول `PatientUserID` (Invoices, Vouchers, LabOrders, RadiologyOrders, PatientAssessments) → target.UserID
+3. دمج البيانات الطبية النصية (ChronicDiseases, Allergies) إن كان المصدر يحوي قيمة والهدف فارغ.
+4. تعطيل حساب المصدر `IsActive=false`، تعيين `MergedIntoPatientID` و`MergedAt`.
+5. Audit log.
+
+## API (PatientsController)
+- `GET /api/patients` — يُرجع: FileNumber, FirstName, FatherName, GrandfatherName, FamilyName + الحقول القائمة + `IsMerged`.
+- `GET /api/patients/{id}` — نفسه + MergedIntoPatientID.
+- `PUT /api/patients/{id}` — يقبل حقول الاسم الجديدة ويُحدّث FullName المشترك.
+- `POST /api/patients/merge` — دمج (Admin/Doctor).
+- `GET /api/patients/next-file-number` — رقم الملف التالي (اختياري، يُستخدم من الواجهة).
+
+## الواجهة
+- صفحة جديدة `patients.html` + `patients.controller.js` (المسار `app.patients`، الأدوار Admin/Doctor/Receptionist).
+- قائمة ملفات: رقم الملف + الاسم الكامل + مكونات الاسم + الهاتف + سنة الميلاد + زر دمج.
+- نموذج إدخال/تعديل بمكونات الاسم الليبي الأربعة.
+- نافذة دمج: اختيار ملفين + تحذير + تنفيذ.
+
+## الضوابط
+- فهرس فريد على FileNumber (ولكن قبول null — SQL Server يسّمح بقيم null متعددة).
+- الدمج عملية لا رجعة فيها (تسجيل audit فقط).
+- الواجهة تستخدم حقول الاسم الجديدة إذا وُجدت، وإلا FullName.

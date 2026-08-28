@@ -1,0 +1,263 @@
+<!-- Radiology Module View -->
+<div class="stagger-children">
+
+    <!-- Header & Action -->
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+        <div>
+            <h2 style="margin-bottom: 4px;">
+                <i class="fas fa-x-ray" style="color: #4361ee;"></i> قسم الأشعة التشخيصية والتصوير الطبي (RIS)
+            </h2>
+            <p class="text-muted" style="font-size: 0.85rem;">متابعة طلبات الأشعة، إعداد التقارير بالقوالب الجاهزة، ومعاينة الصور الطبية المرفقة</p>
+        </div>
+
+        <button class="btn btn-primary" ng-if="vm.currentUser.role === 'Admin' || vm.currentUser.role === 'Doctor'" ng-click="vm.openOrderModal()">
+            <i class="fas fa-plus-circle me-1"></i> طلب أشعة جديد
+        </button>
+    </div>
+
+    <!-- Radiology Orders Table -->
+    <div class="card">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h4 style="margin: 0;"><i class="fas fa-list-alt me-1" style="color: var(--primary);"></i> سجّل طلبات وتقارير الأشعة</h4>
+            <span class="badge badge-normal" ng-if="vm.orders.length > 0">{{vm.orders.length}} طلب متاح</span>
+        </div>
+        <div class="table-wrapper" style="max-height: 550px; overflow-y: auto;">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>رقم الطلب</th>
+                        <th>اسم المريض</th>
+                        <th>نوع الأشعة (Modality)</th>
+                        <th>العضو / الجزء</th>
+                        <th>تاريخ الطلب</th>
+                        <th>الحالة</th>
+                        <th>طبيب الأشعة</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr ng-repeat="order in vm.orders" style="animation: fadeInUp {{$index * 0.04}}s ease;">
+                        <td><strong>#RAD-{{order.radiologyOrderID}}</strong></td>
+                        <td>
+                            <div style="font-weight: bold;">{{order.patientUser.fullName}}</div>
+                            <small class="text-muted">طبيب: د. {{order.doctor.fullName}}</small>
+                        </td>
+                        <td>
+                            <span class="badge badge-primary">{{order.modality}}</span>
+                        </td>
+                        <td><strong>{{order.bodyPart}}</strong></td>
+                        <td>{{order.requestedAt | date:'yyyy/MM/dd hh:mm a'}}</td>
+                        <td>
+                            <span class="badge" ng-class="{'badge-warning': order.status === 'Requested', 'badge-success': order.status === 'Completed'}">
+                                {{order.status === 'Completed' ? 'تم اعتماد التقرير' : 'بانتظار الفحص'}}
+                            </span>
+                        </td>
+                        <td>
+                            <span ng-if="order.radiologist">د. {{order.radiologist.fullName}}</span>
+                            <span ng-if="!order.radiologist" class="text-muted">—</span>
+                        </td>
+                        <td>
+                            <div style="display: flex; gap: 6px;">
+                                <button class="btn btn-sm btn-primary" ng-if="vm.currentUser.role === 'Admin' || vm.currentUser.role === 'Doctor' || vm.currentUser.role === 'Radiologist'" ng-click="vm.openReportModal(order)" title="إعداد / تعديل التقرير">
+                                    <i class="fas fa-file-signature"></i> التقرير
+                                </button>
+                                <button class="btn btn-sm btn-secondary" ng-if="order.status === 'Completed'" ng-click="vm.openViewerModal(order)" title="معاينة وطباعة">
+                                    <i class="fas fa-eye"></i> معاينة
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr ng-if="!vm.orders || vm.orders.length === 0">
+                        <td colspan="8" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                            <i class="fas fa-x-ray" style="font-size: 2.5rem; margin-bottom: 10px; display: block; opacity: 0.4;"></i>
+                            لا توجد طلبات أشعة مسجلة حالياً
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Request New Radiology Order Modal -->
+    <div class="modal-overlay" ng-if="vm.showOrderModal" ng-click="vm.showOrderModal = false">
+        <div class="modal-content" style="max-width: 480px;" ng-click="$event.stopPropagation()">
+            <div class="modal-header">
+                <h4><i class="fas fa-x-ray" style="color: #4361ee; margin-left: 8px;"></i> طلب فحص أشعة جديد</h4>
+                <button class="btn-icon" style="background: none; border: none; font-size: 1.2rem;" ng-click="vm.showOrderModal = false"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label>اختر المريض <span style="color: red;">*</span></label>
+                        <select class="form-control" ng-model="vm.newOrder.patientUserId" required>
+                            <option value="">-- اختر المريض --</option>
+                            <option ng-repeat="p in vm.patients" ng-value="p.userID">{{p.fullName}} ({{p.phone || 'بدون هاتف'}})</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>قالب الأشعة الجاهز (اختياري — يُحدد السعر تلقائياً)</label>
+                        <select class="form-control" ng-model="vm.newOrder.templateID" ng-options="t.templateID as t.templateName for t in vm.templates">
+                            <option value="">-- بدون قالب (سعر يدوائي) --</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>نوع التصوير (Modality) <span style="color: red;">*</span></label>
+                        <select class="form-control" ng-model="vm.newOrder.modality" required>
+                            <option value="X-Ray">أشعة سينية (X-Ray)</option>
+                            <option value="Ultrasound">موجات فوق صوتية (Ultrasound)</option>
+                            <option value="CT">أشعة مقطعية (CT Scan)</option>
+                            <option value="MRI">رنين مغناطيسي (MRI)</option>
+                            <option value="Mammography">ماموجرام (Mammography)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>العضو المراد تصويره (Body Part) <span style="color: red;">*</span></label>
+                        <input type="text" class="form-control" ng-model="vm.newOrder.bodyPart" required placeholder="مثال: الصدر Chest، البطن Abdomen...">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" ng-click="vm.submitCreateOrder()"><i class="fas fa-paper-plane me-1"></i> إرسال للأشعة</button>
+                <button class="btn btn-secondary" ng-click="vm.showOrderModal = false">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Radiology Report Modal (Smart Autofill Templates) -->
+    <div class="modal-overlay" ng-if="vm.showReportModal" ng-click="vm.showReportModal = false">
+        <div class="modal-content" style="max-width: 650px;" ng-click="$event.stopPropagation()">
+            <div class="modal-header">
+                <h4><i class="fas fa-file-signature" style="color: var(--primary); margin-left: 8px;"></i> إعداد تقرير الأشعة المعتمد</h4>
+                <button class="btn-icon" style="background: none; border: none; font-size: 1.2rem;" ng-click="vm.showReportModal = false"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <!-- Smart Template Selection Autofill -->
+                <div style="background: rgba(67,97,238,0.05); padding: 12px; border-radius: 8px; margin-bottom: 16px;">
+                    <label style="font-weight: bold; display: block; margin-bottom: 6px; font-size: 0.85rem; color: #4361ee;">
+                        <i class="fas fa-magic me-1"></i> اختيار قالب تقرير جاهز (Smart Template Autofill)
+                    </label>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button type="button" class="btn btn-sm btn-secondary" ng-repeat="tpl in vm.templates" ng-click="vm.applyTemplate(tpl)">
+                            <i class="fas fa-file-alt me-1"></i> {{tpl.templateName}}
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>نص التقرير الطبي للأشعة <span style="color: red;">*</span></label>
+                    <textarea class="form-control" rows="6" ng-model="vm.reportInput.reportText" required placeholder="أدخل التقرير التشخيصي التفصيلي..." style="font-family: monospace; line-height: 1.5;"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>صورة الأشعة المرفقة (حقل اختياري)</label>
+                    <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                        <input type="file" id="radiologyImageFile" accept="image/*" class="form-control" style="flex: 1;">
+                        <button type="button" class="btn btn-sm btn-outline-primary" ng-click="vm.uploadImage()" ng-disabled="vm.uploadingImage" style="white-space: nowrap;">
+                            <i class="fas fa-upload me-1"></i>{{vm.uploadingImage ? 'جارٍ الرفع...' : 'رفع الصورة للخادم'}}
+                        </button>
+                    </div>
+                    <input type="text" class="form-control" ng-model="vm.reportInput.imagePath" placeholder="https://... أو /uploads/radiology/...">
+                    <small class="text-muted">الخيار الأفضل: ارفع الصورة من جهازك ليُحفظ مسارها على الخادم تلقائياً. المسارات المحلية (C:\...) لن تظهر للطبيب.</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" ng-click="vm.submitReport()"><i class="fas fa-check-double me-1"></i> اعتمد التقرير واضمنه بالملف الطبي</button>
+                <button class="btn btn-secondary" ng-click="vm.showReportModal = false">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Official Radiology Report Viewer & Print Modal -->
+    <div class="modal-overlay" ng-if="vm.showViewerModal" ng-click="vm.showViewerModal = false">
+        <div class="modal-content" style="max-width: 650px;" ng-click="$event.stopPropagation()">
+            <div class="modal-header">
+                <h4><i class="fas fa-eye" style="color: #4361ee; margin-left: 8px;"></i> تقرير الأشعة المعتمد</h4>
+                <button class="btn-icon" style="background: none; border: none; font-size: 1.2rem;" ng-click="vm.showViewerModal = false"><i class="fas fa-times"></i></button>
+            </div>
+
+            <!-- Official Report Printable Body -->
+            <div class="modal-body" style="background: #fff; color: #333; padding: 24px; font-family: 'Cairo', sans-serif;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #4361ee; padding-bottom: 12px; margin-bottom: 20px;">
+                    <div>
+                        <h2 style="margin: 0; color: #4361ee;">العيادة الطبية المجمعة</h2>
+                        <small style="color: #666;">قسم الأشعة التشخيصية والتصوير الطبي (RIS)</small>
+                    </div>
+                    <div style="text-align: left; font-size: 0.8rem; color: #555;">
+                        <div><strong>التاريخ:</strong> {{vm.selectedOrder.completedAt | date:'yyyy/MM/dd'}}</div>
+                        <div><strong>رقم الفحص:</strong> #RAD-{{vm.selectedOrder.radiologyOrderID}}</div>
+                    </div>
+                </div>
+
+                <div style="background: #f8f9fa; border-radius: 8px; padding: 12px 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.85rem; margin-bottom: 20px;">
+                    <div><strong>المريض:</strong> {{vm.selectedOrder.patientUser.fullName}}</div>
+                    <div><strong>الطبيب المعالج:</strong> د. {{vm.selectedOrder.doctor.fullName}}</div>
+                    <div><strong>نوع الفحص:</strong> {{vm.selectedOrder.modality}}</div>
+                    <div><strong>العضو / المنطقة:</strong> {{vm.selectedOrder.bodyPart}}</div>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <h4 style="color: #4361ee; border-bottom: 1px solid #eee; padding-bottom: 6px;">التقرير التشخيصي (Radiological Findings):</h4>
+                    <div style="background: #fafafa; border: 1px solid #eee; border-radius: 8px; padding: 16px; font-family: monospace; white-space: pre-wrap; line-height: 1.6; font-size: 0.95rem;">
+                        {{vm.selectedOrder.reportText}}
+                    </div>
+                </div>
+
+                <div ng-if="vm.selectedOrder.imagePath" style="margin-bottom: 20px;">
+                    <h4 style="color: #4361ee; border-bottom: 1px solid #eee; padding-bottom: 6px;">صورة الأشعة المرفقة (Radiological Image):</h4>
+                    <div style="background: #fafafa; border: 1px solid #eee; border-radius: 8px; padding: 12px; text-align: center;">
+                        <img ng-src="{{vm.selectedOrder.imagePath}}" alt="صورة الأشعة"
+                             style="max-width: 100%; max-height: 380px; border-radius: 6px; cursor: zoom-in;"
+                             ng-click="vm.openImageModal()"
+                             title="اضغط للتكبير"
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                        <div class="text-muted" style="display: none; padding: 24px; font-size: 0.85rem;">
+                            <i class="fas fa-image"></i> تعذّر عرض الصورة داخل المعاينة — استخدم الزر أدناه لفتحها.
+                        </div>
+                        <div style="margin-top: 12px;">
+                            <button type="button" class="btn btn-sm btn-primary" ng-click="vm.openImageModal()">
+                                <i class="fas fa-expand"></i> عرض الصورة بالحجم الكامل
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 30px; border-top: 1px dashed #ccc; padding-top: 16px;">
+                    <div style="font-size: 0.8rem; color: #666;">طبيب الأشعة المعتمد: <strong>د. {{vm.selectedOrder.radiologist.fullName || 'الاستشاري'}}</strong></div>
+                    <div style="border: 2px dashed #4361ee; padding: 6px 14px; border-radius: 8px; color: #4361ee; font-weight: bold; font-size: 0.8rem; transform: rotate(-2deg);">
+                        <i class="fas fa-stamp me-1"></i> معتمد رسمياً من قسم الأشعة
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-primary" ng-click="vm.printReport()"><i class="fas fa-print me-1"></i> طباعة التقرير</button>
+                <button class="btn btn-secondary" ng-click="vm.showViewerModal = false">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Full-Size Image Viewer Modal (in-app lightbox) -->
+    <div class="modal-overlay" ng-if="vm.showImageModal" ng-click="vm.showImageModal = false">
+        <div class="modal-content" style="max-width: 900px; width: 95%;" ng-click="$event.stopPropagation()">
+            <div class="modal-header">
+                <h4><i class="fas fa-image" style="color: #4361ee; margin-left: 8px;"></i> صورة الأشعة المرفقة</h4>
+                <button class="btn-icon" style="background: none; border: none; font-size: 1.2rem;" ng-click="vm.showImageModal = false"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body" style="background: #111; padding: 16px; text-align: center; border-radius: 0 0 8px 8px;">
+                <img ng-src="{{vm.selectedOrder.imagePath}}" alt="صورة الأشعة بالحجم الكامل"
+                     style="max-width: 100%; max-height: 78vh; border-radius: 6px;"
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                <div class="text-muted" style="display: none; padding: 40px; font-size: 0.9rem; color: #bbb;">
+                    <i class="fas fa-image"></i> تعذّر تحميل الصورة — تأكد من صحة الرابط الذي أدخله فني الأشعة.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" ng-click="vm.showImageModal = false">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+</div>

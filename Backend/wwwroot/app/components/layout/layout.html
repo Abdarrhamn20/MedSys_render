@@ -1,0 +1,569 @@
+<!-- Main App Layout - Sidebar + Content -->
+<div class="app-layout">
+
+    <!-- Sidebar Overlay (Mobile) -->
+    <div class="sidebar-overlay" ng-class="{'active': layout.sidebarOpen}" ng-click="layout.toggleSidebar()"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" ng-class="{'active': layout.sidebarOpen}">
+
+        <!-- Sidebar Header / Logo -->
+        <div class="sidebar-header">
+            <div class="sidebar-logo">
+                <i class="fas fa-clinic-medical"></i>
+            </div>
+            <div class="sidebar-brand">
+                العيادة الافتراضية
+                <small>IVS Medical System</small>
+            </div>
+        </div>
+
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar-nav">
+
+            <!-- القائمة الرئيسية -->
+            <div class="nav-section">
+                <span class="nav-section-title">القائمة الرئيسية</span>
+            </div>
+
+            <a ui-sref="app.dashboard" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                <i class="fas fa-home"></i>
+                <span>لوحة التحكم</span>
+            </a>
+
+            <!-- قائمة الأدمن -->
+            <div ng-if="layout.user.role === 'Admin'">
+                <div class="nav-section">
+                    <span class="nav-section-title">الإدارة</span>
+                </div>
+                <a ui-sref="app.users" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-users-cog"></i>
+                    <span>إدارة المستخدمين</span>
+                </a>
+                <a ui-sref="app.employees" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-id-card"></i>
+                    <span>الموارد البشرية</span>
+                </a>
+                <a ui-sref="app.appointments" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>المواعيد</span>
+                    <span class="nav-badge" ng-if="layout.pendingCount > 0">{{layout.pendingCount}}</span>
+                </a>
+                <a ui-sref="app.medicalRecords" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-file-medical"></i>
+                    <span>السجلات الطبية</span>
+                </a>
+                <a ui-sref="app.patients" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-folder-open"></i>
+                    <span>ملفات المرضى</span>
+                </a>
+                <a ui-sref="app.billing" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                    <span>الفواتير والمدفوعات</span>
+                </a>
+                <a ui-sref="app.feeManagement" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-hand-holding-usd"></i>
+                    <span>أسعار الكشوفات</span>
+                </a>
+                <a ui-sref="app.priceManagement" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-tags"></i>
+                    <span>إدارة الأسعار المركزية</span>
+                </a>
+                <a ui-sref="app.inpatient" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()" ng-if="layout.facilityMode === 'General' || layout.facilityMode === 'Hybrid'">
+                    <i class="fas fa-bed-pulse"></i>
+                    <span>إدارة الإيواء والتنويم</span>
+                </a>
+                <a ui-sref="app.lab" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()" ng-if="layout.facilityMode === 'General' || layout.facilityMode === 'Hybrid'">
+                    <i class="fas fa-flask"></i>
+                    <span>المختبر والتحاليل الطبية</span>
+                </a>
+                <a ui-sref="app.radiology" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()" ng-if="layout.facilityMode === 'General' || layout.facilityMode === 'Hybrid'">
+                    <i class="fas fa-x-ray"></i>
+                    <span>الأشعة التشخيصية</span>
+                </a>
+                <a ui-sref="app.patientAssessments" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()" ng-if="layout.facilityMode === 'Psychiatric' || layout.facilityMode === 'Hybrid'">
+                    <i class="fas fa-brain"></i>
+                    <span>الاستبيانات النفسية</span>
+                </a>
+                <a ui-sref="app.doctorLedger" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-chart-line"></i>
+                    <span>نسب وعوائد الأطباء</span>
+                </a>
+                <a ui-sref="app.accounting" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-book"></i>
+                    <span>النظام المحاسبي</span>
+                </a>
+                <a ui-sref="app.treasury" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-vault"></i>
+                    <span>الخزائن والسندات</span>
+                </a>
+                <a ui-sref="app.warehouse" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-warehouse"></i>
+                    <span>المخازن والأصناف</span>
+                </a>
+                <a ui-sref="app.expressBooking" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-bolt"></i>
+                    <span>الحجز السريع والخزينة</span>
+                </a>
+                <a ui-sref="app.backup" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-database"></i>
+                    <span>النسخ الاحتياطي</span>
+                </a>
+                <a ui-sref="app.auditLogs" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-history"></i>
+                    <span>سجل التدقيق</span>
+                </a>
+            </div>
+
+            <!-- قائمة موظف الاستقبال -->
+            <div ng-if="layout.user.role === 'Receptionist'">
+                <div class="nav-section">
+                    <span class="nav-section-title">الاستقبال</span>
+                </div>
+                <a ui-sref="app.expressBooking" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-bolt"></i>
+                    <span>الحجز السريع</span>
+                </a>
+                <a ui-sref="app.appointments" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>مواعيد اليوم</span>
+                </a>
+                <a ui-sref="app.patients" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-folder-open"></i>
+                    <span>ملفات المرضى</span>
+                </a>
+                <a ui-sref="app.employees" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-id-card"></i>
+                    <span>ملفي الوظيفي</span>
+                </a>
+            </div>
+
+            <!-- قائمة الكاشير -->
+            <div ng-if="layout.user.role === 'Cashier'">
+                <div class="nav-section">
+                    <span class="nav-section-title">الخزينة</span>
+                </div>
+                <a ui-sref="app.billing" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                    <span>الفواتير والتحصيل</span>
+                </a>
+                <a ui-sref="app.accounting" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-book"></i>
+                    <span>النظام المحاسبي</span>
+                </a>
+                <a ui-sref="app.treasury" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-vault"></i>
+                    <span>الخزائن والسندات</span>
+                </a>
+                <a ui-sref="app.expressBooking" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-cash-register"></i>
+                    <span>تقرير الخزينة</span>
+                </a>
+                <a ui-sref="app.employees" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-id-card"></i>
+                    <span>ملفي الوظيفي</span>
+                </a>
+            </div>
+
+            <!-- قائمة المحاسب -->
+            <div ng-if="layout.user.role === 'Accountant'">
+                <div class="nav-section">
+                    <span class="nav-section-title">المحاسبة</span>
+                </div>
+                <a ui-sref="app.accounting" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-book"></i>
+                    <span>النظام المحاسبي</span>
+                </a>
+                <a ui-sref="app.treasury" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-vault"></i>
+                    <span>الخزائن والسندات</span>
+                </a>
+                <a ui-sref="app.employees" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-id-card"></i>
+                    <span>الموارد البشرية والرواتب</span>
+                </a>
+            </div>
+
+            <!-- قائمة الطبيب -->
+            <div ng-if="layout.user.role === 'Doctor'">
+                <div class="nav-section">
+                    <span class="nav-section-title">عيادتي</span>
+                </div>
+                <a ui-sref="app.appointments" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-calendar-check"></i>
+                    <span>مواعيدي</span>
+                    <span class="nav-badge" ng-if="layout.urgentCount > 0">{{layout.urgentCount}}</span>
+                </a>
+                <a ui-sref="app.medicalRecords" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-file-medical"></i>
+                    <span>السجلات الطبية</span>
+                </a>
+                <a ui-sref="app.patients" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-folder-open"></i>
+                    <span>ملفات المرضى</span>
+                </a>
+                <a ui-sref="app.lab" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()" ng-if="layout.facilityMode === 'General' || layout.facilityMode === 'Hybrid'">
+                    <i class="fas fa-flask"></i>
+                    <span>المختبر والتحاليل</span>
+                </a>
+                <a ui-sref="app.radiology" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()" ng-if="layout.facilityMode === 'General' || layout.facilityMode === 'Hybrid'">
+                    <i class="fas fa-x-ray"></i>
+                    <span>الأشعة التشخيصية</span>
+                </a>
+                <a ui-sref="app.inpatient" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()" ng-if="layout.facilityMode === 'General' || layout.facilityMode === 'Hybrid'">
+                    <i class="fas fa-bed-pulse"></i>
+                    <span>إدارة الإيواء والتنويم</span>
+                </a>
+                <a ui-sref="app.patientAssessments" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()" ng-if="layout.facilityMode === 'Psychiatric' || layout.facilityMode === 'Hybrid'">
+                    <i class="fas fa-brain"></i>
+                    <span>الاستبيانات النفسية</span>
+                </a>
+                <a ui-sref="app.doctorLedger" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-chart-line"></i>
+                    <span>كشف مستحقاتي وأرباحي</span>
+                </a>
+                <a ui-sref="app.billing" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                    <span>الفواتير والمدفوعات</span>
+                </a>
+                <a ui-sref="app.feeManagement" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-hand-holding-usd"></i>
+                    <span>سعر الكشف الخاص بي</span>
+                </a>
+                <a ui-sref="app.employees" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-id-card"></i>
+                    <span>ملفي الوظيفي</span>
+                </a>
+            </div>
+
+            <!-- قائمة فني المختبرات -->
+            <div ng-if="layout.user.role === 'LabTechnician'">
+                <div class="nav-section">
+                    <span class="nav-section-title">محطة المختبر</span>
+                </div>
+                <a ui-sref="app.lab" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-flask"></i>
+                    <span>نتائج وفحوصات المختبر</span>
+                </a>
+                <a ui-sref="app.employees" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-id-card"></i>
+                    <span>ملفي الوظيفي</span>
+                </a>
+            </div>
+
+            <!-- قائمة أخصائي الأشعة -->
+            <div ng-if="layout.user.role === 'Radiologist'">
+                <div class="nav-section">
+                    <span class="nav-section-title">محطة الأشعة</span>
+                </div>
+                <a ui-sref="app.radiology" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-x-ray"></i>
+                    <span>تقارير وتصوير الأشعة</span>
+                </a>
+                <a ui-sref="app.employees" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-id-card"></i>
+                    <span>ملفي الوظيفي</span>
+                </a>
+            </div>
+
+            <!-- قائمة المريض -->
+            <div ng-if="layout.user.role === 'Patient'">
+                <div class="nav-section">
+                    <span class="nav-section-title">خدماتي</span>
+                </div>
+                <a ui-sref="app.bookAppointment" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-calendar-plus"></i>
+                    <span>حجز موعد</span>
+                </a>
+                <a ui-sref="app.appointments" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>مواعيدي</span>
+                    <span class="nav-badge" ng-if="layout.pendingCount > 0">{{layout.pendingCount}}</span>
+                </a>
+                <a ui-sref="app.medicalRecords" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-notes-medical"></i>
+                    <span>سجلاتي الطبية</span>
+                </a>
+                <a ui-sref="app.inpatient" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()" ng-if="layout.facilityMode === 'General' || layout.facilityMode === 'Hybrid'">
+                    <i class="fas fa-bed-pulse"></i>
+                    <span>سجلات الإيواء والتنويم</span>
+                </a>
+                <a ui-sref="app.lab" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()" ng-if="layout.facilityMode === 'General' || layout.facilityMode === 'Hybrid'">
+                    <i class="fas fa-flask"></i>
+                    <span>نتائج تحاليلي</span>
+                </a>
+                <a ui-sref="app.radiology" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()" ng-if="layout.facilityMode === 'General' || layout.facilityMode === 'Hybrid'">
+                    <i class="fas fa-x-ray"></i>
+                    <span>تقارير الأشعة</span>
+                </a>
+                <a ui-sref="app.patientAssessments" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()" ng-if="layout.facilityMode === 'Psychiatric' || layout.facilityMode === 'Hybrid'">
+                    <i class="fas fa-clipboard-check"></i>
+                    <span>الاستبيانات النفسية</span>
+                </a>
+                <a ui-sref="app.billing" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                    <span>الفواتير والمدفوعات</span>
+                </a>
+            </div>
+
+            <!-- قائمة الصيدلاني -->
+            <div ng-if="layout.user.role === 'Pharmacist'">
+                <div class="nav-section">
+                    <span class="nav-section-title">الصيدلية</span>
+                </div>
+                <a ui-sref="app.pharmacy" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-pills"></i>
+                    <span>إدارة الصيدلية</span>
+                    <span class="nav-badge" ng-if="layout.pendingCount > 0">{{layout.pendingCount}}</span>
+                </a>
+                <a ui-sref="app.billing" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                    <span>سداد الفواتير</span>
+                </a>
+                <a ui-sref="app.employees" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-id-card"></i>
+                    <span>ملفي الوظيفي</span>
+                </a>
+            </div>
+
+            <!-- قائمة أمين المخزن -->
+            <div ng-if="layout.user.role === 'WarehouseKeeper'">
+                <div class="nav-section">
+                    <span class="nav-section-title">المخازن</span>
+                </div>
+                <a ui-sref="app.warehouse" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-warehouse"></i>
+                    <span>المخازن والأصناف</span>
+                </a>
+                <a ui-sref="app.employees" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-id-card"></i>
+                    <span>ملفي الوظيفي</span>
+                </a>
+            </div>
+
+            <!-- رابط الصيدلية للأدمن -->
+            <div ng-if="layout.user.role === 'Admin'">
+                <div class="nav-section">
+                    <span class="nav-section-title">الصيدلية</span>
+                </div>
+                <a ui-sref="app.pharmacy" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                    <i class="fas fa-pills"></i>
+                    <span>إدارة الصيدلية</span>
+                </a>
+            </div>
+
+            <!-- الإعدادات -->
+            <div class="nav-section">
+                <span class="nav-section-title">الإعدادات</span>
+            </div>
+            <a ui-sref="app.profile" ui-sref-active="active" class="nav-item" ng-click="layout.closeSidebar()">
+                <i class="fas fa-user-circle"></i>
+                <span>الملف الشخصي</span>
+            </a>
+        </nav>
+
+        <!-- Sidebar Footer - User Info -->
+        <div class="sidebar-footer">
+            <div class="sidebar-user">
+                <div class="avatar">
+                    {{layout.user.fullName.charAt(0)}}
+                </div>
+                <div class="sidebar-user-info">
+                    <div class="sidebar-user-name">{{layout.user.fullName}}</div>
+                    <div class="sidebar-user-role">{{layout.getRoleAr()}}</div>
+                </div>
+                <button class="btn-logout" ng-click="layout.logout()" title="تسجيل الخروج">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+
+        <!-- Top Navbar -->
+        <header class="top-navbar">
+            <div class="navbar-right">
+                <button class="btn-toggle-sidebar" ng-click="layout.toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h1 class="page-title">
+                    <i class="fas" ng-class="$root.pageIcon"></i>
+                    {{$root.pageTitle}}
+                </h1>
+            </div>
+
+            <div class="navbar-left">
+                <!-- Online / Offline Sync Badge -->
+                <span class="badge" ng-class="{'badge-success': layout.isOnline, 'badge-warning': !layout.isOnline}" style="margin-left: 8px; font-size: 0.75rem; padding: 6px 12px; border-radius: 20px; display: inline-flex; align-items: center; gap: 5px;">
+                    <i class="fas" ng-class="layout.isOnline ? 'fa-wifi' : 'fa-signal-slash'"></i>
+                    <span>{{layout.isOnline ? 'متصل' : 'بدون إنترنت (Offline)'}}</span>
+                </span>
+
+                <button class="navbar-icon-btn" ng-click="layout.toggleDarkMode()" title="تغيير المظهر">
+                    <i class="fas" ng-class="layout.isDarkMode ? 'fa-sun' : 'fa-moon'"></i>
+                </button>
+
+                <div class="navbar-search">
+                    <input type="text" placeholder="بحث..." ng-model="layout.searchQuery">
+                    <i class="fas fa-search"></i>
+                </div>
+
+                <!-- Interactive Notifications Dropdown -->
+                <div class="notification-dropdown-wrapper" style="position: relative; display: flex; align-items: center;">
+                    <button class="navbar-notification" ng-click="layout.toggleNotifications()" title="الإشعارات والتنبيهات" style="position: relative; cursor: pointer;">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-dot" ng-if="layout.hasNotifications"></span>
+                    </button>
+                    
+                    <!-- Dropdown List -->
+                    <div class="notifications-dropdown" ng-if="layout.notificationsOpen" style="position: absolute; left: 0; top: 100%; width: 340px; background: var(--card-background, #fff); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.06); z-index: 1000; padding: 15px; margin-top: 10px; font-family: 'Cairo'; text-align: right; box-sizing: border-box; animation: slideDown 0.2s ease;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 10px; margin-bottom: 10px;">
+                            <span style="font-weight: bold; color: var(--text-color, #333); font-size: 0.95rem;">
+                                الإشعارات والتنبيهات
+                                <span class="badge" style="background: rgba(230, 57, 70, 0.1); color: #e63946; font-size: 0.75rem; padding: 2px 8px; border-radius: 20px; font-weight: bold; margin-right: 6px;" ng-if="layout.unreadCount > 0">{{layout.unreadCount}} جديدة</span>
+                            </span>
+                            <a ng-click="layout.markAllNotificationsRead()" ng-if="layout.unreadCount > 0" style="font-size: 0.75rem; font-weight: bold; color: #4361ee; text-decoration: none; cursor: pointer;">تحديد الكل كمقروء</a>
+                        </div>
+
+                        <!-- System Notifications list -->
+                        <div style="max-height: 260px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+                            <div ng-repeat="n in layout.notifications" ng-click="layout.markNotificationRead(n)" ng-style="{'cursor': 'pointer'}" style="background: rgba(230, 57, 70, 0.05); border-right: 3px solid #e63946; padding: 10px 12px; border-radius: 6px; display: flex; align-items: flex-start; gap: 10px; transition: background 0.2s;" ng-class="{'unread': !n.isRead}">
+                                <i class="fas" ng-class="{'fa-video': n.type === 'TelemedicineStarted', 'fa-clock': n.type === 'AppointmentTimeReached', 'fa-calendar-check': n.relatedEntityType === 'Appointment', 'fa-bell': true}" style="color: #e63946; margin-top: 2px;"></i>
+                                <div style="flex-grow: 1; min-width: 0;">
+                                    <div style="font-size: 0.82rem; font-weight: bold; color: #333;">{{n.title}} <span ng-if="!n.isRead" style="background: #e63946; color: white; font-size: 0.6rem; padding: 1px 6px; border-radius: 10px; margin-right: 4px;">جديد</span></div>
+                                    <div style="font-size: 0.76rem; line-height: 1.4; color: #666; margin-top: 2px;" ng-if="n.message">{{n.message}}</div>
+                                    <div style="font-size: 0.68rem; color: #999; margin-top: 3px;">{{n.createdAt | date: 'yyyy/MM/dd hh:mm a'}}</div>
+                                </div>
+                            </div>
+
+                            <!-- Empty Notifications state -->
+                            <div ng-if="layout.notifications.length === 0" style="text-align: center; padding: 25px 10px; color: #888;">
+                                <i class="fas fa-bell-slash" style="font-size: 1.8rem; color: #ccc; margin-bottom: 8px; display: block;"></i>
+                                <span style="font-size: 0.85rem;">لا توجد إشعارات جديدة</span>
+                            </div>
+                        </div>
+
+                        <!-- Medication Requests (Admin / Pharmacist) -->
+                        <div ng-if="layout.user.role === 'Admin' || layout.user.role === 'Pharmacist'" style="margin-top: 10px; border-top: 1px solid rgba(0,0,0,0.05); padding-top: 10px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px;">
+                                <span style="font-weight: bold; color: var(--text-color, #333); font-size: 0.85rem;">طلبات توفير الأدوية</span>
+                                <span class="badge" style="background: rgba(230, 57, 70, 0.1); color: #e63946; font-size: 0.75rem; padding: 2px 8px; border-radius: 20px; font-weight: bold;" ng-if="layout.medRequests.length > 0">{{layout.medRequests.length}} معلقة</span>
+                            </div>
+
+                            <div style="max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+                                <div ng-repeat="req in layout.medRequests" style="background: rgba(67, 97, 238, 0.03); border-right: 3px solid #4361ee; padding: 10px 12px; border-radius: 6px; display: flex; flex-direction: column; gap: 6px; transition: background 0.2s;" onmouseover="this.style.backgroundColor='rgba(67, 97, 238, 0.06)'" onmouseout="this.style.backgroundColor='rgba(67, 97, 238, 0.03)'">
+                                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
+                                        <div style="font-size: 0.82rem; line-height: 1.4; color: #333; flex-grow: 1;">
+                                            طلب الطبيب <strong>د. {{req.doctorName}}</strong> توفير دواء: <strong style="color: #4361ee;">{{req.medicationName}}</strong>
+                                        </div>
+                                        <button ng-click="layout.resolveMedRequest(req.requestId, $event)" title="تم التوفير" style="background: #2DC653; border: none; color: white; width: 26px; height: 26px; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.backgroundColor='#27ae60'" onmouseout="this.style.backgroundColor='#2DC653'">
+                                            <i class="fas fa-check" style="font-size: 0.75rem;"></i>
+                                        </button>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: #888;">
+                                        <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 170px;">{{req.notes ? ('ملاحظة: ' + req.notes) : 'بدون ملاحظات'}}</span>
+                                        <span>{{req.createdAt | date: 'yyyy/MM/dd hh:mm a'}}</span>
+                                    </div>
+                                </div>
+
+                                <div ng-if="layout.medRequests.length === 0" style="text-align: center; padding: 15px 10px; color: #888;">
+                                    <span style="font-size: 0.8rem;">لا توجد طلبات أدوية معلقة</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Footer actions -->
+                        <div style="border-top: 1px solid rgba(0,0,0,0.05); padding-top: 10px; margin-top: 10px; text-align: center;" ng-if="layout.user.role === 'Admin' || layout.user.role === 'Pharmacist'">
+                            <a ui-sref="app.pharmacy" ng-click="layout.toggleNotifications()" style="font-size: 0.8rem; font-weight: bold; color: #4361ee; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
+                                إدارة الصيدلية والمستودع <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="avatar" style="cursor: pointer;" title="{{layout.user.fullName}}">
+                    {{layout.user.fullName.charAt(0)}}
+                </div>
+            </div>
+        </header>
+
+        <!-- Page Content -->
+        <div class="page-content">
+            <!-- Mobile App Dynamic Commercial Installation Banner -->
+            <div class="card" ng-if="layout.user" style="margin: 0 0 16px 0; padding: 14px 18px; background: linear-gradient(135deg, #0077b6, #00b4d8); color: white; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; box-shadow: 0 4px 15px rgba(0,119,182,0.3);">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <i class="fas fa-mobile-screen-button" style="font-size: 1.8rem;"></i>
+                    <div>
+                        <strong style="font-size: 0.95rem; display: block;" ng-if="layout.pwa.isPWAEnabled()">تطبيق الموبايل متاح للعيادة!</strong>
+                        <strong style="font-size: 0.95rem; display: block;" ng-if="!layout.pwa.isPWAEnabled()">احصل على تطبيق الموبايل الخاص بالعيادة!</strong>
+                        <span style="font-size: 0.8rem; opacity: 0.9;" ng-if="layout.pwa.isPWAEnabled()">ثبّت المنظومة كتطبيق مستقل على هاتفك بنقرة واحدة</span>
+                        <span style="font-size: 0.8rem; opacity: 0.9;" ng-if="!layout.pwa.isPWAEnabled()">ثبّت التطبيق على هاتفك المحمول لتسريع الكشوفات والمواعيد</span>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <button class="btn btn-sm" ng-if="layout.pwa.isPWAEnabled()" style="background: white; color: #0077b6; font-weight: 800; border-radius: 20px; padding: 6px 16px;" ng-click="layout.pwa.installApp()">
+                        <i class="fas fa-download me-1"></i> تثبيت التطبيق
+                    </button>
+                    <button class="btn btn-sm" ng-if="!layout.pwa.isPWAEnabled()" style="background: #ffb703; color: #023e8a; font-weight: 800; border-radius: 20px; padding: 6px 16px;" ng-click="layout.pwa.installApp()">
+                        <i class="fas fa-mobile-alt me-1"></i> تثبيت التطبيق
+                    </button>
+                    <button class="btn btn-sm" ng-if="layout.pushState.supported && layout.pushState.permission !== 'granted'" style="background: white; color: #023e8a; font-weight: 800; border-radius: 20px; padding: 6px 16px;" ng-click="layout.enablePush()" ng-disabled="layout.enablingPush">
+                        <i class="fas fa-bell me-1"></i> {{layout.enablingPush ? 'جارٍ التفعيل...' : 'تفعيل الإشعارات'}}
+                    </button>
+                    <span ng-if="layout.pushState.permission === 'granted'" style="font-size: 0.8rem; opacity: 0.95;"><i class="fas fa-bell"></i> الإشعارات مفعّلة</span>
+                </div>
+            </div>
+
+            <div ui-view></div>
+        </div>
+    </main>
+
+    <!-- Mobile Bottom Navigation Bar (App Experience) -->
+    <nav class="mobile-bottom-nav" ng-if="layout.user">
+        <a ui-sref="app.dashboard" ui-sref-active="active" class="mobile-nav-item">
+            <i class="fas fa-home"></i>
+            <span>الرئيسية</span>
+        </a>
+        <a ui-sref="app.appointments" ui-sref-active="active" class="mobile-nav-item" ng-if="layout.user.role !== 'Pharmacist'">
+            <i class="fas fa-calendar-alt"></i>
+            <span>المواعيد</span>
+        </a>
+        <a ui-sref="app.inpatient" ui-sref-active="active" class="mobile-nav-item" ng-if="layout.user.role !== 'Pharmacist'">
+            <i class="fas fa-bed-pulse"></i>
+            <span>الإيواء</span>
+        </a>
+        <a ui-sref="app.pharmacy" ui-sref-active="active" class="mobile-nav-item" ng-if="layout.user.role === 'Admin' || layout.user.role === 'Pharmacist'">
+            <i class="fas fa-pills"></i>
+            <span>الصيدلية</span>
+        </a>
+        <a ui-sref="app.medicalRecords" ui-sref-active="active" class="mobile-nav-item">
+            <i class="fas fa-notes-medical"></i>
+            <span>السجلات</span>
+        </a>
+        <a ui-sref="app.profile" ui-sref-active="active" class="mobile-nav-item">
+            <i class="fas fa-user-circle"></i>
+            <span>حسابي</span>
+        </a>
+    </nav>
+
+    <!-- Incoming Video Call Modal (App-Style Ringing) -->
+    <div ng-if="layout.showIncomingCall" style="position: fixed; inset: 0; z-index: 20000; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; padding: 16px; animation: fadeIn 0.3s ease;">
+        <div style="width: 100%; max-width: 340px; background: linear-gradient(160deg, #023e8a, #0077b6); color: white; border-radius: 18px; padding: 26px 20px; text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,0.45);">
+            <div style="width: 84px; height: 84px; margin: 0 auto 14px; border-radius: 50%; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; border: 3px solid rgba(255,255,255,0.5); animation: ivs-pulse-ring 1.4s ease-in-out infinite;">
+                <i class="fas fa-video" style="font-size: 2rem;"></i>
+            </div>
+            <div style="font-size: 1.05rem; font-weight: 800; margin-bottom: 4px;">{{layout.incomingCall.title}}</div>
+            <div style="font-size: 0.85rem; opacity: 0.92; margin-bottom: 20px;">{{layout.incomingCall.message}}</div>
+            <div style="display: flex; gap: 10px;">
+                <button style="flex: 1; background: #28a745; color: white; font-weight: 800; border: none; border-radius: 24px; padding: 12px; font-size: 0.95rem; cursor: pointer;" ng-click="layout.joinIncomingCall()">
+                    <i class="fas fa-phone-volume me-1"></i> انضم الآن
+                </button>
+                <button style="flex: 1; background: rgba(255,255,255,0.18); color: white; font-weight: 700; border: none; border-radius: 24px; padding: 12px; font-size: 0.95rem; cursor: pointer;" ng-click="layout.dismissIncomingCall()">
+                    <i class="fas fa-times me-1"></i> تجاهل
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

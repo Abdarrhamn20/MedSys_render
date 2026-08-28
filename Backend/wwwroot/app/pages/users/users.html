@@ -1,0 +1,401 @@
+<!-- Users Management Page -->
+<div class="stagger-children">
+
+    <!-- Page Header -->
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+        <div>
+            <h2 style="margin-bottom: 4px;">إدارة المستخدمين</h2>
+            <p class="text-muted" style="font-size: 0.85rem;">إدارة حسابات الأطباء والمرضى ومديري النظام</p>
+        </div>
+        <button class="btn btn-primary" ng-click="vm.showAddModal = true">
+            <i class="fas fa-user-plus"></i> إضافة مستخدم
+        </button>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row" style="margin-bottom: 24px;">
+        <div class="col-3">
+            <div class="stat-card" ng-click="vm.filterRole = ''; vm.loadUsers();" style="cursor: pointer;">
+                <div class="stat-icon" style="background: rgba(0,119,182,0.1); color: var(--primary);"><i class="fas fa-users"></i></div>
+                <div class="stat-info"><h4>الكل</h4><div class="stat-number">{{vm.userStats.totalUsers || 0}}</div></div>
+            </div>
+        </div>
+        <div class="col-3">
+            <div class="stat-card" ng-click="vm.filterRole = 'Doctor'; vm.loadUsers();" style="cursor: pointer;">
+                <div class="stat-icon" style="background: rgba(45,198,83,0.1); color: var(--priority-normal);"><i class="fas fa-user-md"></i></div>
+                <div class="stat-info"><h4>الأطباء</h4><div class="stat-number">{{vm.userStats.doctors || 0}}</div></div>
+            </div>
+        </div>
+        <div class="col-3">
+            <div class="stat-card" ng-click="vm.filterRole = 'Patient'; vm.loadUsers();" style="cursor: pointer;">
+                <div class="stat-icon" style="background: rgba(255,159,28,0.1); color: var(--priority-urgent);"><i class="fas fa-procedures"></i></div>
+                <div class="stat-info"><h4>المرضى</h4><div class="stat-number">{{vm.userStats.patients || 0}}</div></div>
+            </div>
+        </div>
+        <div class="col-3">
+            <div class="stat-card" ng-click="vm.filterRole = 'Admin'; vm.loadUsers();" style="cursor: pointer;">
+                <div class="stat-icon" style="background: rgba(230,57,70,0.1); color: var(--priority-emergency);"><i class="fas fa-user-shield"></i></div>
+                <div class="stat-info"><h4>المدراء</h4><div class="stat-number">{{vm.userStats.admins || 0}}</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search & Filter Bar -->
+    <div class="card" style="margin-bottom: 20px;">
+        <div class="card-body" style="padding: 16px;">
+            <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+                <div class="input-icon-wrapper" style="flex: 1; min-width: 200px;">
+                    <input type="text" class="form-control" ng-model="vm.searchQuery" ng-change="vm.loadUsers()"
+                           placeholder="بحث بالاسم أو البريد أو الهاتف..." style="padding-right: 40px;">
+                    <i class="fas fa-search input-icon"></i>
+                </div>
+                <select class="form-control" ng-model="vm.filterRole" ng-change="vm.loadUsers()" style="width: 160px;">
+                    <option value="">كل الأدوار</option>
+                    <option value="Admin">مدير</option>
+                    <option value="Accountant">محاسب</option>
+                    <option value="Doctor">طبيب</option>
+                    <option value="Patient">مريض</option>
+                    <option value="Pharmacist">صيدلاني</option>
+                    <option value="LabTechnician">فني مختبر</option>
+                    <option value="Radiologist">أخصائي أشعة</option>
+                    <option value="Receptionist">موظف استقبال</option>
+                    <option value="Cashier">كاشير</option>
+                    <option value="WarehouseKeeper">أمين مخزن</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="card">
+        <div class="table-wrapper" style="max-height: 580px; overflow-y: auto; -webkit-overflow-scrolling: touch;">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>الاسم</th>
+                        <th>البريد الإلكتروني</th>
+                        <th>الهاتف</th>
+                        <th>الدور</th>
+                        <th>الحالة</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr ng-repeat="user in vm.users" style="animation: fadeInUp {{$index * 0.05}}s ease;">
+                        <td>{{user.userID}}</td>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div class="avatar" style="width: 36px; height: 36px; font-size: 0.8rem;">{{user.fullName.charAt(0)}}</div>
+                                <div>
+                                    <strong>{{user.fullName}}</strong>
+                                    <div style="font-size: 0.75rem; color: var(--primary);" ng-if="user.role === 'Doctor' && (user.specialty || (user.doctorProfile && user.doctorProfile.specialty))">
+                                        {{user.specialty || user.doctorProfile.specialty}}
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td style="color: var(--text-secondary);">{{user.email}}</td>
+                        <td>{{user.phone || '—'}}</td>
+                        <td>
+                            <span class="badge" ng-class="{'badge-primary': user.role === 'Admin', 'badge-normal': user.role === 'Doctor', 'badge-urgent': user.role === 'Patient', 'badge-info': user.role === 'Pharmacist' || user.role === 'LabTechnician' || user.role === 'Radiologist' || user.role === 'Accountant' || user.role === 'WarehouseKeeper', 'badge-urgent': user.role === 'Receptionist' || user.role === 'Cashier'}">
+                                <i class="fas" ng-class="{'fa-user-shield': user.role === 'Admin', 'fa-calculator': user.role === 'Accountant', 'fa-user-md': user.role === 'Doctor', 'fa-user': user.role === 'Patient', 'fa-pills': user.role === 'Pharmacist', 'fa-flask': user.role === 'LabTechnician', 'fa-x-ray': user.role === 'Radiologist', 'fa-user-tie': user.role === 'Receptionist', 'fa-cash-register': user.role === 'Cashier', 'fa-warehouse': user.role === 'WarehouseKeeper'}"></i>
+                                {{vm.getRoleAr(user.role)}}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge" ng-class="user.isActive ? 'badge-normal' : 'badge-emergency'">
+                                {{user.isActive ? 'فعّال' : 'معطّل'}}
+                            </span>
+                        </td>
+                        <td>
+                            <div style="display: flex; gap: 6px;">
+                                <button class="btn btn-sm btn-info" ng-click="vm.viewUserProfile(user)" title="الملف التعريفي الشامل" style="padding: 6px 10px; min-height: auto;">
+                                    <i class="fas fa-id-card"></i> ملفه
+                                </button>
+                                <button class="btn btn-sm btn-secondary" ng-click="vm.editUser(user)" title="تعديل" style="padding: 6px 10px; min-height: auto;">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm" ng-class="user.isActive ? 'btn-warning' : 'btn-success'" ng-click="vm.toggleActive(user)" title="{{user.isActive ? 'تعطيل' : 'تفعيل'}}" style="padding: 6px 10px; min-height: auto;">
+                                    <i class="fas" ng-class="user.isActive ? 'fa-ban' : 'fa-check'"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger" ng-click="vm.deleteUser(user)" title="حذف" style="padding: 6px 10px; min-height: auto;">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr ng-if="vm.users.length === 0 && !vm.loading">
+                        <td colspan="7">
+                            <div class="empty-state">
+                                <i class="fas fa-users"></i>
+                                <h4>لا يوجد مستخدمين</h4>
+                                <p>لم يتم العثور على نتائج</p>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div style="padding: 10px 16px; border-top: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-muted); font-size: 0.82rem; text-align: left;">
+            إجمالي المستعرضين: <strong>{{vm.users.length}}</strong> مستخدم
+        </div>
+    </div>
+
+    <!-- Add/Edit User Modal -->
+    <div class="modal-overlay" ng-if="vm.showAddModal" ng-click="vm.showAddModal = false">
+        <div class="modal-content" ng-click="$event.stopPropagation()">
+            <div class="modal-header">
+                <h4><i class="fas fa-user-plus" style="color: var(--primary); margin-left: 8px;"></i> {{vm.editingUser ? 'تعديل مستخدم' : 'إضافة مستخدم جديد'}}</h4>
+                <button class="btn-icon" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-muted);" ng-click="vm.showAddModal = false">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form name="userForm" novalidate>
+                    <!-- Role Selector -->
+                    <div class="role-selector" ng-if="!vm.editingUser" style="margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 8px;">
+                        <div class="role-option" ng-class="{'active': vm.newUser.role === 'Patient'}" ng-click="vm.newUser.role = 'Patient'">
+                            <i class="fas fa-user"></i><span>مريض</span>
+                        </div>
+                        <div class="role-option" ng-class="{'active': vm.newUser.role === 'Doctor'}" ng-click="vm.newUser.role = 'Doctor'">
+                            <i class="fas fa-user-md"></i><span>طبيب</span>
+                        </div>
+                        <div class="role-option" ng-class="{'active': vm.newUser.role === 'Admin'}" ng-click="vm.newUser.role = 'Admin'">
+                            <i class="fas fa-user-shield"></i><span>مدير</span>
+                        </div>
+                        <div class="role-option" ng-class="{'active': vm.newUser.role === 'Accountant'}" ng-click="vm.newUser.role = 'Accountant'">
+                            <i class="fas fa-calculator"></i><span>محاسب</span>
+                        </div>
+                        <div class="role-option" ng-class="{'active': vm.newUser.role === 'Pharmacist'}" ng-click="vm.newUser.role = 'Pharmacist'">
+                            <i class="fas fa-pills"></i><span>صيدلاني</span>
+                        </div>
+                        <div class="role-option" ng-class="{'active': vm.newUser.role === 'LabTechnician'}" ng-click="vm.newUser.role = 'LabTechnician'">
+                            <i class="fas fa-flask"></i><span>فني مختبرات</span>
+                        </div>
+                        <div class="role-option" ng-class="{'active': vm.newUser.role === 'Radiologist'}" ng-click="vm.newUser.role = 'Radiologist'">
+                            <i class="fas fa-x-ray"></i><span>أخصائي أشعة</span>
+                        </div>
+                        <div class="role-option" ng-class="{'active': vm.newUser.role === 'Receptionist'}" ng-click="vm.newUser.role = 'Receptionist'">
+                            <i class="fas fa-user-tie"></i><span>موظف استقبال</span>
+                        </div>
+                        <div class="role-option" ng-class="{'active': vm.newUser.role === 'Cashier'}" ng-click="vm.newUser.role = 'Cashier'">
+                            <i class="fas fa-cash-register"></i><span>كاشير</span>
+                        </div>
+                        <div class="role-option" ng-class="{'active': vm.newUser.role === 'WarehouseKeeper'}" ng-click="vm.newUser.role = 'WarehouseKeeper'">
+                            <i class="fas fa-warehouse"></i><span>أمين مخزن</span>
+                        </div>
+                    </div>
+
+                    <!-- Cashier Treasury Assignment -->
+                    <div class="form-group" ng-if="vm.newUser.role === 'Cashier'">
+                        <label>الخزينة المخصصة للكاشير</label>
+                        <select class="form-control" ng-model="vm.newUser.assignedTreasuryID" required style="appearance: auto;">
+                            <option value="">-- اختر الخزينة --</option>
+                            <option ng-repeat="treasury in vm.treasuries" ng-if="treasury.isActive" value="{{ treasury.treasuryID }}">{{ treasury.treasuryCode }} — {{ treasury.treasuryNameAr }}</option>
+                        </select>
+                        <small style="color: #888;">سيتمكن الكاشير من إنشاء سندات قبض/صرف على هذه الخزينة فقط.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>الاسم الكامل</label>
+                        <input type="text" class="form-control" ng-model="vm.newUser.fullName" required placeholder="أدخل الاسم الكامل">
+                    </div>
+                    <div class="form-group">
+                        <label>البريد الإلكتروني</label>
+                        <input type="email" class="form-control" ng-model="vm.newUser.email" required placeholder="example@clinic.com">
+                    </div>
+                    <div style="display: flex; gap: 12px;">
+                        <div class="form-group" style="flex: 1;">
+                            <label>الهاتف</label>
+                            <input type="tel" class="form-control" ng-model="vm.newUser.phone" placeholder="09XXXXXXXX">
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label>كلمة المرور {{vm.editingUser ? '(اتركها فارغة إذا لم تُرِد تغييرها)' : ''}}</label>
+                            <input type="password" class="form-control" ng-model="vm.newUser.password" ng-required="!vm.editingUser" placeholder="••••••••">
+                        </div>
+                    </div>
+
+                    <!-- Doctor Fields -->
+                    <div ng-if="vm.newUser.role === 'Doctor'">
+                        <div class="form-group">
+                            <label>التخصص الطبي</label>
+                            <select class="form-control" ng-model="vm.newUser.specialty" required style="appearance: auto;">
+                                <option value="">-- اختر التخصص الطبي --</option>
+                                <optgroup label="الطب العام والباطنة">
+                                    <option value="طب عام">طب عام</option>
+                                    <option value="طب باطني">طب باطني</option>
+                                    <option value="طب أسرة">طب أسرة</option>
+                                </optgroup>
+                                <optgroup label="الطب النفسي والعصبي">
+                                    <option value="الطب النفسي">الطب النفسي</option>
+                                    <option value="طب نفسي أطفال ومراهقين">طب نفسي أطفال ومراهقين</option>
+                                    <option value="طب الأعصاب">طب الأعصاب</option>
+                                </optgroup>
+                                <optgroup label="الجراحة">
+                                    <option value="جراحة عامة">جراحة عامة</option>
+                                    <option value="جراحة عظام">جراحة عظام</option>
+                                    <option value="جراحة قلب">جراحة قلب</option>
+                                    <option value="جراحة مخ وأعصاب">جراحة مخ وأعصاب</option>
+                                    <option value="جراحة تجميل">جراحة تجميل</option>
+                                </optgroup>
+                                <optgroup label="تخصصات أخرى">
+                                    <option value="طب أطفال">طب أطفال</option>
+                                    <option value="طب القلب">طب القلب</option>
+                                    <option value="طب الصدرية">طب الصدرية</option>
+                                    <option value="طب العيون">طب العيون</option>
+                                    <option value="طب الأنف والأذن والحنجرة">طب الأنف والأذن والحنجرة</option>
+                                    <option value="طب الجلدية">طب الجلدية</option>
+                                    <option value="طب المسالك البولية">طب المسالك البولية</option>
+                                    <option value="طب النساء والتوليد">طب النساء والتوليد</option>
+                                    <option value="طب العظام">طب العظام</option>
+                                    <option value="طب الأسنان">طب الأسنان</option>
+                                    <option value="طب الطوارئ">طب الطوارئ</option>
+                                    <option value="الأشعة التشخيصية">الأشعة التشخيصية</option>
+                                    <option value="التخدير والعناية المركزة">التخدير والعناية المركزة</option>
+                                    <option value="الأورام">الأورام</option>
+                                    <option value="الغدد الصماء والسكري">الغدد الصماء والسكري</option>
+                                    <option value="أمراض الكلى">أمراض الكلى</option>
+                                    <option value="أمراض الدم">أمراض الدم</option>
+                                    <option value="الطب الطبيعي والتأهيل">الطب الطبيعي والتأهيل</option>
+                                    <option value="التغذية العلاجية">التغذية العلاجية</option>
+                                    <option value="أخرى">أخرى</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                        <div style="display: flex; gap: 12px;">
+                            <div class="form-group" style="flex: 1;">
+                                <label>رقم الترخيص</label>
+                                <input type="text" class="form-control" ng-model="vm.newUser.licenseNumber" placeholder="مثال: LIC-10293">
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label>سعر الكشف (د.ل)</label>
+                                <input type="number" step="0.01" class="form-control" ng-model="vm.newUser.consultationFee" placeholder="مثال: 50">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Patient Fields -->
+                    <div ng-if="vm.newUser.role === 'Patient'">
+                        <div style="display: flex; gap: 12px;">
+                            <div class="form-group" style="flex: 1;">
+                                <label>فصيلة الدم</label>
+                                <select class="form-control" ng-model="vm.newUser.bloodType">
+                                    <option value="">اختر</option>
+                                    <option ng-repeat="bt in ['A+','A-','B+','B-','AB+','AB-','O+','O-']" value="{{bt}}">{{bt}}</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label>الجنس</label>
+                                <select class="form-control" ng-model="vm.newUser.gender">
+                                    <option value="">اختر</option>
+                                    <option value="ذكر">ذكر</option>
+                                    <option value="أنثى">أنثى</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" ng-click="vm.saveUser()" ng-disabled="vm.saving">
+                    <span ng-if="!vm.saving"><i class="fas fa-save"></i> حفظ</span>
+                    <span ng-if="vm.saving"><span class="spinner"></span> جاري الحفظ...</span>
+                </button>
+                <button class="btn btn-secondary" ng-click="vm.showAddModal = false">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal-overlay" ng-if="vm.showDeleteModal" ng-click="vm.showDeleteModal = false">
+        <div class="modal-content" style="max-width: 420px;" ng-click="$event.stopPropagation()">
+            <div class="modal-body" style="text-align: center; padding: 32px;">
+                <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: var(--priority-emergency); margin-bottom: 16px;"></i>
+                <h4 style="margin-bottom: 8px;">تأكيد الحذف</h4>
+                <p style="color: var(--text-secondary);">هل أنت متأكد من حذف المستخدم <strong>{{vm.selectedUser.fullName}}</strong>؟</p>
+            </div>
+            <div class="modal-footer" style="justify-content: center;">
+                <button class="btn btn-danger" ng-click="vm.confirmDelete()"><i class="fas fa-trash"></i> حذف</button>
+                <button class="btn btn-secondary" ng-click="vm.showDeleteModal = false">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Comprehensive Medical ID Card Modal (الملف التعريفي الشامل) -->
+    <div class="modal-overlay" ng-if="vm.showProfileModal" ng-click="vm.showProfileModal = false">
+        <div class="modal-content" style="max-width: 580px; border-radius: 16px;" ng-click="$event.stopPropagation()">
+            <div class="modal-header" style="background: linear-gradient(135deg, #0077b6, #00b4d8); color: white; border-radius: 16px 16px 0 0; padding: 20px;">
+                <div style="display: flex; align-items: center; gap: 14px;">
+                    <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: bold; border: 2px solid white;">
+                        {{vm.selectedProfileUser.fullName.charAt(0)}}
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; color: white;">{{vm.selectedProfileUser.fullName}}</h3>
+                        <div style="font-size: 0.85rem; opacity: 0.9;">
+                            <span class="badge" style="background: white; color: #0077b6; font-weight: bold; margin-left: 6px;">{{vm.getRoleAr(vm.selectedProfileUser.role)}}</span>
+                            <span>#ID-{{vm.selectedProfileUser.userID}}</span>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn-icon" style="background: none; border: none; font-size: 1.3rem; color: white; cursor: pointer;" ng-click="vm.showProfileModal = false"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div class="modal-body" style="padding: 24px;">
+                <!-- General Account Information -->
+                <div style="background: rgba(0,119,182,0.04); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+                    <h5 style="margin-bottom: 12px; color: var(--primary);"><i class="fas fa-user-circle me-1"></i> المعلومات الأساسية للحساب</h5>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.9rem;">
+                        <div><strong>البريد الإلكتروني:</strong> {{vm.selectedProfileUser.email}}</div>
+                        <div><strong>رقم الهاتف:</strong> {{vm.selectedProfileUser.phone || 'غير مسجل'}}</div>
+                        <div><strong>حالة الحساب:</strong> 
+                            <span class="badge" ng-class="vm.selectedProfileUser.isActive ? 'badge-success' : 'badge-warning'">
+                                {{vm.selectedProfileUser.isActive ? 'نشط ومفعل' : 'معطل'}}
+                            </span>
+                        </div>
+                        <div><strong>تاريخ الانضمام:</strong> {{vm.selectedProfileUser.createdAt ? (vm.selectedProfileUser.createdAt | date:'yyyy/MM/dd') : 'غير متوفر'}}</div>
+                    </div>
+                </div>
+
+                <!-- Role Specific Extended Details: Doctor -->
+                <div ng-if="vm.selectedProfileUser.role === 'Doctor'" style="background: rgba(45,198,83,0.05); border: 1px solid rgba(45,198,83,0.2); border-radius: 12px; padding: 16px;">
+                    <h5 style="margin-bottom: 12px; color: #2DC653;"><i class="fas fa-user-md me-1"></i> البيانات المهنية والعيادية للطبيب</h5>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.9rem;">
+                        <div><strong>التخصص الطبي:</strong> {{vm.selectedProfileUser.specialty || (vm.selectedProfileUser.doctorProfile ? vm.selectedProfileUser.doctorProfile.specialty : 'عام')}}</div>
+                        <div><strong>رقم الترخيص:</strong> {{vm.selectedProfileUser.licenseNumber || (vm.selectedProfileUser.doctorProfile ? vm.selectedProfileUser.doctorProfile.licenseNumber : 'غير مسجل')}}</div>
+                        <div><strong>سعر الكشفية:</strong> <strong style="color: #2DC653;">{{vm.selectedProfileUser.consultationFee || (vm.selectedProfileUser.doctorProfile ? vm.selectedProfileUser.doctorProfile.consultationFee : 0)}} د.ل</strong></div>
+                        <div><strong>مدة الكشف:</strong> {{vm.selectedProfileUser.doctorProfile ? vm.selectedProfileUser.doctorProfile.consultationDurationMinutes : 30}} دقيقة</div>
+                    </div>
+                </div>
+
+                <!-- Role Specific Extended Details: Patient -->
+                <div ng-if="vm.selectedProfileUser.role === 'Patient'" style="background: rgba(67,97,238,0.05); border: 1px solid rgba(67,97,238,0.2); border-radius: 12px; padding: 16px;">
+                    <h5 style="margin-bottom: 12px; color: #4361ee;"><i class="fas fa-notes-medical me-1"></i> الملف الطبي الحيوي للمريض</h5>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.9rem;">
+                        <div><strong>فصيلة الدم:</strong> <span class="badge badge-danger">{{vm.selectedProfileUser.bloodType || (vm.selectedProfileUser.patientProfile ? vm.selectedProfileUser.patientProfile.bloodType : 'غير محدد')}}</span></div>
+                        <div><strong>الجنس:</strong> {{vm.selectedProfileUser.gender || (vm.selectedProfileUser.patientProfile ? vm.selectedProfileUser.patientProfile.gender : 'غير محدد')}}</div>
+                        <div><strong>تاريخ الميلاد:</strong> {{vm.selectedProfileUser.dateOfBirth ? (vm.selectedProfileUser.dateOfBirth | date:'yyyy/MM/dd') : (vm.selectedProfileUser.patientProfile && vm.selectedProfileUser.patientProfile.dateOfBirth ? (vm.selectedProfileUser.patientProfile.dateOfBirth | date:'yyyy/MM/dd') : 'غير محدد')}}</div>
+                        <div ng-if="$root.facilityMode === 'Psychiatric' || $root.facilityMode === 'Hybrid'"><strong>مستوى الخطورة:</strong> 
+                            <span class="badge" ng-class="{'badge-success': (vm.selectedProfileUser.riskLevel === 'Stable' || (vm.selectedProfileUser.patientProfile && vm.selectedProfileUser.patientProfile.riskLevel === 'Stable')), 'badge-warning': (vm.selectedProfileUser.riskLevel === 'Monitoring' || (vm.selectedProfileUser.patientProfile && vm.selectedProfileUser.patientProfile.riskLevel === 'Monitoring')), 'badge-danger': (vm.selectedProfileUser.riskLevel === 'Critical' || (vm.selectedProfileUser.patientProfile && vm.selectedProfileUser.patientProfile.riskLevel === 'Critical'))}">
+                                {{(vm.selectedProfileUser.riskLevel === 'Stable' || (vm.selectedProfileUser.patientProfile && vm.selectedProfileUser.patientProfile.riskLevel === 'Stable')) ? 'مستقر 🟢' : ((vm.selectedProfileUser.riskLevel === 'Critical' || (vm.selectedProfileUser.patientProfile && vm.selectedProfileUser.patientProfile.riskLevel === 'Critical')) ? 'حرج 🔴' : 'مستقر 🟢')}}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Role Specific Extended Details: Pharmacist / Lab / Radiology / Admin -->
+                <div ng-if="vm.selectedProfileUser.role !== 'Doctor' && vm.selectedProfileUser.role !== 'Patient'" style="background: rgba(255,159,28,0.05); border: 1px solid rgba(255,159,28,0.2); border-radius: 12px; padding: 16px;">
+                    <h5 style="margin-bottom: 12px; color: #FF9F1C;"><i class="fas fa-shield-alt me-1"></i> الصلاحيات ومحطة العمل</h5>
+                    <div style="font-size: 0.9rem;">
+                        <div><strong>الدور الوظيفي بالمنظومة:</strong> {{vm.getRoleAr(vm.selectedProfileUser.role)}}</div>
+                        <div style="margin-top: 6px; color: #666;">يمتلك هذا الحساب كافة الصلاحيات التشغيلية الخاصة بمحطة عمله بالعيادة.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer" style="padding: 16px 24px;">
+                <button class="btn btn-secondary" ng-click="vm.showProfileModal = false">إغلاق</button>
+            </div>
+        </div>
+    </div>
+</div>

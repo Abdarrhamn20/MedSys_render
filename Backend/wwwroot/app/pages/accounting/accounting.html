@@ -1,0 +1,563 @@
+<div class="accounting-page">
+
+    <style>
+        .acc-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 25px; }
+        .acc-stat-card { background: var(--bg-card, #fff); padding: 20px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.03); position: relative; overflow: hidden; }
+        .acc-stat-card::before { content: ''; position: absolute; top: 0; right: 0; width: 5px; height: 100%; background: var(--stat-color, #4361ee); }
+        .acc-stat-card h3 { font-size: 0.82rem; color: var(--text-muted, #888); margin: 0 0 8px 0; font-weight: 600; }
+        .acc-stat-value { font-size: 1.5rem; font-weight: 700; color: var(--text-primary, #333); margin: 0; }
+        .acc-filter-bar { display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; margin-bottom: 20px; }
+        .acc-filter-bar label { display: block; font-size: 0.8rem; font-weight: bold; color: var(--text-secondary, #555); margin-bottom: 6px; }
+        .acc-filter-bar select, .acc-filter-bar input { padding: 10px; border-radius: 8px; border: 1px solid var(--border-color, #ddd); background: var(--bg-primary, #fff); color: var(--text-primary, #333); font-family: 'Cairo'; outline: none; }
+        .acc-card { background: var(--bg-card, #fff); border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.03); overflow: hidden; }
+        .acc-card-header { display: flex; justify-content: space-between; align-items: center; padding: 18px 22px; border-bottom: 2px solid rgba(0,0,0,0.05); }
+        .acc-card-header h2 { font-size: 1.05rem; margin: 0; color: var(--text-primary, #333); font-weight: 700; }
+        .acc-table-wrap { overflow-x: auto; }
+        .acc-table { width: 100%; border-collapse: collapse; text-align: right; }
+        .acc-table thead tr { border-bottom: 2px solid rgba(0,0,0,0.05); background: #f8f9fa; }
+        .acc-table th { padding: 14px; font-weight: 700; color: #555; white-space: nowrap; }
+        .acc-table td { padding: 13px 14px; color: #333; border-bottom: 1px solid rgba(0,0,0,0.03); }
+        .acc-table tbody tr:hover { background: rgba(67, 97, 238, 0.03); }
+        .acc-tag { padding: 4px 12px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; white-space: nowrap; }
+        .acc-tag-acc { background: #4361ee; color: #fff; }
+        .acc-tag-balance { background: rgba(67, 97, 238, 0.1); color: #4361ee; }
+        .acc-tag-card { background: rgba(46, 196, 182, 0.1); color: #2ec4b6; }
+        .acc-tag-danger { background: rgba(230, 57, 70, 0.1); color: #e63946; }
+        .acc-tag-warn { background: rgba(255, 159, 28, 0.1); color: #ff9f1c; }
+        .acc-tag-silver { background: rgba(136, 136, 136, 0.12); color: #666; }
+        .acc-empty { padding: 40px; text-align: center; color: #888; font-family: 'Cairo'; }
+        .acc-btn { padding: 10px 18px; border-radius: 8px; font-family: 'Cairo'; font-weight: bold; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; font-size: 0.85rem; }
+        .acc-btn-primary { background: #4361ee; color: #fff; }
+        .acc-btn-success { background: #2ec4b6; color: #fff; }
+        .acc-btn-danger { background: #e63946; color: #fff; }
+        .acc-btn-light { background: #f1f3f9; color: #555; }
+        .acc-btn[disabled] { opacity: 0.6; cursor: not-allowed; }
+        .acc-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 20px; }
+        .acc-modal { background: var(--bg-card, #fff); border-radius: 16px; width: 100%; max-width: 720px; max-height: 92vh; overflow-y: auto; box-shadow: 0 25px 60px rgba(0,0,0,0.25); }
+        .acc-modal-header { display: flex; justify-content: space-between; align-items: center; padding: 18px 22px; border-bottom: 2px solid rgba(0,0,0,0.05); position: sticky; top: 0; background: var(--bg-card, #fff); z-index: 2; }
+        .acc-modal-header h2 { font-size: 1.05rem; margin: 0; }
+        .acc-modal-body { padding: 22px; }
+        .acc-modal-footer { padding: 16px 22px; border-top: 2px solid rgba(0,0,0,0.05); display: flex; justify-content: flex-end; gap: 10px; }
+        .acc-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .acc-form-grid .full { grid-column: 1 / -1; }
+        .acc-field label { display: block; font-size: 0.8rem; font-weight: bold; color: var(--text-secondary, #555); margin-bottom: 6px; }
+        .acc-field input, .acc-field select, .acc-field textarea { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color, #ddd); background: var(--bg-primary, #fff); color: var(--text-primary, #333); font-family: 'Cairo'; outline: none; box-sizing: border-box; }
+        .acc-badge { padding: 4px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; }
+        .acc-badge-draft { background: rgba(255, 159, 28, 0.12); color: #b57e12; }
+        .acc-badge-posted { background: rgba(45, 198, 83, 0.12); color: #1f9d55; }
+        .acc-badge-reversed { background: rgba(230, 57, 70, 0.12); color: #c0392b; }
+        .acc-tree-node { display: flex; align-items: center; gap: 8px; }
+        .acc-pagination { display: flex; justify-content: space-between; align-items: center; padding: 15px 22px; border-top: 2px solid rgba(0,0,0,0.05); color: #666; font-size: 0.85rem; }
+        @media (max-width: 600px) { .acc-form-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 768px) {
+            .acc-stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 18px; }
+            .acc-stat-card { padding: 12px; border-radius: 12px; }
+            .acc-stat-card h3 { font-size: 0.68rem; margin-bottom: 5px; }
+            .acc-stat-value { font-size: 1.1rem; }
+            .acc-stat-value small { font-size: 0.65rem; }
+            .acc-filter-bar { gap: 10px; }
+            .acc-filter-bar select, .acc-filter-bar input { width: 100%; }
+            .acc-filter-bar > div { flex: 1 1 100%; }
+            .acc-card-header { padding: 14px 16px; }
+            .acc-card-header h2 { font-size: 0.9rem; }
+            .acc-modal { max-height: 88vh; }
+            .acc-modal-header, .acc-modal-body { padding: 16px; }
+            .acc-modal-footer { padding: 14px 16px; }
+            .acc-table th { padding: 10px 8px; font-size: 0.75rem; }
+            .acc-table td { padding: 10px 8px; font-size: 0.8rem; }
+        }
+    </style>
+
+    <!-- Summary Cards (Admin) -->
+    <div class="acc-stats-grid no-print" ng-if="vm.isAdmin && vm.summary">
+        <div class="acc-stat-card" style="--stat-color: #2ec4b6; --stat-bg: rgba(46,196,182,0.1);">
+            <h3>إجمالي الإيرادات المرحّلة</h3>
+            <p class="acc-stat-value">{{ vm.summary.revenue | number: 2 }} <small style="font-size: 0.8rem;">د.ل</small></p>
+        </div>
+        <div class="acc-stat-card" style="--stat-color: #e63946; --stat-bg: rgba(230,57,70,0.1);">
+            <h3>إجمالي المصروفات المرحّلة</h3>
+            <p class="acc-stat-value">{{ vm.summary.expenses | number: 2 }} <small style="font-size: 0.8rem;">د.ل</small></p>
+        </div>
+        <div class="acc-stat-card" style="--stat-color: #4361ee; --stat-bg: rgba(67,97,238,0.1);">
+            <h3>صافي النتيجة</h3>
+            <p class="acc-stat-value" ng-style="vm.summary.net < 0 ? {'color':'#e63946'} : {'color':'#2ec4b6'}">{{ vm.summary.net | number: 2 }} <small style="font-size: 0.8rem;">د.ل</small></p>
+        </div>
+        <div class="acc-stat-card" style="--stat-color: #ff9f1c; --stat-bg: rgba(255,159,28,0.1);">
+            <h3>رصيد الصندوق (1010)</h3>
+            <p class="acc-stat-value">{{ vm.summary.cashBalance | number: 2 }} <small style="font-size: 0.8rem;">د.ل</small></p>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="card-tabs-header no-print" style="margin-bottom: 25px; display: flex; gap: 6px; border-bottom: 2px solid rgba(0,0,0,0.05); padding-bottom: 8px; flex-wrap: wrap; overflow-x: auto;">
+        <button class="tab-btn" ng-class="{'active': vm.activeTab === 'chart'}" ng-click="vm.setTab('chart')" style="font-family: 'Cairo'; padding: 9px 14px; border: none; background: none; font-weight: bold; cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; font-size: 0.85rem;" ng-style="vm.activeTab === 'chart' ? {'border-color': '#4361ee', 'color': '#4361ee'} : {'color': '#666'}">
+            <i class="fas fa-sitemap" style="margin-left: 6px;"></i>شجرة الحسابات
+        </button>
+        <button class="tab-btn" ng-class="{'active': vm.activeTab === 'entries'}" ng-click="vm.setTab('entries')" style="font-family: 'Cairo'; padding: 9px 14px; border: none; background: none; font-weight: bold; cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; font-size: 0.85rem;" ng-style="vm.activeTab === 'entries' ? {'border-color': '#4361ee', 'color': '#4361ee'} : {'color': '#666'}">
+            <i class="fas fa-book" style="margin-left: 6px;"></i>القيود
+        </button>
+        <button class="tab-btn" ng-class="{'active': vm.activeTab === 'ledger'}" ng-click="vm.setTab('ledger')" style="font-family: 'Cairo'; padding: 9px 14px; border: none; background: none; font-weight: bold; cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; font-size: 0.85rem;" ng-style="vm.activeTab === 'ledger' ? {'border-color': '#4361ee', 'color': '#4361ee'} : {'color': '#666'}">
+            <i class="fas fa-columns" style="margin-left: 6px;"></i>كشف الحساب
+        </button>
+        <button class="tab-btn" ng-class="{'active': vm.activeTab === 'trial'}" ng-click="vm.setTab('trial')" style="font-family: 'Cairo'; padding: 9px 14px; border: none; background: none; font-weight: bold; cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; font-size: 0.85rem;" ng-style="vm.activeTab === 'trial' ? {'border-color': '#4361ee', 'color': '#4361ee'} : {'color': '#666'}">
+            <i class="fas fa-scale-balanced" style="margin-left: 6px;"></i>ميزان المراجعة
+        </button>
+    </div>
+
+    <!-- ==================== CHART OF ACCOUNTS ==================== -->
+    <div class="tab-content" ng-if="vm.activeTab === 'chart'">
+        <div class="acc-filter-bar">
+            <div style="flex-grow: 1;"></div>
+            <button class="acc-btn acc-btn-primary" ng-if="vm.isAdmin" ng-click="vm.openAccountModal(null)">
+                <i class="fas fa-plus"></i>حساب جديد
+            </button>
+            <button class="acc-btn acc-btn-light" ng-click="vm.loadChart()">
+                <i class="fas fa-sync"></i>تحديث
+            </button>
+        </div>
+
+        <div class="acc-card">
+            <div class="acc-card-header">
+                <h2><i class="fas fa-sitemap" style="margin-left: 8px; color: #4361ee;"></i>شجرة الحسابات (المخطط المحاسبي)</h2>
+            </div>
+            <div class="acc-table-wrap">
+                <table class="acc-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;"></th>
+                            <th>الرقم</th>
+                            <th>اسم الحساب</th>
+                            <th>النوع</th>
+                            <th>الرصيد الافتتاحي</th>
+                            <th>الحالة</th>
+                            <th ng-if="vm.isAdmin">إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="account in vm.chartRows">
+                            <td>
+                                <button ng-if="account.hasChildren" class="acc-btn acc-btn-light" style="padding: 4px 8px; font-size: 0.7rem;" ng-click="vm.toggleExpand(account.accountCode)">
+                                    <i class="fas" ng-class="account.expanded ? 'fa-chevron-down' : 'fa-chevron-left'"></i>
+                                </button>
+                                <span ng-if="!account.hasChildren" style="display: inline-block; width: 30px;"></span>
+                            </td>
+                            <td style="font-weight: 700; color: #4361ee; padding-right: {{ account.depth * 24 }}px;">{{ account.accountCode }}</td>
+                            <td style="font-weight: 600;">{{ account.accountNameAr }}</td>
+                            <td><span class="acc-tag acc-tag-silver">{{ vm.accountTypeAr(account.accountType) }}</span></td>
+                            <td>{{ account.openingBalance | number: 2 }} د.ل</td>
+                            <td>
+                                <span class="acc-tag" ng-class="account.isActive ? 'acc-tag-card' : 'acc-tag-danger'">{{ account.isActive ? 'مفعّل' : 'موقوف' }}</span>
+                            </td>
+                            <td ng-if="vm.isAdmin">
+                                <button class="acc-btn acc-btn-light" style="padding: 5px 10px; font-size: 0.75rem;" ng-click="vm.openAccountModal(account)">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr ng-if="!vm.chartRows || vm.chartRows.length === 0">
+                            <td colspan="7">
+                                <div class="acc-empty"><i class="fas fa-inbox" style="font-size: 2rem; margin-bottom: 10px; display: block; color: #ccc;"></i>لا توجد حسابات</div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== JOURNAL ENTRIES ==================== -->
+    <div class="tab-content" ng-if="vm.activeTab === 'entries'">
+        <div class="acc-filter-bar">
+            <div>
+                <label>الحالة</label>
+                <select ng-model="vm.filterStatus" ng-change="vm.applyEntryFilters()">
+                    <option value="">كل الحالات</option>
+                    <option value="Draft">مسودة</option>
+                    <option value="Posted">مرحّل</option>
+                    <option value="Reversed">عكسي</option>
+                </select>
+            </div>
+            <div>
+                <label>من تاريخ</label>
+                <input type="date" ng-model="vm.filterFrom" ng-change="vm.applyEntryFilters()">
+            </div>
+            <div>
+                <label>إلى تاريخ</label>
+                <input type="date" ng-model="vm.filterTo" ng-change="vm.applyEntryFilters()">
+            </div>
+            <button class="acc-btn acc-btn-primary" ng-if="vm.isAdmin" ng-click="vm.openEntryModal()">
+                <i class="fas fa-plus"></i>قيد جديد
+            </button>
+            <button class="acc-btn acc-btn-light" ng-click="vm.loadEntries()">
+                <i class="fas fa-sync" ng-class="{'fa-spin': vm.entriesLoading}"></i>تحديث
+            </button>
+        </div>
+
+        <div class="acc-card">
+            <div class="acc-card-header">
+                <h2><i class="fas fa-book" style="margin-left: 8px; color: #4361ee;"></i>سجل القيود المحاسبية</h2>
+            </div>
+            <div class="acc-table-wrap">
+                <table class="acc-table">
+                    <thead>
+                        <tr>
+                            <th>رقم القيد</th>
+                            <th>التاريخ</th>
+                            <th>البيان</th>
+                            <th>المصدر</th>
+                            <th>المبلغ</th>
+                            <th>الحالة</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="entry in vm.entries">
+                            <td style="font-weight: 700; color: #4361ee;">{{ entry.entryNumber }}</td>
+                            <td style="color: #666; font-size: 0.85rem;">{{ entry.entryDate | date: 'yyyy/MM/dd' }}</td>
+                            <td>{{ entry.description }}</td>
+                            <td>
+                                <span class="acc-tag acc-tag-silver" ng-if="entry.sourceModule === 'Manual'">يدوي</span>
+                                <span class="acc-tag acc-tag-card" ng-if="entry.sourceModule !== 'Manual'">{{ entry.sourceModule }}</span>
+                            </td>
+                            <td style="font-weight: 700;">{{ entry.totalDebit | number: 2 }} د.ل</td>
+                            <td>
+                                <span class="acc-badge" ng-class="entry.status === 'Posted' ? 'acc-badge-posted' : (entry.status === 'Reversed' ? 'acc-badge-reversed' : 'acc-badge-draft')">
+                                    {{ entry.status === 'Posted' ? 'مرحّل' : (entry.status === 'Reversed' ? 'عكسي' : 'مسودة') }}
+                                </span>
+                            </td>
+                            <td>
+                                <button class="acc-btn acc-btn-light" style="padding: 5px 10px; font-size: 0.75rem;" ng-click="vm.openEntryDetail(entry)">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr ng-if="!vm.entries || vm.entries.length === 0">
+                            <td colspan="7">
+                                <div class="acc-empty"><i class="fas fa-receipt" style="font-size: 2rem; margin-bottom: 10px; display: block; color: #ccc;"></i>لا توجد قيود محاسبية</div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="acc-pagination no-print">
+                <span>إجمالي الصفحات: {{ vm.totalPages }}</span>
+                <span>
+                    <button class="acc-btn acc-btn-light" style="padding: 6px 12px;" ng-click="vm.pageChange(-1)" ng-disabled="vm.page <= 1"><i class="fas fa-chevron-right"></i> السابق</button>
+                    <span style="margin: 0 12px;">صفحة {{ vm.page }}</span>
+                    <button class="acc-btn acc-btn-light" style="padding: 6px 12px;" ng-click="vm.pageChange(1)" ng-disabled="vm.page >= vm.totalPages">التالي <i class="fas fa-chevron-left"></i></button>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== LEDGER (كشف حساب) ==================== -->
+    <div class="tab-content" ng-if="vm.activeTab === 'ledger'">
+        <div class="acc-filter-bar">
+            <div style="min-width: 220px;">
+                <label>الحساب</label>
+                <select id="ledgerAccountSel" ng-model="vm.ledgerAccountID">
+                    <option ng-repeat="acc in vm.flatAccounts" value="{{ acc.accountID }}">{{ acc.accountCode }} — {{ acc.accountNameAr }}</option>
+                </select>
+            </div>
+            <div>
+                <label>من تاريخ</label>
+                <input type="date" ng-model="vm.ledgerFrom">
+            </div>
+            <div>
+                <label>إلى تاريخ</label>
+                <input type="date" ng-model="vm.ledgerTo">
+            </div>
+            <button class="acc-btn acc-btn-primary" ng-click="vm.loadLedger()">
+                <i class="fas fa-search"></i>عرض الكشف
+            </button>
+        </div>
+
+        <div class="acc-card" ng-if="vm.ledger">
+            <div class="acc-card-header">
+                <h2>
+                    <i class="fas fa-columns" style="margin-left: 8px; color: #4361ee;"></i>
+                    كشف حساب {{ vm.ledger.accountNameAr }} ({{ vm.ledger.accountCode }})
+                </h2>
+                <span class="acc-tag acc-tag-silver">{{ vm.accountTypeAr(vm.ledger.accountType) }}</span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; padding: 18px 22px; background: #f8f9fa; border-bottom: 2px solid rgba(0,0,0,0.05);">
+                <div><span style="color: #888; font-size: 0.8rem;">الرصيد الافتتاحي</span><br><strong>{{ vm.ledger.openingBalance | number: 2 }} د.ل</strong></div>
+                <div><span style="color: #888; font-size: 0.8rem;">إجمالي مدين</span><br><strong style="color: #e63946;">{{ vm.ledger.periodDebit | number: 2 }} د.ل</strong></div>
+                <div><span style="color: #888; font-size: 0.8rem;">إجمالي دائن</span><br><strong style="color: #2ec4b6;">{{ vm.ledger.periodCredit | number: 2 }} د.ل</strong></div>
+                <div><span style="color: #888; font-size: 0.8rem;">الرصيد الختامي</span><br><strong style="color: #4361ee;">{{ vm.ledger.closingBalance | number: 2 }} د.ل</strong></div>
+            </div>
+            <div class="acc-table-wrap">
+                <table class="acc-table">
+                    <thead>
+                        <tr>
+                            <th>رقم القيد</th>
+                            <th>التاريخ</th>
+                            <th>البيان</th>
+                            <th>مدين</th>
+                            <th>دائن</th>
+                            <th>الرصيد</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="line in vm.ledger.lines">
+                            <td style="font-weight: 700; color: #4361ee;">{{ line.entryNumber }}</td>
+                            <td style="color: #666; font-size: 0.85rem;">{{ line.entryDate | date: 'yyyy/MM/dd' }}</td>
+                            <td>{{ line.description }}</td>
+                            <td style="color: #e63946; font-weight: 600;">{{ line.debit > 0 ? (line.debit | number: 2) : '-' }}</td>
+                            <td style="color: #2ec4b6; font-weight: 600;">{{ line.credit > 0 ? (line.credit | number: 2) : '-' }}</td>
+                            <td style="font-weight: 700; color: #4361ee;">{{ line.balance | number: 2 }}</td>
+                        </tr>
+                        <tr ng-if="!vm.ledger.lines || vm.ledger.lines.length === 0">
+                            <td colspan="6">
+                                <div class="acc-empty"><i class="fas fa-info-circle" style="font-size: 2rem; margin-bottom: 10px; display: block; color: #ccc;"></i>لا توجد حركات في الفترة المحددة</div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== TRIAL BALANCE ==================== -->
+    <div class="tab-content" ng-if="vm.activeTab === 'trial'">
+        <div class="acc-filter-bar">
+            <div>
+                <label>حتى تاريخ</label>
+                <input type="date" ng-model="vm.trialAsOf">
+            </div>
+            <button class="acc-btn acc-btn-primary" ng-click="vm.loadTrialBalance()">
+                <i class="fas fa-sync" ng-class="{'fa-spin': vm.trialLoading}"></i>عرض
+            </button>
+        </div>
+
+        <div class="acc-card" ng-if="vm.trial">
+            <div class="acc-card-header">
+                <h2><i class="fas fa-scale-balanced" style="margin-left: 8px; color: #4361ee;"></i>ميزان المراجعة</h2>
+            </div>
+            <div class="acc-table-wrap">
+                <table class="acc-table">
+                    <thead>
+                        <tr>
+                            <th>الرقم</th>
+                            <th>الحساب</th>
+                            <th>النوع</th>
+                            <th>مدين</th>
+                            <th>دائن</th>
+                            <th>الرصيد</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="acc in vm.trial.accounts">
+                            <td style="font-weight: 700; color: #4361ee;">{{ acc.accountCode }}</td>
+                            <td style="font-weight: 600;">{{ acc.accountNameAr }}</td>
+                            <td><span class="acc-tag acc-tag-silver">{{ vm.accountTypeAr(acc.accountType) }}</span></td>
+                            <td style="color: #e63946; font-weight: 600;">{{ acc.totalDebit > 0 ? (acc.totalDebit | number: 2) : '-' }}</td>
+                            <td style="color: #2ec4b6; font-weight: 600;">{{ acc.totalCredit > 0 ? (acc.totalCredit | number: 2) : '-' }}</td>
+                            <td style="font-weight: 700; color: #4361ee;">{{ acc.balance | number: 2 }}</td>
+                        </tr>
+                        <tr ng-if="!vm.trial.accounts || vm.trial.accounts.length === 0">
+                            <td colspan="6">
+                                <div class="acc-empty"><i class="fas fa-info-circle" style="font-size: 2rem; margin-bottom: 10px; display: block; color: #ccc;"></i>لا توجد حركات مرحّلة لعرضها</div>
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tfoot ng-if="vm.trial.accounts && vm.trial.accounts.length > 0">
+                        <tr style="border-top: 2px solid rgba(0,0,0,0.08); background: #f8f9fa; font-weight: 800;">
+                            <td colspan="3" style="padding: 14px; color: #333;">الإجمالي</td>
+                            <td style="padding: 14px; color: #e63946;">{{ vm.trial.totals.totalDebit | number: 2 }}</td>
+                            <td style="padding: 14px; color: #2ec4b6;">{{ vm.trial.totals.totalCredit | number: 2 }}</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== ACCOUNT MODAL ==================== -->
+    <div class="acc-modal-overlay" ng-if="vm.showAccountModal">
+        <div class="acc-modal">
+            <div class="acc-modal-header">
+                <h2>{{ vm.editingAccount ? 'تعديل حساب: ' + vm.editingAccount.accountNameAr : 'إنشاء حساب جديد' }}</h2>
+                <button class="acc-btn acc-btn-light" style="padding: 6px 12px;" ng-click="vm.closeAccountModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="acc-modal-body">
+                <div class="acc-form-grid">
+                    <div class="acc-field">
+                        <label>رقم الحساب *</label>
+                        <input ng-model="vm.accountForm.accountCode" placeholder="مثال: 5070">
+                    </div>
+                    <div class="acc-field">
+                        <label>نوع الحساب *</label>
+                        <select ng-model="vm.accountForm.accountType">
+                            <option value="Asset">أصل</option>
+                            <option value="Liability">خصم</option>
+                            <option value="Equity">حقوق ملكية</option>
+                            <option value="Revenue">إيراد</option>
+                            <option value="Expense">مصروف</option>
+                        </select>
+                    </div>
+                    <div class="acc-field">
+                        <label>اسم الحساب بالعربية *</label>
+                        <input ng-model="vm.accountForm.accountNameAr" placeholder="مثال: مصروف أدوات مكتبية">
+                    </div>
+                    <div class="acc-field">
+                        <label>اسم الحساب (إنجليزي)</label>
+                        <input ng-model="vm.accountForm.accountName" placeholder="اختياري">
+                    </div>
+                    <div class="acc-field">
+                        <label>الحساب الأب</label>
+                        <select ng-model="vm.accountForm.parentAccountID">
+                            <option value="">— بدون أب (حساب رئيسي) —</option>
+                            <option ng-repeat="acc in vm.flatAccounts" value="{{ acc.accountID }}" ng-if="vm.editingAccount !== null ? acc.accountID !== vm.editingAccount.accountID : true">{{ acc.accountCode }} — {{ acc.accountNameAr }}</option>
+                        </select>
+                    </div>
+                    <div class="acc-field">
+                        <label>الرصيد الافتتاحي (د.ل)</label>
+                        <input type="number" step="0.01" ng-model="vm.accountForm.openingBalance" min="0">
+                    </div>
+                    <div class="acc-field full">
+                        <label><input type="checkbox" ng-model="vm.accountForm.isActive" style="margin-left: 6px;"> الحساب مفعّل</label>
+                    </div>
+                </div>
+            </div>
+            <div class="acc-modal-footer">
+                <button class="acc-btn acc-btn-light" ng-click="vm.closeAccountModal()">إلغاء</button>
+                <button class="acc-btn acc-btn-primary" ng-click="vm.saveAccount()" ng-disabled="vm.savingAccount">
+                    <i class="fas fa-save"></i> {{ vm.savingAccount ? 'جارٍ الحفظ...' : 'حفظ' }}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== NEW ENTRY MODAL ==================== -->
+    <div class="acc-modal-overlay" ng-if="vm.showEntryModal">
+        <div class="acc-modal">
+            <div class="acc-modal-header">
+                <h2><i class="fas fa-book" style="margin-left: 8px; color: #4361ee;"></i>قيد محاسبي جديد</h2>
+                <button class="acc-btn acc-btn-light" style="padding: 6px 12px;" ng-click="vm.closeEntryModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="acc-modal-body">
+                <div class="acc-form-grid">
+                    <div class="acc-field">
+                        <label>تاريخ القيد *</label>
+                        <input type="date" ng-model="vm.entryForm.entryDate" ng-change="vm.recalcEntry()">
+                    </div>
+                    <div class="acc-field">
+                        <label>بيان القيد *</label>
+                        <input ng-model="vm.entryForm.description" placeholder="مثال: صرف رواتب شهر أغسطس">
+                    </div>
+                </div>
+
+                <div class="acc-card" style="margin-top: 18px;">
+                    <div class="acc-card-header">
+                        <h2 style="font-size: 0.95rem;">تفاصيل القيد (مدين / دائن)</h2>
+                        <button class="acc-btn acc-btn-light" style="padding: 6px 12px; font-size: 0.8rem;" ng-click="vm.addEntryLine()"><i class="fas fa-plus"></i> سطر</button>
+                    </div>
+                    <div class="acc-table-wrap">
+                        <table class="acc-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 30%;">الحساب</th>
+                                    <th>مدين</th>
+                                    <th>دائن</th>
+                                    <th>ملاحظات</th>
+                                    <th style="width: 40px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ng-repeat="line in vm.entryForm.lines">
+                                    <td>
+                                        <select ng-model="line.accountID" ng-change="vm.recalcEntry()" style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--border-color, #ddd); font-family: 'Cairo';">
+                                            <option value="">— اختر الحساب —</option>
+                                            <option ng-repeat="acc in vm.flatAccounts" value="{{ acc.accountID }}">{{ acc.accountCode }} — {{ acc.accountNameAr }}</option>
+                                        </select>
+                                    </td>
+                                    <td><input type="number" step="0.01" min="0" ng-model="line.debit" ng-change="vm.recalcEntry()" style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--border-color, #ddd); font-family: 'Cairo'; box-sizing: border-box;"></td>
+                                    <td><input type="number" step="0.01" min="0" ng-model="line.credit" ng-change="vm.recalcEntry()" style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--border-color, #ddd); font-family: 'Cairo'; box-sizing: border-box;"></td>
+                                    <td><input ng-model="line.notes" style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--border-color, #ddd); font-family: 'Cairo'; box-sizing: border-box;"></td>
+                                    <td>
+                                        <button class="acc-btn acc-btn-light" style="padding: 4px 8px; color: #e63946;" ng-click="vm.removeEntryLine($index)"><i class="fas fa-trash"></i></button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                            <tfoot>
+                                <tr style="border-top: 2px solid rgba(0,0,0,0.08); background: #f8f9fa; font-weight: 800;">
+                                    <td style="padding: 12px;">الإجمالي</td>
+                                    <td style="padding: 12px; color: #e63946;">{{ vm.entryTotalDebit | number: 2 }}</td>
+                                    <td style="padding: 12px; color: #2ec4b6;">{{ vm.entryTotalCredit | number: 2 }}</td>
+                                    <td colspan="2"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    <div ng-if="vm.entryTotalDebit !== vm.entryTotalCredit" style="padding: 10px 22px; background: rgba(230,57,70,0.06); color: #e63946; font-weight: 700; font-size: 0.85rem; border-top: 1px solid rgba(230,57,70,0.15);">
+                        <i class="fas fa-exclamation-triangle" style="margin-left: 6px;"></i>القيد غير متوازن — يجب أن يتساوى مجموع المدين مع الدائن
+                    </div>
+                </div>
+            </div>
+            <div class="acc-modal-footer">
+                <button class="acc-btn acc-btn-light" ng-click="vm.closeEntryModal()">إلغاء</button>
+                <button class="acc-btn acc-btn-primary" ng-click="vm.saveEntry()" ng-disabled="vm.savingEntry || vm.entryTotalDebit !== vm.entryTotalCredit || vm.entryTotalDebit <= 0">
+                    <i class="fas fa-save"></i> {{ vm.savingEntry ? 'جارٍ الحفظ...' : 'حفظ كمسودة' }}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== ENTRY DETAIL MODAL ==================== -->
+    <div class="acc-modal-overlay" ng-if="vm.showEntryDetail && vm.currentEntry">
+        <div class="acc-modal">
+            <div class="acc-modal-header">
+                <h2>قيد {{ vm.currentEntry.entryNumber }}</h2>
+                <button class="acc-btn acc-btn-light" style="padding: 6px 12px;" ng-click="vm.closeEntryDetail()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="acc-modal-body">
+                <div style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 16px; font-size: 0.85rem; color: #555;">
+                    <span><strong>التاريخ:</strong> {{ vm.currentEntry.entryDate | date: 'yyyy/MM/dd' }}</span>
+                    <span><strong>الحالة:</strong> <span class="acc-badge" ng-class="vm.currentEntry.status === 'Posted' ? 'acc-badge-posted' : (vm.currentEntry.status === 'Reversed' ? 'acc-badge-reversed' : 'acc-badge-draft')">{{ vm.currentEntry.status === 'Posted' ? 'مرحّل' : (vm.currentEntry.status === 'Reversed' ? 'عكسي' : 'مسودة') }}</span></span>
+                    <span ng-if="vm.currentEntry.sourceModule !== 'Manual'"><strong>المصدر:</strong> {{ vm.currentEntry.sourceModule }}</span>
+                </div>
+                <p style="margin: 0 0 14px 0; font-weight: 600; color: #333;"><i class="fas fa-quote-right" style="margin-left: 6px; color: #888;"></i>{{ vm.currentEntry.description }}</p>
+
+                <div class="acc-table-wrap">
+                    <table class="acc-table">
+                        <thead>
+                            <tr>
+                                <th>الحساب</th>
+                                <th>مدين</th>
+                                <th>دائن</th>
+                                <th>ملاحظات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr ng-repeat="line in vm.currentEntry.lines">
+                                <td style="font-weight: 600;">{{ line.accountCode }} — {{ line.accountNameAr }}</td>
+                                <td style="color: #e63946; font-weight: 600;">{{ line.debit > 0 ? (line.debit | number: 2) : '-' }}</td>
+                                <td style="color: #2ec4b6; font-weight: 600;">{{ line.credit > 0 ? (line.credit | number: 2) : '-' }}</td>
+                                <td style="color: #888; font-size: 0.85rem;">{{ line.notes }}</td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr style="border-top: 2px solid rgba(0,0,0,0.08); background: #f8f9fa; font-weight: 800;">
+                                <td style="padding: 12px;">الإجمالي</td>
+                                <td style="padding: 12px; color: #e63946;">{{ vm.currentEntry.totalDebit | number: 2 }}</td>
+                                <td style="padding: 12px; color: #2ec4b6;">{{ vm.currentEntry.totalCredit | number: 2 }}</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+            <div class="acc-modal-footer">
+                <button class="acc-btn acc-btn-danger" ng-if="vm.isAdmin && vm.currentEntry.status === 'Posted'" ng-click="vm.reverseEntry(vm.currentEntry)">
+                    <i class="fas fa-undo"></i> قيد عكسي
+                </button>
+                <button class="acc-btn acc-btn-success" ng-if="vm.isAdmin && vm.currentEntry.status === 'Draft'" ng-click="vm.postEntry(vm.currentEntry)">
+                    <i class="fas fa-check-circle"></i> ترحيل القيد
+                </button>
+                <button class="acc-btn acc-btn-light" ng-click="vm.closeEntryDetail()">إغلاق</button>
+            </div>
+        </div>
+    </div>
+</div>

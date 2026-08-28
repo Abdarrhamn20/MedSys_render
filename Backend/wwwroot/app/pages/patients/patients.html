@@ -1,0 +1,275 @@
+<!-- Patient Files Management Page -->
+<style>
+    .pt-modal-overlay {
+        position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+        backdrop-filter: blur(3px); z-index: 2000;
+        display: flex; align-items: center; justify-content: center; padding: 20px;
+        opacity: 1; animation: ptFade 0.2s ease forwards;
+    }
+    @keyframes ptFade { from { opacity: 0; } to { opacity: 1; } }
+    .pt-modal {
+        background: var(--bg-card, #fff); border-radius: 16px;
+        box-shadow: 0 25px 60px rgba(0,0,0,0.25); width: 100%; max-width: 620px;
+        max-height: 92vh; display: flex; flex-direction: column; overflow: hidden;
+        opacity: 1; animation: ptUp 0.25s ease forwards;
+    }
+    @keyframes ptUp { from { opacity: 0; transform: translateY(20px) scale(0.98); } to { opacity: 1; transform: none; } }
+    .pt-modal.lg { max-width: 760px; }
+    .pt-modal-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 18px 24px; border-bottom: 1px solid var(--border-color, #eee);
+        background: linear-gradient(135deg, rgba(0,119,182,0.06), rgba(0,0,0,0.01));
+    }
+    .pt-modal-title { margin: 0; font-size: 1.05rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+    .pt-modal-body { padding: 22px 24px; overflow-y: auto; }
+    .pt-modal-footer {
+        display: flex; justify-content: flex-start; gap: 10px; padding: 16px 24px;
+        border-top: 1px solid var(--border-color, #eee); background: #fafbfd;
+    }
+    .pt-close {
+        width: 34px; height: 34px; border: none; border-radius: 50%;
+        background: rgba(0,0,0,0.05); color: #555; cursor: pointer; font-size: 1rem;
+        display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+    }
+    .pt-close:hover { background: rgba(230,57,70,0.12); color: #c0392b; }
+
+    .pt-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .pt-grid .full { grid-column: 1 / -1; }
+    @media (max-width: 640px) { .pt-grid { grid-template-columns: 1fr; } }
+    .pt-field { display: flex; flex-direction: column; gap: 6px; }
+    .pt-label { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); }
+
+    .pt-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .pt-action-btn {
+        width: 34px; height: 34px; border: none; border-radius: 9px;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 0.85rem; cursor: pointer; transition: all 0.2s;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+    .pt-action-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
+    .pt-action-btn.edit { background: rgba(230,126,34,0.14); color: #a05a12; }
+    .pt-action-btn.edit:hover { background: #e67e22; color: #fff; }
+    .pt-action-btn.merge { background: rgba(0,119,182,0.12); color: #0077b6; }
+    .pt-action-btn.merge:hover { background: #0077b6; color: #fff; }
+
+    .pt-filter-bar { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 18px; }
+    .pt-filter-bar .pt-search { position: relative; flex: 1; min-width: 240px; }
+    .pt-filter-bar .pt-search input { width: 100%; padding: 10px 38px 10px 12px; }
+    .pt-filter-bar .pt-search i { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 0.85rem; }
+</style>
+
+<div class="stagger-children">
+
+    <!-- Page Header -->
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+        <div>
+            <h2 style="margin-bottom: 4px;">ملفات المرضى</h2>
+            <p class="text-muted" style="font-size: 0.85rem;">إدارة الملفات الطبية — التركيبة الاسمية الليبية + رقم الملف التسلسلي + دمج الملفات</p>
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="btn btn-danger" ng-if="vm.currentUser.role === 'Admin' || vm.currentUser.role === 'Doctor'" ng-click="vm.showMergeModal = true">
+                <i class="fas fa-object-group"></i> دمج ملفين
+            </button>
+            <button class="btn btn-primary" ng-if="vm.currentUser.role === 'Admin'" ng-click="vm.openAddModal()">
+                <i class="fas fa-folder-plus"></i> ملف مريض جديد
+            </button>
+        </div>
+    </div>
+
+    <!-- Search & Filter Bar -->
+    <div class="card" style="margin-bottom: 20px;">
+        <div class="card-body" style="padding: 16px;">
+            <div class="pt-filter-bar" style="margin-bottom: 0;">
+                <div class="pt-search">
+                    <input type="text" class="form-control" ng-model="vm.searchQuery" ng-change="vm.loadPatients()"
+                           placeholder="بحث برقم الملف أو الاسم (الأول/اللقب) أو البريد أو الهاتف...">
+                    <i class="fas fa-search"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Patients Table -->
+    <div class="card">
+        <div class="card-body" style="padding: 0;">
+            <div style="overflow-x: auto;">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>رقم الملف</th>
+                            <th>الاسم الكامل</th>
+                            <th>مكونات الاسم</th>
+                            <th>الهاتف</th>
+                            <th>الجنس</th>
+                            <th>الحالة</th>
+                            <th style="width: 100px;">إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="p in vm.patients">
+                            <td>
+                                <span class="badge badge-primary" style="font-family: monospace;">{{p.fileNumber}}</span>
+                            </td>
+                            <td style="font-weight: 600;">{{p.fullName}}</td>
+                            <td style="font-size: 0.8rem; color: #666;">
+                                <div>{{p.firstName || '-'}}</div>
+                                <div class="text-muted">{{p.fatherName || '-'}} / {{p.grandfatherName || '-'}} / {{p.familyName || '-'}}</div>
+                            </td>
+                            <td>{{p.phone || '-'}}</td>
+                            <td>{{p.gender === 'Male' ? 'ذكر' : p.gender === 'Female' ? 'أنثى' : (p.gender || '-')}}</td>
+                            <td>
+                                <span class="badge" ng-class="p.isMerged ? 'badge-secondary' : 'badge-success'">
+                                    {{p.isMerged ? 'مدمج' : 'نشط'}}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="pt-actions">
+                                    <button class="pt-action-btn edit" ng-click="vm.openEditModal(p)" title="تعديل">
+                                        <i class="fas fa-pen"></i>
+                                    </button>
+                                    <button class="pt-action-btn merge" ng-click="vm.selectMergeSource(p)" title="دمج">
+                                        <i class="fas fa-object-group"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr ng-if="!vm.loading && vm.patients.length === 0">
+                            <td colspan="7" class="text-center text-muted" style="padding: 28px;">لا توجد ملفات مرضى مطابقة</td>
+                        </tr>
+                        <tr ng-if="vm.loading">
+                            <td colspan="7" class="text-center" style="padding: 28px;">
+                                <i class="fas fa-spinner fa-spin" style="color: var(--primary);"></i> جارٍ التحميل...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <div ng-if="vm.totalPages > 1" style="display: flex; justify-content: center; margin-top: 16px;">
+        <nav>
+            <ul class="pagination pagination-sm">
+                <li class="page-item" ng-class="{disabled: vm.page === 1}">
+                    <button class="page-link" ng-click="vm.goPage(vm.page - 1)">السابق</button>
+                </li>
+                <li class="page-item disabled"><span class="page-link">صفحة {{vm.page}} / {{vm.totalPages}}</span></li>
+                <li class="page-item" ng-class="{disabled: vm.page === vm.totalPages}">
+                    <button class="page-link" ng-click="vm.goPage(vm.page + 1)">التالي</button>
+                </li>
+            </ul>
+        </nav>
+    </div>
+
+    <!-- Add/Edit Modal -->
+    <div class="pt-modal-overlay" ng-if="vm.showFormModal" ng-click="vm.closeFormModal()">
+        <div class="pt-modal lg" ng-click="$event.stopPropagation()">
+            <div class="pt-modal-header">
+                <h5 class="pt-modal-title"><i class="fas fa-folder-open" style="color: var(--primary);"></i> {{vm.editMode ? 'تعديل ملف مريض' : 'ملف مريض جديد'}}</h5>
+                <button class="pt-close" ng-click="vm.closeFormModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="pt-modal-body">
+                <div class="pt-grid">
+                    <div class="pt-field">
+                        <label class="pt-label">رقم الملف</label>
+                        <input type="text" class="form-control" ng-model="vm.form.fileNumber" ng-disabled="!vm.editMode" placeholder="يُولَّد تلقائياً">
+                    </div>
+                    <div class="pt-field">
+                        <label class="pt-label">الاسم الأول *</label>
+                        <input type="text" class="form-control" ng-model="vm.form.firstName" required>
+                    </div>
+                    <div class="pt-field">
+                        <label class="pt-label">اسم الأب</label>
+                        <input type="text" class="form-control" ng-model="vm.form.fatherName">
+                    </div>
+                    <div class="pt-field">
+                        <label class="pt-label">اسم الجد</label>
+                        <input type="text" class="form-control" ng-model="vm.form.grandfatherName">
+                    </div>
+                    <div class="pt-field">
+                        <label class="pt-label">اللقب / العائلة</label>
+                        <input type="text" class="form-control" ng-model="vm.form.familyName">
+                    </div>
+                    <div class="pt-field">
+                        <label class="pt-label">الهاتف</label>
+                        <input type="text" class="form-control" ng-model="vm.form.phone">
+                    </div>
+                    <div class="pt-field">
+                        <label class="pt-label">الجنس</label>
+                        <select class="form-control" ng-model="vm.form.gender">
+                            <option value="">—</option>
+                            <option value="Male">ذكر</option>
+                            <option value="Female">أنثى</option>
+                        </select>
+                    </div>
+                    <div class="pt-field">
+                        <label class="pt-label">تاريخ الميلاد</label>
+                        <input type="date" class="form-control" ng-model="vm.form.dateOfBirth">
+                    </div>
+                    <div class="pt-field">
+                        <label class="pt-label">فصيلة الدم</label>
+                        <select class="form-control" ng-model="vm.form.bloodType">
+                            <option value="">—</option>
+                            <option ng-repeat="b in ['A+','A-','B+','B-','AB+','AB-','O+','O-']" value="{{b}}">{{b}}</option>
+                        </select>
+                    </div>
+                    <div class="pt-field full">
+                        <label class="pt-label">الأمراض المزمنة</label>
+                        <textarea class="form-control" rows="2" ng-model="vm.form.chronicDiseases"></textarea>
+                    </div>
+                    <div class="pt-field full">
+                        <label class="pt-label">الحساسية</label>
+                        <textarea class="form-control" rows="2" ng-model="vm.form.allergies"></textarea>
+                    </div>
+                    <div class="pt-field full">
+                        <label class="pt-label">ملاحظات عامة</label>
+                        <textarea class="form-control" rows="2" ng-model="vm.form.generalNotes"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="pt-modal-footer">
+                <button type="button" class="btn btn-secondary" ng-click="vm.closeFormModal()">إلغاء</button>
+                <button type="button" class="btn btn-primary" ng-click="vm.submitForm()">
+                    <i class="fas fa-save"></i> حفظ
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Merge Modal -->
+    <div class="pt-modal-overlay" ng-if="vm.showMergeModal" ng-click="vm.showMergeModal = false">
+        <div class="pt-modal lg" ng-click="$event.stopPropagation()">
+            <div class="pt-modal-header">
+                <h5 class="pt-modal-title"><i class="fas fa-object-group" style="color: #e67e22;"></i> دمج ملفي مرضى</h5>
+                <button class="pt-close" ng-click="vm.showMergeModal = false"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="pt-modal-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    سيتم نقل كل السجلات (مواعيد، فواتير، تحاليل، أشعة، تنويم، تقييمات) من الملف المصدر إلى الملف الوجهة، ثم يُغلق الملف المصدر. لا يمكن التراجع عن هذه العملية.
+                </div>
+                <div class="pt-grid">
+                    <div class="pt-field">
+                        <label class="pt-label">الملف المصدر (سَيُغلق)</label>
+                        <select class="form-control" ng-model="vm.merge.sourcePatientId" ng-options="p.patientID as (p.fileNumber + ' — ' + p.fullName) for p in vm.patients">
+                            <option value="">— اختر —</option>
+                        </select>
+                    </div>
+                    <div class="pt-field">
+                        <label class="pt-label">الملف الوجهة (سيبقى)</label>
+                        <select class="form-control" ng-model="vm.merge.targetPatientId" ng-options="p.patientID as (p.fileNumber + ' — ' + p.fullName) for p in vm.patients">
+                            <option value="">— اختر —</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="pt-modal-footer">
+                <button type="button" class="btn btn-secondary" ng-click="vm.showMergeModal = false">إلغاء</button>
+                <button type="button" class="btn btn-danger" ng-click="vm.submitMerge()">
+                    <i class="fas fa-object-group"></i> دمج الملفين
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

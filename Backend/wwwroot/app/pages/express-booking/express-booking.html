@@ -1,0 +1,279 @@
+<!-- Express Booking & Daily Cash Register View -->
+<div class="stagger-children">
+
+    <!-- Header Navigation Tabs -->
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+        <div>
+            <h2 style="margin-bottom: 4px;">
+                <i class="fas fa-bolt" style="color: #ff9f1c;"></i> الحجز السريع وتقارير الخزينة اليومية
+            </h2>
+            <p class="text-muted" style="font-size: 0.85rem;">حجز كشف وتذاكر دخول سريعة في 10 ثوانٍ مع تتبع خزينة العيادة</p>
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+            <button class="btn" ng-if="vm.canBook" ng-class="vm.activeTab === 'booking' ? 'btn-primary' : 'btn-secondary'" ng-click="vm.activeTab = 'booking'">
+                <i class="fas fa-plus-circle me-1"></i> حجز جديد (Walk-in)
+            </button>
+            <button class="btn" ng-if="vm.canViewCashReport" ng-class="vm.activeTab === 'cashReport' ? 'btn-primary' : 'btn-secondary'" ng-click="vm.activeTab = 'cashReport'">
+                <i class="fas fa-cash-register me-1"></i> تقرير الخزينة اليومي
+            </button>
+        </div>
+    </div>
+
+    <!-- Tab 1: 10-Second Express Booking Form -->
+    <div ng-if="vm.activeTab === 'booking' && vm.canBook">
+        <div class="row">
+            <!-- Booking Input Form -->
+            <div class="col-8">
+                <div class="card">
+                    <div class="card-header" style="background: rgba(0,119,182,0.03); border-bottom: 1px solid var(--border-color);">
+                        <h4 style="margin: 0;"><i class="fas fa-user-plus" style="color: var(--primary);"></i> إدخال حجز مريض مباشر (Express Walk-In Entry)</h4>
+                    </div>
+                    <div class="card-body" style="padding: 24px;">
+                        <!-- بحث عن مريض موجود -->
+                        <div class="form-group" style="margin-bottom: 18px;">
+                            <label><i class="fas fa-search" style="margin-left: 4px;"></i> بحث عن مريض مسجل (اختياري)</label>
+                            <input type="text" class="form-control" ng-model="vm.patientSearch" ng-change="vm.searchPatients()" ng-focus="vm.searchPatients()" placeholder="ابحث بالاسم أو رقم الهاتف..." autocomplete="off">
+                            <div ng-if="vm.searchingPatients" style="margin-top: 6px; font-size: 0.8rem; color: #888;">جاري البحث...</div>
+                            <div ng-if="vm.patientResults.length > 0" style="border: 1px solid var(--border-color); border-radius: 8px; margin-top: 6px; max-height: 180px; overflow-y: auto; background: #fff;">
+                                <div ng-repeat="p in vm.patientResults" ng-click="vm.selectPatient(p)" style="padding: 8px 12px; border-bottom: 1px solid rgba(0,0,0,0.05); cursor: pointer;" ng-mouseover="this.style.background='#f0f6ff'" ng-mouseleave="this.style.background='#fff'">
+                                    <strong>{{p.fullName}}</strong>
+                                    <span style="color: #888; font-size: 0.8rem; margin-right: 8px;">{{p.phone || 'بدون هاتف'}}</span>
+                                </div>
+                            </div>
+                            <div ng-if="vm.patientSearch && !vm.searchingPatients && vm.patientResults.length === 0 && vm.patientSearch.trim().length >= 2" style="margin-top: 6px; font-size: 0.8rem; color: #888;">
+                                لا يوجد مريض مطابق — يمكن إدخال بياناته كحجز مباشر جديد.
+                            </div>
+                        </div>
+                        <form ng-submit="vm.submitExpressBooking()">
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="form-group">
+                                        <label>اسم المريض الثلاثي <span style="color: red;">*</span></label>
+                                        <input type="text" class="form-control" ng-model="vm.booking.patientName" required placeholder="أدخل اسم المريض الكامل">
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-group">
+                                        <label>رقم الهاتف</label>
+                                        <input type="tel" class="form-control" ng-model="vm.booking.patientPhone" placeholder="09XXXXXXXX">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="form-group">
+                                        <label>اختر الطبيب المعالج <span style="color: red;">*</span></label>
+                                        <select class="form-control" ng-model="vm.booking.doctorId" ng-change="vm.onDoctorChange()" required>
+                                            <option ng-repeat="doc in vm.doctors" ng-value="doc.userID">د. {{doc.fullName}} ({{doc.specialty || 'طبيب عام'}})</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-group">
+                                        <label>قيمة الكشف (د.ل)</label>
+                                        <input type="number" step="0.01" class="form-control" ng-model="vm.booking.consultationFee" required style="font-weight: bold; color: var(--primary);">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Payment Method Buttons (للأدمن فقط — موظف الاستقبال لا يحصّل) -->
+                            <div class="form-group" style="margin-top: 10px;" ng-if="!vm.isReceptionist">
+                                <label style="display: block; margin-bottom: 8px;">طريقة سداد القيمة <span style="color: red;">*</span></label>
+                                <div style="display: flex; gap: 12px;">
+                                    <label class="card" style="flex: 1; padding: 12px; cursor: pointer; text-align: center; margin: 0; border: 2px solid transparent;" ng-style="vm.booking.paymentMethod === 'Cash' && {'border-color': '#2DC653', 'background': 'rgba(45,198,83,0.06)'}">
+                                        <input type="radio" ng-model="vm.booking.paymentMethod" value="Cash" style="display: none;">
+                                        <i class="fas fa-money-bill-wave" style="font-size: 1.4rem; color: #2DC653; margin-bottom: 4px; display: block;"></i>
+                                        <strong style="font-size: 0.85rem;">نقداً (Cash)</strong>
+                                    </label>
+
+                                    <label class="card" style="flex: 1; padding: 12px; cursor: pointer; text-align: center; margin: 0; border: 2px solid transparent;" ng-style="vm.booking.paymentMethod === 'POS' && {'border-color': '#4361ee', 'background': 'rgba(67,97,238,0.06)'}">
+                                        <input type="radio" ng-model="vm.booking.paymentMethod" value="POS" style="display: none;">
+                                        <i class="fas fa-credit-card" style="font-size: 1.4rem; color: #4361ee; margin-bottom: 4px; display: block;"></i>
+                                        <strong style="font-size: 0.85rem;">بطاقة (POS/سداد)</strong>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- تنبيه لموظف الاستقبال: السداد لدى الكاشير -->
+                            <div ng-if="vm.isReceptionist" style="margin-top: 10px; background: rgba(255,159,28,0.1); border: 1px solid rgba(255,159,28,0.3); border-radius: 8px; padding: 10px 14px; font-size: 0.85rem; color: #8a5a00;">
+                                <i class="fas fa-info-circle" style="margin-left: 6px;"></i>
+                                سيتم إصدار تذكرة دخول بفاتورة <strong>معلّقة</strong> — يتحصّل المريض السداد لدى الكاشير بعد الحجز.
+                            </div>
+
+                            <div class="form-group" style="margin-top: 15px;">
+                                <label>ملاحظات إضافية</label>
+                                <input type="text" class="form-control" ng-model="vm.booking.notes" placeholder="أدخل أي ملاحظات خاصة بالحالة...">
+                            </div>
+
+                            <div style="margin-top: 24px; text-align: left;">
+                                <button type="submit" class="btn btn-primary" style="padding: 12px 36px; font-size: 1.05rem;" ng-disabled="vm.submitting">
+                                    <span ng-if="!vm.submitting && !vm.isReceptionist"><i class="fas fa-ticket-alt me-1"></i> إصدار تذكرة الكشف والسداد</span>
+                                    <span ng-if="!vm.submitting && vm.isReceptionist"><i class="fas fa-ticket-alt me-1"></i> إصدار تذكرة الدخول</span>
+                                    <span ng-if="vm.submitting"><span class="spinner"></span> جاري الحجز...</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Side Live Queue Overview -->
+            <div class="col-4">
+                <div class="card" style="background: linear-gradient(135deg, #0077b6, #00b4d8); color: white;">
+                    <div class="card-body" style="padding: 24px; text-align: center;">
+                        <i class="fas fa-clock" style="font-size: 2.5rem; opacity: 0.9; margin-bottom: 12px; display: block;"></i>
+                        <h3 style="margin-bottom: 6px;">حجز مباشر مؤكد</h3>
+                        <p style="font-size: 0.85rem; opacity: 0.9;">يتم منح المريض رقم دور تلقائي وتوليد تذكرة حرارية برمز QR للاستقبال والقاعة.</p>
+                        
+                        <div style="background: rgba(255,255,255,0.15); border-radius: 12px; padding: 16px; margin-top: 20px; backdrop-filter: blur(5px);">
+                            <div style="font-size: 0.8rem; text-transform: uppercase;">سرعة الإدخال والتأكيد</div>
+                            <div style="font-size: 1.8rem; font-weight: 800; margin-top: 4px;">⚡ 10 ثوانٍ</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab 2: Daily Cash Register Closing Report -->
+    <div ng-if="vm.activeTab === 'cashReport'">
+        <div class="card" style="margin-bottom: 20px;">
+            <div class="card-body" style="padding: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <label>تاريخ التقرير:</label>
+                    <input type="date" class="form-control" ng-model="vm.reportDate" ng-change="vm.loadCashReport()" style="width: 180px;">
+                </div>
+                <button class="btn btn-secondary" ng-click="vm.loadCashReport()">
+                    <i class="fas fa-sync-alt me-1"></i> تحديث البيانات
+                </button>
+            </div>
+        </div>
+
+        <!-- Cash Totals Row -->
+        <div class="row" style="margin-bottom: 24px;">
+            <div class="col-3">
+                <div class="stat-card" style="border-right: 4px solid #2DC653;">
+                    <div class="stat-icon" style="background: rgba(45,198,83,0.1); color: #2DC653;"><i class="fas fa-money-bill-wave"></i></div>
+                    <div class="stat-info">
+                        <h4>مقبوضات الكاش (Cash)</h4>
+                        <div class="stat-number" style="color: #2DC653;">{{vm.cashReport.totalCash || 0 | number:2}} <small style="font-size: 0.7rem;">د.ل</small></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="stat-card" style="border-right: 4px solid #4361ee;">
+                    <div class="stat-icon" style="background: rgba(67,97,238,0.1); color: #4361ee;"><i class="fas fa-credit-card"></i></div>
+                    <div class="stat-info">
+                        <h4>مقبوضات البطاقة (POS)</h4>
+                        <div class="stat-number" style="color: #4361ee;">{{vm.cashReport.totalPOS || 0 | number:2}} <small style="font-size: 0.7rem;">د.ل</small></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="stat-card" style="border-right: 4px solid #0077b6;">
+                    <div class="stat-icon" style="background: rgba(0,119,182,0.1); color: #0077b6;"><i class="fas fa-globe"></i></div>
+                    <div class="stat-info">
+                        <h4>الدفع الإلكتروني (Online)</h4>
+                        <div class="stat-number" style="color: #0077b6;">{{vm.cashReport.totalOnline || 0 | number:2}} <small style="font-size: 0.7rem;">د.ل</small></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="stat-card" style="border-right: 4px solid #ff9f1c;">
+                    <div class="stat-icon" style="background: rgba(255,159,28,0.1); color: #ff9f1c;"><i class="fas fa-calculator"></i></div>
+                    <div class="stat-info">
+                        <h4>إجمالي المقبوضات الكلي</h4>
+                        <div class="stat-number">{{vm.cashReport.grandTotal || 0 | number:2}} <small style="font-size: 0.7rem;">د.ل</small></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payments Table -->
+        <div class="card">
+            <div class="card-header">
+                <h4 style="margin: 0;"><i class="fas fa-receipt me-1" style="color: var(--primary);"></i> سجّل الدفعات والمقبوضات التفصيلي اليوم</h4>
+            </div>
+            <div class="table-wrapper" style="max-height: 450px; overflow-y: auto;">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>رقم الفاتورة</th>
+                            <th>الوقت</th>
+                            <th>المريض</th>
+                            <th>الطبيب المعالج</th>
+                            <th>نوع الفاتورة</th>
+                            <th>وسيلة الدفع</th>
+                            <th>المبلغ المدفوع</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="pay in vm.cashReport.payments">
+                            <td><strong>#INV-{{pay.invoiceID}}</strong></td>
+                            <td>{{pay.time | date:'hh:mm a'}}</td>
+                            <td>{{pay.patientName}}</td>
+                            <td>د. {{pay.doctorName}}</td>
+                            <td><span class="badge badge-normal">{{pay.invoiceType}}</span></td>
+                            <td>
+                                <span class="badge" ng-class="pay.paymentMethod === 'Cash' ? 'badge-success' : 'badge-primary'">
+                                    {{pay.paymentMethod === 'Cash' ? 'كاش (Cash)' : 'بطاقة (POS)'}}
+                                </span>
+                            </td>
+                            <td><strong style="color: var(--primary);">{{pay.totalAmount | number:2}} د.ل</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Thermal Printer Printable Ticket Modal (80mm Ready) -->
+    <div class="modal-overlay" ng-if="vm.showTicketModal" ng-click="vm.showTicketModal = false">
+        <div class="modal-content" style="max-width: 360px; font-family: 'Cairo', sans-serif;" ng-click="$event.stopPropagation()">
+            <div class="modal-header" style="background: #0077b6; color: white; border-radius: 12px 12px 0 0;">
+                <h4 style="color: white; margin: 0;"><i class="fas fa-ticket-alt me-1"></i> تذكرة دخول المريض</h4>
+                <button class="btn-icon" style="color: white; background: none; border: none;" ng-click="vm.showTicketModal = false"><i class="fas fa-times"></i></button>
+            </div>
+
+            <!-- Thermal Printable Area -->
+            <div id="printableTicket" class="modal-body" style="text-align: center; padding: 20px 16px; background: #fff; color: #000;">
+                <div style="font-size: 1.2rem; font-weight: bold; margin-bottom: 2px;">العيادة الطبية المجمعة</div>
+                <div style="font-size: 0.75rem; color: #555;">IVS Medical System</div>
+                <hr style="border: 0; border-top: 1px dashed #ccc; margin: 12px 0;">
+
+                <div style="font-size: 0.85rem; color: #444;">رقم الدور بالقاعة</div>
+                <div style="font-size: 3.5rem; font-weight: 900; color: #0077b6; line-height: 1; margin: 8px 0;">
+                    #{{vm.receipt.queueNumber}}
+                </div>
+
+                <div style="background: #f8f9fa; border-radius: 8px; padding: 10px; margin: 12px 0; text-align: right; font-size: 0.85rem; line-height: 1.6;">
+                    <div><strong>المريض:</strong> {{vm.receipt.patientName}}</div>
+                    <div><strong>الطبيب:</strong> د. {{vm.receipt.doctorName}}</div>
+                    <div><strong>التخصص:</strong> {{vm.receipt.specialty}}</div>
+                    <div><strong>التاريخ والوقت:</strong> {{vm.receipt.date}} - {{vm.receipt.time}}</div>
+                    <div><strong>حالة السداد:</strong>
+                        <span ng-if="vm.receipt.paymentStatus === 'Unpaid'" style="color: #ff9f1c; font-weight: bold;">بانتظار السداد لدى الكاشير</span>
+                        <span ng-if="vm.receipt.paymentStatus !== 'Unpaid'">{{vm.receipt.paymentMethod === 'Cash' ? 'نقداً (Cash)' : 'بطاقة (POS)'}}</span>
+                    </div>
+                    <div><strong ng-if="vm.receipt.paymentStatus !== 'Unpaid'">المبلغ المدفوع:</strong><strong ng-if="vm.receipt.paymentStatus === 'Unpaid'">قيمة الكشف (مستحقة):</strong> <span style="font-weight: bold; color: #2DC653;">{{vm.receipt.fee | number:2}} د.ل</span></div>
+                </div>
+
+                <!-- Digital Verification QR Code Simulation -->
+                <div style="margin-top: 14px;">
+                    <div style="font-size: 0.7rem; color: #888; margin-bottom: 4px;">رمز التحقق والدخول الرقمي</div>
+                    <div style="display: inline-block; padding: 6px; background: #eee; border-radius: 6px;">
+                        <i class="fas fa-qrcode" style="font-size: 3.5rem; color: #222;"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer" style="justify-content: center; gap: 10px;">
+                <button class="btn btn-primary" ng-click="vm.printTicket()"><i class="fas fa-print me-1"></i> طباعة التذكرة</button>
+                <button class="btn btn-secondary" ng-click="vm.showTicketModal = false">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+</div>

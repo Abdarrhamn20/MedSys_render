@@ -1,0 +1,216 @@
+<!-- Appointments List Page -->
+<div class="stagger-children">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+        <h2 style="margin: 0;">المواعيد</h2>
+        <button class="btn btn-primary" ui-sref="app.bookAppointment" ng-if="vm.role === 'Patient'"><i class="fas fa-calendar-plus"></i> حجز موعد جديد</button>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="card" style="margin-bottom: 20px;">
+        <div class="card-body" style="padding: 16px;">
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                <select class="form-control" ng-model="vm.filterStatus" ng-change="vm.load()" style="width: 150px;">
+                    <option value="">كل الحالات</option>
+                    <option value="Pending">في الانتظار</option>
+                    <option value="Confirmed">مؤكد</option>
+                    <option value="InProgress">جاري</option>
+                    <option value="Completed">مكتمل</option>
+                    <option value="Cancelled">ملغي</option>
+                </select>
+                <select class="form-control" ng-model="vm.filterPriority" ng-change="vm.load()" style="width: 150px;">
+                    <option value="">كل الأولويات</option>
+                    <option value="1">عادي</option>
+                    <option value="2">عاجل</option>
+                    <option value="3">طوارئ</option>
+                </select>
+                <input type="date" class="form-control" ng-model="vm.filterDate" ng-change="vm.load()" style="width: 180px;">
+            </div>
+        </div>
+    </div>
+
+    <!-- Appointments Table -->
+    <div class="card">
+        <!-- Loading State -->
+        <div class="card-body" ng-if="vm.loading" style="text-align: center; padding: 48px;">
+            <div class="spinner" style="margin: 0 auto 16px;"></div>
+            <p style="color: var(--text-muted);">جاري تحميل المواعيد...</p>
+        </div>
+
+        <div class="table-wrapper" ng-if="!vm.loading">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th ng-if="vm.role !== 'Patient'">المريض</th>
+                        <th ng-if="vm.role !== 'Doctor'">الطبيب</th>
+                        <th>التاريخ</th>
+                        <th>الوقت</th>
+                        <th>الأولوية</th>
+                        <th>النوع</th>
+                        <th>الحالة</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr ng-repeat="app in vm.appointments" ng-style="app.priorityID === 3 ? {'background': 'rgba(230,57,70,0.05)'} : {}">
+                        <td>{{app.appID}}</td>
+                        <td ng-if="vm.role !== 'Patient'">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <div class="avatar" style="width: 32px; height: 32px; font-size: 0.75rem;">{{app.patientName.charAt(0)}}</div>
+                                {{app.patientName}}
+                            </div>
+                        </td>
+                        <td ng-if="vm.role !== 'Doctor'">
+                            <div>د. {{app.doctorName}}</div>
+                            <small class="text-muted">{{app.doctorSpecialty}}</small>
+                        </td>
+                        <td>{{app.appointmentDate | date:'yyyy/MM/dd'}}</td>
+                        <td>{{app.appointmentTime}}</td>
+                        <td>
+                            <span class="badge" ng-class="{'badge-normal': app.priorityID === 1, 'badge-urgent': app.priorityID === 2, 'badge-emergency': app.priorityID === 3}">
+                                <i class="fas {{app.priorityIcon}}"></i> {{app.priorityLevel}}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge" ng-class="app.appointmentType === 'Online' ? 'badge-info' : 'badge-secondary'" title="{{app.appointmentType === 'Online' ? 'استشارة عن بعد (فيديو)' : 'حضور للعيادة'}}">
+                                <i class="fas" ng-class="app.appointmentType === 'Online' ? 'fa-video' : 'fa-building-medical'" style="margin-left: 4px;"></i>
+                                {{app.appointmentType === 'Online' ? 'عن بعد' : 'حضوري'}}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge" ng-class="vm.getStatusClass(app.status)">{{vm.getStatusAr(app.status)}}</span>
+                        </td>
+                        <td>
+                            <div style="display: flex; gap: 6px;">
+                                <button class="btn btn-sm btn-primary" ng-click="vm.viewDetails(app)" title="تفاصيل" style="padding: 6px 10px; min-height: auto;">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-info" ng-if="app.appointmentType === 'Online' && app.status === 'InProgress' && vm.role !== 'Receptionist'" ng-click="vm.startVideoCall(app)" title="الدخول إلى جلسة الفيديو الجارية" style="padding: 6px 10px; min-height: auto;">
+                                    <i class="fas fa-video"></i>
+                                </button>
+                                <button class="btn btn-sm btn-success" ng-if="(vm.role === 'Doctor' || vm.role === 'Receptionist') && app.status === 'Pending'" ng-click="vm.updateStatus(app, 'Confirmed')" title="تأكيد" style="padding: 6px 10px; min-height: auto;">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                <button class="btn btn-sm btn-warning" ng-if="(vm.role === 'Doctor' || vm.role === 'Receptionist') && app.status === 'Confirmed'" ng-click="vm.startSession(app)" title="بدء الجلسة" style="padding: 6px 10px; min-height: auto;">
+                                    <i class="fas fa-play"></i>
+                                </button>
+                                <button class="btn btn-sm btn-success" ng-if="(vm.role === 'Doctor' || vm.role === 'Receptionist') && app.status === 'InProgress'" ng-click="vm.updateStatus(app, 'Completed')" title="إكمال" style="padding: 6px 10px; min-height: auto;">
+                                    <i class="fas fa-check-double"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger" ng-if="(vm.role === 'Admin' || vm.role === 'Doctor' || vm.role === 'Patient' || vm.role === 'Receptionist') && app.status !== 'Completed' && app.status !== 'Cancelled'" ng-click="vm.openCancel(app)" title="إلغاء" style="padding: 6px 10px; min-height: auto;">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr ng-if="vm.appointments.length === 0">
+                        <td colspan="9">
+                            <div class="empty-state">
+                                <i class="fas fa-calendar-alt"></i>
+                                <h4>لا توجد مواعيد</h4>
+                                <p>ستظهر هنا مواعيدك</p>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="card-body" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color);" ng-if="vm.totalPages > 1">
+            <span class="text-muted" style="font-size: 0.85rem;">{{vm.totalCount}} موعد</span>
+            <div style="display: flex; gap: 6px;">
+                <button class="btn btn-sm btn-secondary" ng-disabled="vm.page <= 1" ng-click="vm.page = vm.page - 1; vm.load();"><i class="fas fa-chevron-right"></i></button>
+                <span style="padding: 6px 14px; font-size: 0.85rem;">{{vm.page}} / {{vm.totalPages}}</span>
+                <button class="btn btn-sm btn-secondary" ng-disabled="vm.page >= vm.totalPages" ng-click="vm.page = vm.page + 1; vm.load();"><i class="fas fa-chevron-left"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Appointment Details Modal -->
+    <div class="modal-overlay" ng-if="vm.showDetails" ng-click="vm.showDetails = false">
+        <div class="modal-content" style="max-width: 600px;" ng-click="$event.stopPropagation()">
+            <div class="modal-header">
+                <h4><i class="fas fa-calendar-check" style="color: var(--primary); margin-left: 8px;"></i> تفاصيل الموعد #{{vm.detailApp.appID}}</h4>
+                <button style="background:none; border:none; font-size:1.2rem; cursor:pointer; color: var(--text-muted);" ng-click="vm.showDetails = false"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body" ng-if="vm.detailApp">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div><strong>المريض:</strong> {{vm.detailApp.patientName}}</div>
+                    <div><strong>الطبيب:</strong> د. {{vm.detailApp.doctorName}}</div>
+                    <div><strong>التخصص:</strong> {{vm.detailApp.doctorSpecialty}}</div>
+                    <div><strong>التاريخ:</strong> {{vm.detailApp.appointmentDate | date:'yyyy/MM/dd'}}</div>
+                    <div><strong>الوقت:</strong> {{vm.detailApp.appointmentTime}}</div>
+                    <div><strong>نقاط الفرز:</strong> {{vm.detailApp.triageScore}}</div>
+                </div>
+                <div style="margin-top: 16px;" ng-if="vm.detailApp.patientChronicDiseases || vm.detailApp.patientAllergies">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <div>
+                            <div ng-if="vm.detailApp.patientChronicDiseases"><strong>أمراض مزمنة:</strong> {{vm.detailApp.patientChronicDiseases}}</div>
+                            <div ng-if="vm.detailApp.patientAllergies"><strong>حساسية:</strong> {{vm.detailApp.patientAllergies}}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- سجل مكالمات الفيديو -->
+                <div style="margin-top: 20px;" ng-if="vm.detailApp.appointmentType === 'Online'">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                        <h5 style="margin: 0;"><i class="fas fa-video" style="color: var(--primary); margin-left: 8px;"></i> سجل مكالمات الفيديو</h5>
+                        <span class="badge badge-info" ng-if="vm.sessionHistory.length > 0">{{vm.sessionHistory.length}} جلسة</span>
+                    </div>
+                    <div class="alert alert-info" style="margin: 0; padding: 14px;" ng-if="vm.sessionHistory.length === 0 && !vm.sessionHistoryLoading">
+                        <i class="fas fa-info-circle"></i> لا توجد جلسات فيديو مسجلة لهذا الموعد
+                    </div>
+                    <div ng-if="vm.sessionHistoryLoading" style="text-align: center; padding: 12px;">
+                        <div class="spinner" style="margin: 0 auto 8px;"></div>
+                        <small class="text-muted">جاري تحميل السجل...</small>
+                    </div>
+                    <div ng-repeat="s in vm.sessionHistory" style="background: rgba(0,119,182,0.04); border: 1px solid rgba(0,119,182,0.15); border-radius: 10px; padding: 12px 14px; margin-bottom: 8px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 6px;">
+                            <span class="badge" ng-class="s.status === 'Ended' ? 'badge-normal' : (s.status === 'Active' ? 'badge-info' : 'badge-urgent')">
+                                <i class="fas" ng-class="s.status === 'Ended' ? 'fa-check-circle' : (s.status === 'Active' ? 'fa-play-circle' : 'fa-hourglass-half')" style="margin-left: 4px;"></i>
+                                {{s.status === 'Ended' ? 'انتهت' : (s.status === 'Active' ? 'جارية' : 'بانتظار البدء')}}
+                            </span>
+                            <small class="text-muted">
+                                <i class="fas fa-calendar-alt" style="margin-left: 4px;"></i>
+                                {{s.startedAt ? (s.startedAt | date:'yyyy/MM/dd HH:mm') : (s.createdAt | date:'yyyy/MM/dd HH:mm')}}
+                                <span ng-if="s.endedAt" style="margin-right: 8px;"><i class="fas fa-hourglass-end" style="margin-left: 4px;"></i>{{s.endedAt | date:'HH:mm'}}</span>
+                            </small>
+                        </div>
+                        <div style="font-size: 0.88rem; color: var(--text-secondary);">
+                            <strong style="color: var(--text-primary);">ملاحظات الطبيب:</strong>
+                            <span ng-if="s.sessionNotes">{{s.sessionNotes}}</span>
+                            <span ng-if="!s.sessionNotes" class="text-muted">لا توجد ملاحظات مسجلة</span>
+                        </div>
+                    </div>
+                </div>
+    <!-- Cancel Appointment Modal -->
+    <div class="modal-overlay" ng-if="vm.cancelTarget" ng-click="vm.closeCancel()">
+        <div class="modal-content" style="max-width: 460px;" ng-click="$event.stopPropagation()">
+            <div class="modal-header">
+                <h4><i class="fas fa-times-circle" style="color: var(--priority-emergency); margin-left: 8px;"></i> إلغاء الموعد</h4>
+                <button style="background:none; border:none; font-size:1.2rem; cursor:pointer; color: var(--text-muted);" ng-click="vm.closeCancel()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 12px; font-size: 0.9rem;">
+                    <strong>الموعد:</strong> #{{vm.cancelTarget.appID}} — د. {{vm.cancelTarget.doctorName}} — {{vm.cancelTarget.appointmentDate | date:'yyyy/MM/dd'}} الساعة {{vm.cancelTarget.appointmentTime}}
+                </div>
+                <div class="alert" style="background: rgba(230,57,70,0.08); border: 1px solid rgba(230,57,70,0.25); border-radius: 10px; padding: 12px 14px;" ng-if="vm.cancelBlockedMsg">
+                    <i class="fas fa-exclamation-triangle" style="color: var(--priority-emergency); margin-left: 8px;"></i>
+                    <span style="color: var(--priority-emergency); font-weight: 600;">{{vm.cancelBlockedMsg}}</span>
+                </div>
+                <div class="form-group" ng-if="vm.role === 'Patient' && !vm.cancelBlockedMsg" style="margin-top: 12px;">
+                    <label>سبب الإلغاء <span style="color: var(--priority-emergency);">*</span></label>
+                    <textarea class="form-control" ng-model="vm.cancelReason" rows="3" placeholder="اذكر سبب إلغاء الموعد..." style="resize: vertical;"></textarea>
+                </div>
+                <div style="text-align: center; margin-top: 16px;">
+                    <button class="btn btn-secondary" ng-click="vm.closeCancel()">تراجع</button>
+                    <button class="btn btn-danger" ng-click="vm.confirmCancel()" ng-disabled="!!vm.cancelBlockedMsg" style="margin-right: 8px;">
+                        <i class="fas fa-times"></i> تأكيد الإلغاء
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

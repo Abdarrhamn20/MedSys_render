@@ -1,0 +1,762 @@
+﻿<!-- Laboratory Module View (LIS) -->
+<style>
+    .lab-tabs { display: flex; gap: 4px; border-bottom: 2px solid rgba(0,0,0,0.06); margin-bottom: 20px; flex-wrap: wrap; }
+    .lab-tab {
+        display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px;
+        border: none; background: transparent; font-family: var(--font-family);
+        font-size: 0.95rem; font-weight: 700; color: var(--text-secondary);
+        cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px;
+        border-radius: 10px 10px 0 0; transition: all 0.2s ease;
+    }
+    .lab-tab:hover { color: var(--primary); background: rgba(0,119,182,0.06); }
+    .lab-tab.active { color: var(--primary); border-bottom-color: var(--primary); background: rgba(0,119,182,0.08); }
+
+    .lab-device-help {
+        background: linear-gradient(135deg, rgba(0,119,182,0.05), rgba(0,0,0,0.01));
+        border: 1px dashed rgba(0,119,182,0.3); border-radius: 14px;
+        padding: 18px 20px; margin-bottom: 20px; font-size: 0.88rem;
+    }
+    .lab-device-help h5 { margin: 0 0 12px 0; font-size: 1rem; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+    .lab-device-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-top: 12px; }
+    .lab-device-step {
+        background: var(--bg-card, #fff); border: 1px solid var(--border-color, #eee);
+        border-radius: 12px; padding: 14px 16px;
+    }
+    .lab-device-step .step-num {
+        width: 28px; height: 28px; border-radius: 50%; background: var(--primary);
+        color: #fff; display: inline-flex; align-items: center; justify-content: center;
+        font-weight: 800; font-size: 0.8rem; margin-bottom: 8px;
+    }
+    .lab-device-step .step-title { font-weight: 700; font-size: 0.9rem; margin-bottom: 6px; }
+    .lab-device-step p { margin: 0; font-size: 0.8rem; color: var(--text-secondary); line-height: 1.6; }
+    @media (max-width: 640px) { .lab-tabs { gap: 0; } .lab-tab { flex: 1; justify-content: center; padding: 10px 8px; font-size: 0.85rem; } }
+
+    .btn-outline-primary, .btn-outline-success, .btn-outline-danger {
+        background: transparent; border: 1.5px solid; min-height: 32px;
+        display: inline-flex; align-items: center; gap: 5px; border-radius: 8px;
+        font-family: var(--font-family); font-size: var(--font-size-sm);
+        cursor: pointer; transition: all 0.2s ease;
+    }
+    .btn-outline-primary { color: var(--primary); border-color: var(--primary); }
+    .btn-outline-primary:hover { background: var(--primary); color: #fff; }
+    .btn-outline-success { color: #25a844; border-color: #25a844; }
+    .btn-outline-success:hover { background: #25a844; color: #fff; }
+    .btn-outline-danger { color: #e63946; border-color: #e63946; }
+    .btn-outline-danger:hover { background: #e63946; color: #fff; }
+
+    .lab-grid { display: flex; flex-wrap: wrap; margin: 0 -8px; }
+    .lab-grid > * { padding: 0 8px; box-sizing: border-box; }
+    .lab-grid .form-group { margin-bottom: 14px; }
+    .lab-col-2 { width: 16.666%; }
+    .lab-col-3 { width: 25%; }
+    .lab-col-4 { width: 33.333%; }
+    .lab-col-5 { width: 41.666%; }
+    .lab-col-6 { width: 50%; }
+    .lab-col-8 { width: 66.666%; }
+    @media (max-width: 768px) {
+        .lab-col-8, .lab-col-5 { width: 100%; }
+        .lab-col-4, .lab-col-3, .lab-col-6 { width: 50%; }
+        .lab-col-2 { width: 50%; }
+        .lab-grid .form-group { margin-bottom: 12px; }
+    }
+</style>
+
+<div class="stagger-children">
+
+    <!-- Header & Action -->
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+        <div>
+            <h2 style="margin-bottom: 4px;">
+                <i class="fas fa-flask" style="color: #2DC653;"></i> قسم المختبر والتحاليل الطبية (LIS)
+            </h2>
+            <p class="text-muted" style="font-size: 0.85rem;">طلبات متعددة العناصر، بانلات مركبة، مزرعة وحساسية، وربط أجهزة المختبر</p>
+        </div>
+
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="btn btn-outline-primary" ng-if="vm.canManageTests" ng-click="vm.openCreateTestModal()">
+                <i class="fas fa-plus-circle me-1"></i> فحص / بانل جديد
+            </button>
+            <button class="btn btn-outline-primary" ng-if="vm.canManageDevices" ng-click="vm.openCreateDeviceModal()">
+                <i class="fas fa-microscope me-1"></i> جهاز جديد
+            </button>
+            <button class="btn btn-primary" ng-if="vm.canOrder" ng-click="vm.openOrderModal()">
+                <i class="fas fa-vial me-1"></i> طلب تحليل جديد
+            </button>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="lab-tabs no-print">
+        <button class="lab-tab" ng-class="{'active': vm.activeTab === 'orders'}" ng-click="vm.setTab('orders')">
+            <i class="fas fa-list-ul"></i> طلبات التحاليل
+        </button>
+        <button class="lab-tab" ng-class="{'active': vm.activeTab === 'tests'}" ng-click="vm.setTab('tests')">
+            <i class="fas fa-vials"></i> الفحوصات والبانلات
+        </button>
+        <button class="lab-tab" ng-class="{'active': vm.activeTab === 'devices'}" ng-click="vm.setTab('devices')">
+            <i class="fas fa-microscope"></i> أجهزة المختبر
+        </button>
+    </div>
+
+    <!-- ============================================================
+         TAB: Orders
+    ============================================================ -->
+    <div ng-if="vm.activeTab === 'orders'">
+        <div class="card">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <h4 style="margin: 0;"><i class="fas fa-list-ul me-1" style="color: var(--primary);"></i> سجّل طلبات التحاليل الطبيّة</h4>
+                <span class="badge badge-normal" ng-if="vm.orders.length > 0">{{vm.orders.length}} طلب متاح</span>
+            </div>
+            <div class="table-wrapper" style="max-height: 550px; overflow-y: auto;">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>رقم الطلب</th>
+                            <th>اسم المريض</th>
+                            <th>الفحوصات</th>
+                            <th>تاريخ الطلب</th>
+                            <th>حالة الطلب</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="order in vm.orders" style="animation: fadeInUp {{$index * 0.04}}s ease;">
+                            <td><strong>#LAB-{{order.labOrderID}}</strong></td>
+                            <td>
+                                <div style="font-weight: bold;">{{order.patientUser.fullName}}</div>
+                                <small class="text-muted">طبيب: د. {{order.doctor.fullName}}</small>
+                            </td>
+                            <td style="min-width: 260px;">
+                                <div ng-repeat="item in order.items">
+                                    <span class="badge" ng-class="{'badge-success': item.resultStatus === 'Normal', 'badge-danger': item.resultStatus === 'High', 'badge-warning': item.resultStatus === 'Low', 'badge-secondary': item.resultStatus === 'Pending'}">
+                                        {{item.labTest.testName}}
+                                    </span>
+                                    <span ng-if="item.resultValue" style="font-size: 0.78rem; color: #555; margin-right: 4px;">
+                                        {{item.resultValue}} {{item.labTest.unit}}
+                                        <span ng-if="item.resultStatus === 'High'" style="color:#E63946;"><i class="fas fa-arrow-up"></i></span>
+                                        <span ng-if="item.resultStatus === 'Low'" style="color:#4361ee;"><i class="fas fa-arrow-down"></i></span>
+                                    </span>
+                                    <span ng-if="item.resultValue" class="text-muted" style="font-size:0.72rem;">({{item.resultStatus}})</span>
+                                    <span ng-if="!item.resultValue" class="text-muted" style="font-size:0.72rem;">—</span>
+                                    <br ng-if="!$last">
+                                </div>
+                            </td>
+                            <td>{{order.requestedAt | date:'yyyy/MM/dd hh:mm a'}}</td>
+                            <td>
+                                <span class="badge" ng-class="{'badge-warning': order.status === 'Requested', 'badge-info': order.status === 'InProgress', 'badge-success': order.status === 'Completed'}">
+                                    {{order.status === 'Requested' ? 'بانتظار النتيجة' : (order.status === 'InProgress' ? 'قيد الفحص' : 'مكتمل')}}
+                                </span>
+                            </td>
+                            <td>
+                                <div style="display: flex; gap: 6px; flex-wrap: wrap; max-width: 260px;">
+                                    <span ng-repeat="item in order.items" style="display: inline-flex; gap: 4px; margin-bottom: 2px;">
+                                        <button class="btn btn-sm btn-primary" ng-if="vm.canResult" ng-click="vm.openResultModal(order, item)" title="إدخال / تعديل نتيجة {{item.labTest.testName}}" style="white-space: nowrap;">
+                                            <i class="fas fa-edit"></i> {{item.labTest.code}}
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-success" ng-if="vm.canResult && item.labTest.category === 'Microbiology'" ng-click="vm.openCultureModal(order, item)" title="مزرعة وحساسية" style="white-space: nowrap;">
+                                            <i class="fas fa-bacteria"></i> مزرعة
+                                        </button>
+                                    </span>
+                                    <button class="btn btn-sm btn-secondary" ng-if="order.status === 'Completed'" ng-click="vm.openPrintModal(order)" title="طباعة التقرير" style="white-space: nowrap;">
+                                        <i class="fas fa-print"></i> التقرير
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr ng-if="!vm.orders || vm.orders.length === 0">
+                            <td colspan="6" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                                <i class="fas fa-vials" style="font-size: 2.5rem; margin-bottom: 10px; display: block; opacity: 0.4;"></i>
+                                لا توجد طلبات تحاليل مسجلة حالياً
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         TAB: Tests & Panels
+    ============================================================ -->
+    <div ng-if="vm.activeTab === 'tests'">
+        <div class="card">
+            <div class="card-header">
+                <h4 style="margin: 0;"><i class="fas fa-vials me-1" style="color: var(--primary);"></i> الفحوصات والبانلات المركبة</h4>
+            </div>
+            <div class="table-wrapper" style="max-height: 550px; overflow-y: auto;">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>الفحص</th>
+                            <th>الكود</th>
+                            <th>التصنيف</th>
+                            <th>السعر</th>
+                            <th>الوحدة</th>
+                            <th>النوع</th>
+                            <th>المعدل الطبيعي</th>
+                            <th>الأعضاء / الجهاز</th>
+                            <th>إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="t in vm.labTests" style="animation: fadeInUp {{$index * 0.03}}s ease;">
+                            <td>
+                                <strong ng-if="!t.isPanel">{{t.testName}}</strong>
+                                <strong ng-if="t.isPanel" style="color: #7B2CBF;"><i class="fas fa-layer-group me-1"></i>{{t.testName}}</strong>
+                            </td>
+                            <td><span class="badge" style="background: rgba(0,119,182,0.1); color: var(--primary); font-family: monospace;">{{t.code}}</span></td>
+                            <td>{{t.category}}</td>
+                            <td>{{t.price}} د.ل</td>
+                            <td>{{t.unit}}</td>
+                            <td>
+                                <span class="badge" ng-class="t.isPanel ? 'badge-info' : 'badge-normal'">{{t.isPanel ? 'بانل' : 'فحص مفرد'}}</span>
+                            </td>
+                            <td style="font-size: 0.8rem; color: #555;">
+                                <span ng-if="!t.isPanel && t.referenceRanges.length > 0">{{t.referenceRanges[0].normalMin}} - {{t.referenceRanges[0].normalMax}} {{t.unit}}</span>
+                                <span ng-if="!t.isPanel && (!t.referenceRanges || t.referenceRanges.length === 0)">—</span>
+                                <span ng-if="t.isPanel">—</span>
+                            </td>
+                            <td style="font-size: 0.8rem;">
+                                <span ng-if="t.isPanel && t.panelChildren.length > 0">
+                                    <span class="badge badge-secondary" ng-repeat="c in t.panelChildren" style="margin-right: 3px;">{{c.testName}}</span>
+                                </span>
+                                <span ng-if="t.isPanel && t.panelChildren.length === 0" class="text-muted">لا أعضاء بعد</span>
+                                <span ng-if="!t.isPanel && t.device" class="text-muted"><i class="fas fa-microscope me-1"></i>{{t.device.deviceName}}</span>
+                                <span ng-if="!t.isPanel && !t.device" class="text-muted">يدوي</span>
+                            </td>
+                            <td>
+                                <div style="display: flex; gap: 5px; flex-wrap: wrap; max-width: 150px;">
+                                    <button class="btn btn-sm btn-outline-primary" ng-if="vm.canManageTests" ng-click="vm.openEditTestModal(t)" title="تعديل">
+                                        <i class="fas fa-pen"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" ng-if="vm.canManageTests" ng-click="vm.deleteTest(t)" title="حذف">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    <span ng-if="t.isPanel && vm.canManageTests">
+                                        <select class="form-control form-control-sm" style="width: 120px; display: inline-block;" ng-model="vm.panelMemberTestId">
+                                            <option value="">— أضف عضوًا —</option>
+                                            <option ng-repeat="x in vm.labTests" ng-if="!x.isPanel && x.labTestID !== t.labTestID" ng-value="x.labTestID">{{x.testName}}</option>
+                                        </select>
+                                        <button class="btn btn-sm btn-outline-success" ng-click="vm.addPanelMember(t)" title="إضافة للبانل">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </span>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr ng-if="!vm.labTests || vm.labTests.length === 0">
+                            <td colspan="9" style="text-align: center; padding: 40px; color: var(--text-muted);">لا توجد فحوصات مسجلة</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         TAB: Devices
+    ============================================================ -->
+    <div ng-if="vm.activeTab === 'devices'">
+        <!-- How to connect a device -->
+        <div class="lab-device-help no-print">
+            <h5><i class="fas fa-plug" style="color: var(--primary);"></i> كيفية ربط جهاز مختبر جديد</h5>
+            <p style="color: var(--text-secondary); margin-bottom: 6px; line-height: 1.7;">
+                الجهاز يُسجّل في هذا النظام كعنصر مخزون/جهاز رقمي، ثم يُربط بالفحوصات لاستقبال النتائج تلقائياً. الخطوات:
+            </p>
+            <div class="lab-device-steps">
+                <div class="lab-device-step">
+                    <span class="step-num">1</span>
+                    <div class="step-title">سجّل الجهاز</div>
+                    <p>من قائمة الأجهزة اضغط زر «تعديل» أو أضف الجهاز عبر قسم الأصول/المخزون، وأدخل اسم الجهاز والموديل وكود الجهاز.</p>
+                </div>
+                <div class="lab-device-step">
+                    <span class="step-num">2</span>
+                    <div class="step-title">حدد نوع الاتصال</div>
+                    <p>اختر نوع الاتصال المناسب: <strong>USB/Serial</strong> للواجهات السلكية المباشرة، <strong>Network/HL7</strong> إذا كان الجهاز يدعم بروتوكول HL7 أو الاتصال عبر الشبكة (IP/Port).</p>
+                </div>
+                <div class="lab-device-step">
+                    <span class="step-num">3</span>
+                    <div class="step-title">فعّل الجهاز</div>
+                    <p>اضبط الحالة على «مفعّل» ليظهر الجهاز متاحاً داخل هذا التبويب، ويتيح زر «التقاط» لقراءة النتيجة مباشرة من الجهاز.</p>
+                </div>
+                <div class="lab-device-step">
+                    <span class="step-num">4</span>
+                    <div class="step-title">اربط الجهاز بالفحوصات</div>
+                    <p>من تبويب «الفحوصات والبانلات» اربط كل فحص بالجهاز الذي ينفذه، ليتم استقبال نتيجة الفحص تلقائياً عند وصولها من الجهاز المرتبط.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <h4 style="margin: 0;"><i class="fas fa-microscope me-1" style="color: var(--primary);"></i> أجهزة المختبر المتصلة</h4>
+                <span class="badge badge-normal" ng-if="vm.devices.length > 0">{{vm.devices.length}} جهاز</span>
+            </div>
+            <div class="table-wrapper" style="max-height: 550px; overflow-y: auto;">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>الجهاز</th>
+                            <th>الكود</th>
+                            <th>الموديل</th>
+                            <th>نوع الاتصال</th>
+                            <th>الحالة</th>
+                            <th>إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="d in vm.devices" style="animation: fadeInUp {{$index * 0.03}}s ease;">
+                            <td><strong>{{d.deviceName}}</strong></td>
+                            <td><span class="badge" style="background: rgba(0,119,182,0.1); color: var(--primary); font-family: monospace;">{{d.deviceCode}}</span></td>
+                            <td>{{d.deviceModel || '-'}}</td>
+                            <td>{{d.connectionType}}</td>
+                            <td>
+                                <span class="badge" ng-class="d.isActive ? 'badge-success' : 'badge-secondary'">{{d.isActive ? 'مفعّل' : 'معطّل'}}</span>
+                            </td>
+                            <td>
+                                <div style="display: flex; gap: 5px;">
+                                    <button class="btn btn-sm btn-outline-primary" ng-if="vm.canManageDevices" ng-click="vm.openEditDeviceModal(d)" title="تعديل">
+                                        <i class="fas fa-pen"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-success" ng-if="vm.canResult" ng-click="vm.openCaptureModal(d)" title="التقاط نتيجة من الجهاز">
+                                        <i class="fas fa-wave-square"></i> التقاط
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr ng-if="!vm.devices || vm.devices.length === 0">
+                            <td colspan="6" style="text-align: center; padding: 40px; color: var(--text-muted);">لا توجد أجهزة مسجلة</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         MODAL: New Order (multi-test)
+    ============================================================ -->
+    <div class="modal-overlay" ng-if="vm.showOrderModal" ng-click="vm.showOrderModal = false">
+        <div class="modal-content" style="max-width: 620px;" ng-click="$event.stopPropagation()">
+            <div class="modal-header">
+                <h4><i class="fas fa-vial" style="color: #2DC653; margin-left: 8px;"></i> طلب تحليل جديد (فهم متعددة / بانلات)</h4>
+                <button class="btn-icon" style="background: none; border: none; font-size: 1.2rem;" ng-click="vm.showOrderModal = false"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>اختر المريض <span style="color: red;">*</span></label>
+                    <select class="form-control" ng-model="vm.newOrder.patientUserId" required>
+                        <option value="">-- اختر المريض --</option>
+                        <option ng-repeat="p in vm.patients" ng-value="p.userID">{{p.fullName}} ({{p.phone || 'بدون هاتف'}})</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>اختر الفحوصات / البانلات المطلوبة <span style="color: red;">*</span></label>
+                    <div style="max-height: 220px; overflow-y: auto; border: 1px solid #e3e8ef; border-radius: 8px; padding: 8px;">
+                        <label ng-repeat="t in vm.labTests" style="display: flex; align-items: center; gap: 8px; padding: 6px 8px; cursor: pointer; border-bottom: 1px solid #f0f2f5; margin-bottom: 0;" ng-class="t.isPanel ? 'panel-checkbox' : ''">
+                            <input type="checkbox" ng-checked="vm.isTestSelected(t.labTestID)" ng-click="vm.toggleTestSelection(t.labTestID)">
+                            <span ng-if="t.isPanel" style="color:#7B2CBF;"><i class="fas fa-layer-group me-1"></i></span>
+                            <span style="font-weight: {{t.isPanel ? 'bold' : 'normal'}};">{{t.testName}}</span>
+                            <small class="text-muted">({{t.code}}) - {{t.price}} د.ل</small>
+                        </label>
+                        <div ng-if="!vm.labTests || vm.labTests.length === 0" class="text-muted" style="padding: 12px;">لا توجد فحوصات. أضف فحصاً من تبويب "الفحوصات والبانلات".</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>ملاحظات الطبيب للتحليل</label>
+                    <textarea class="form-control" rows="2" ng-model="vm.newOrder.resultNotes" placeholder="ملاحظات عامة حول الطلب..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" ng-click="vm.submitCreateOrder()"><i class="fas fa-paper-plane me-1"></i> إرسال للمختبر</button>
+                <button class="btn btn-secondary" ng-click="vm.showOrderModal = false">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         MODAL: Item Result
+    ============================================================ -->
+    <div class="modal-overlay" ng-if="vm.showResultModal" ng-click="vm.showResultModal = false">
+        <div class="modal-content" style="max-width: 450px;" ng-click="$event.stopPropagation()">
+            <div class="modal-header">
+                <h4><i class="fas fa-edit" style="color: var(--primary); margin-left: 8px;"></i> إدخال نتيجة التحليل</h4>
+                <button class="btn-icon" style="background: none; border: none; font-size: 1.2rem;" ng-click="vm.showResultModal = false"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div style="background: rgba(0,119,182,0.05); padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 0.85rem;">
+                    <div><strong>الفحص:</strong> {{vm.selectedItem.labTest.testName}} ({{vm.selectedItem.labTest.code}})</div>
+                    <div><strong>المعدل الطبيعي:</strong>
+                        <span ng-if="vm.selectedItem.labTest.referenceRanges.length > 0">{{vm.selectedItem.labTest.referenceRanges[0].normalMin}} - {{vm.selectedItem.labTest.referenceRanges[0].normalMax}} {{vm.selectedItem.labTest.unit}}</span>
+                        <span ng-if="!vm.selectedItem.labTest.referenceRanges || vm.selectedItem.labTest.referenceRanges.length === 0">—</span>
+                    </div>
+                    <div><strong>المريض:</strong> {{vm.selectedOrder.patientUser.fullName}}</div>
+                </div>
+
+                <div class="form-group">
+                    <label>قيمة النتيجة ({{vm.selectedItem.labTest.unit}}) <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" ng-model="vm.resultInput.resultValue" required placeholder="مثال: 12.5 — أو Positive/Negative" style="font-size: 1.2rem; font-weight: bold;">
+                    <small class="text-muted">يقارن النظام تلقائياً بالمعدل (مع مراعاة الجنس والعمر) ويحدد طبيعية/عالية/منخفضة.</small>
+                </div>
+
+                <div class="form-group">
+                    <label>ملاحظات فني المختبر</label>
+                    <textarea class="form-control" rows="2" ng-model="vm.resultInput.technicianNotes" placeholder="أدخل أي ملاحظات فنية..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" ng-click="vm.submitResult()"><i class="fas fa-check-circle me-1"></i> اعتماد النتيجة</button>
+                <button class="btn btn-secondary" ng-click="vm.showResultModal = false">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         MODAL: Culture & Sensitivity
+    ============================================================ -->
+    <div class="modal-overlay" ng-if="vm.showCultureModal" ng-click="vm.showCultureModal = false">
+        <div class="modal-content" style="max-width: 640px;" ng-click="$event.stopPropagation()">
+            <div class="modal-header">
+                <h4><i class="fas fa-bacteria" style="color: #7B2CBF; margin-left: 8px;"></i> المزرعة والحساسية — {{vm.selectedItem.labTest.testName}}</h4>
+                <button class="btn-icon" style="background: none; border: none; font-size: 1.2rem;" ng-click="vm.showCultureModal = false"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div style="background: rgba(123,44,191,0.05); padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 0.85rem;">
+                    <div><strong>المريض:</strong> {{vm.selectedOrder.patientUser.fullName}} — <strong>الطلب:</strong> #LAB-{{vm.selectedOrder.labOrderID}}</div>
+                </div>
+
+                <div class="lab-grid">
+                    <div class="lab-col-6 form-group">
+                        <label>الكائن الدقيق (Organism)</label>
+                        <input type="text" class="form-control" ng-model="vm.cultureInput.organism" placeholder="مثال: E. coli">
+                    </div>
+                    <div class="lab-col-6 form-group">
+                        <label>صبغة جرام</label>
+                        <select class="form-control" ng-model="vm.cultureInput.gramStain">
+                            <option value="">—</option>
+                            <option value="Positive">إيجابية</option>
+                            <option value="Negative">سلبية</option>
+                        </select>
+                    </div>
+                    <div class="lab-col-6 form-group">
+                        <label>حالة المزرعة</label>
+                        <select class="form-control" ng-model="vm.cultureInput.cultureStatus">
+                            <option value="NoGrowth">لا نمو</option>
+                            <option value="Growth">نمو</option>
+                        </select>
+                    </div>
+                    <div class="lab-col-6 form-group">
+                        <label>الكمية (Quantitative)</label>
+                        <select class="form-control" ng-model="vm.cultureInput.quantitativeResult">
+                            <option value="">—</option>
+                            <option value="Light">خفيف</option>
+                            <option value="Moderate">متوسط</option>
+                            <option value="Heavy">كثيف</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer" style="padding: 0 0 12px 0; margin-top: 0;">
+                    <button class="btn btn-primary" ng-click="vm.saveCulture()"><i class="fas fa-save me-1"></i> حفظ بيانات المزرعة</button>
+                </div>
+
+                <!-- Sensitivity Results -->
+                <h6 style="margin-top: 16px; border-top: 1px solid #eee; padding-top: 12px;">
+                    <i class="fas fa-pills me-1" style="color: var(--primary);"></i> نتائج الحساسية للمضادات الحيوية
+                </h6>
+                <div class="lab-grid">
+                    <div class="lab-col-5 form-group">
+                        <label>المضاد الحيوي</label>
+                        <input type="text" class="form-control" ng-model="vm.sensitivityInput.antibioticName" placeholder="مثال: Amoxicillin">
+                    </div>
+                    <div class="lab-col-3 form-group">
+                        <label>التفسير</label>
+                        <select class="form-control" ng-model="vm.sensitivityInput.interpretation">
+                            <option value="Sensitive">حساس S</option>
+                            <option value="Intermediate">متوسط I</option>
+                            <option value="Resistant">مقاوم R</option>
+                        </select>
+                    </div>
+                    <div class="lab-col-2 form-group">
+                        <label>قطر (مم)</label>
+                        <input type="number" class="form-control" ng-model="vm.sensitivityInput.zoneDiameter">
+                    </div>
+                    <div class="lab-col-2 form-group" style="display: flex; align-items: flex-end;">
+                        <button class="btn btn-outline-success btn-block" ng-click="vm.addSensitivity()"><i class="fas fa-plus"></i></button>
+                    </div>
+                </div>
+
+                <table class="table table-sm" ng-if="vm.culture && vm.culture.sensitivityResults.length > 0">
+                    <thead>
+                        <tr>
+                            <th>المضاد</th>
+                            <th>التفسير</th>
+                            <th>القطر (مم)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="s in vm.culture.sensitivityResults">
+                            <td><strong>{{s.antibioticName}}</strong></td>
+                            <td>
+                                <span class="badge" ng-class="{'badge-success': s.interpretation === 'Sensitive', 'badge-warning': s.interpretation === 'Intermediate', 'badge-danger': s.interpretation === 'Resistant'}">
+                                    {{s.interpretation === 'Sensitive' ? 'حساس S' : (s.interpretation === 'Intermediate' ? 'متوسط I' : 'مقاوم R')}}
+                                </span>
+                            </td>
+                            <td>{{s.zoneDiameter || '—'}}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div ng-if="vm.culture && vm.culture.sensitivityResults.length === 0" class="text-muted" style="font-size: 0.85rem;">لم تُضف نتائج حساسية بعد.</div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" ng-click="vm.showCultureModal = false">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         MODAL: Printable Official Report
+    ============================================================ -->
+    <div class="modal-overlay" ng-if="vm.showPrintModal" ng-click="vm.showPrintModal = false">
+        <div class="modal-content" style="max-width: 680px;" ng-click="$event.stopPropagation()">
+            <div class="modal-header">
+                <h4><i class="fas fa-file-medical" style="color: #2DC653; margin-left: 8px;"></i> تقرير فحص المختبر المعتمد</h4>
+                <button class="btn-icon" style="background: none; border: none; font-size: 1.2rem;" ng-click="vm.showPrintModal = false"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div class="modal-body" style="background: #fff; color: #333; padding: 24px; font-family: 'Cairo', sans-serif;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0077b6; padding-bottom: 12px; margin-bottom: 20px;">
+                    <div>
+                        <h2 style="margin: 0; color: #0077b6;">العيادة الطبية المجمعة</h2>
+                        <small style="color: #666;">مختبر التحاليل الطبية الدقيقة (LIS)</small>
+                    </div>
+                    <div style="text-align: left; font-size: 0.8rem; color: #555;">
+                        <div><strong>تاريخ التقرير:</strong> {{vm.selectedOrder.completedAt | date:'yyyy/MM/dd'}}</div>
+                        <div><strong>رقم الطلب:</strong> #LAB-{{vm.selectedOrder.labOrderID}}</div>
+                    </div>
+                </div>
+
+                <div style="background: #f8f9fa; border-radius: 8px; padding: 12px 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.85rem; margin-bottom: 20px;">
+                    <div><strong>اسم المريض:</strong> {{vm.selectedOrder.patientUser.fullName}}</div>
+                    <div><strong>الطبيب المعالج:</strong> د. {{vm.selectedOrder.doctor.fullName}}</div>
+                </div>
+
+                <table class="table" style="margin-bottom: 20px;">
+                    <thead>
+                        <tr style="background: #0077b6; color: white;">
+                            <th>اسم الفحص</th>
+                            <th>النتيجة</th>
+                            <th>المعدل الطبيعي</th>
+                            <th>الحالة</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="item in vm.selectedOrder.items">
+                            <td><strong>{{item.labTest.testName}}</strong></td>
+                            <td style="font-size: 1.1rem; font-weight: bold;">{{item.resultValue}} {{item.labTest.unit}}</td>
+                            <td>
+                                <span ng-if="item.labTest.referenceRanges.length > 0">{{item.labTest.referenceRanges[0].normalMin}} - {{item.labTest.referenceRanges[0].normalMax}} {{item.labTest.unit}}</span>
+                                <span ng-if="!item.labTest.referenceRanges || item.labTest.referenceRanges.length === 0">—</span>
+                            </td>
+                            <td>
+                                <strong ng-style="{'color': item.resultStatus === 'High' ? '#E63946' : (item.resultStatus === 'Low' ? '#4361ee' : '#2DC653')}">
+                                    {{item.resultStatus === 'High' ? 'مرتفع High' : (item.resultStatus === 'Low' ? 'منخفض Low' : 'طبيعي Normal')}}
+                                </strong>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 30px; border-top: 1px dashed #ccc; padding-top: 16px;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 0.7rem; color: #666; margin-bottom: 4px;">رمز التحقق والختم الرقمي</div>
+                        <span style="font-family: monospace; font-size: 0.7rem; color: #0077b6;">{{vm.selectedOrder.verificationQRCode || 'CLINICPRO-LAB-' + vm.selectedOrder.labOrderID}}</span>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="border: 2px dashed #2DC653; padding: 8px 16px; border-radius: 8px; color: #2DC653; font-weight: bold; font-size: 0.85rem; transform: rotate(-3deg);">
+                            <i class="fas fa-check-double me-1"></i> معتمد إلكترونياً من المختبر
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-primary" ng-click="vm.printReport()"><i class="fas fa-print me-1"></i> طباعة التقرير الرسمي</button>
+                <button class="btn btn-secondary" ng-click="vm.showPrintModal = false">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         MODAL: Create/Edit Test
+    ============================================================ -->
+    <div class="modal-overlay" ng-if="vm.showTestModal" ng-click="vm.showTestModal = false">
+        <div class="modal-content" style="max-width: 640px;" ng-click="$event.stopPropagation()">
+            <div class="modal-header">
+                <h4><i class="fas fa-vials" style="color: var(--primary); margin-left: 8px;"></i> {{vm.testEditMode ? 'تعديل فحص / بانل' : 'فحص / بانل جديد'}}</h4>
+                <button class="btn-icon" style="background: none; border: none; font-size: 1.2rem;" ng-click="vm.showTestModal = false"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="lab-grid">
+                    <div class="lab-col-8 form-group">
+                        <label>اسم الفحص <span style="color: red;">*</span></label>
+                        <input type="text" class="form-control" ng-model="vm.testForm.testName">
+                    </div>
+                    <div class="lab-col-4 form-group">
+                        <label>الكود <span style="color: red;">*</span></label>
+                        <input type="text" class="form-control" ng-model="vm.testForm.code" placeholder="CBC">
+                    </div>
+                    <div class="lab-col-4 form-group">
+                        <label>التصنيف</label>
+                        <select class="form-control" ng-model="vm.testForm.category">
+                            <option value="Hematology">Hematology</option>
+                            <option value="Biochemistry">Biochemistry</option>
+                            <option value="Immunology">Immunology</option>
+                            <option value="Microbiology">Microbiology</option>
+                            <option value="General">General</option>
+                        </select>
+                    </div>
+                    <div class="lab-col-4 form-group">
+                        <label>السعر (د.ل)</label>
+                        <input type="number" class="form-control" ng-model="vm.testForm.price" min="0" step="0.01">
+                    </div>
+                    <div class="lab-col-4 form-group">
+                        <label>الوحدة</label>
+                        <input type="text" class="form-control" ng-model="vm.testForm.unit" placeholder="mg/dL">
+                    </div>
+                    <div class="lab-col-6 form-group">
+                        <label class="form-check-label">
+                            <input type="checkbox" ng-model="vm.testForm.isPanel"> بانل مركب (مجموعة فحوصات)
+                        </label>
+                    </div>
+                    <div class="lab-col-6 form-group">
+                        <label>الجهاز (إن وُجد)</label>
+                        <select class="form-control" ng-model="vm.testForm.deviceID">
+                            <option ng-value="null">يدوي — بدون جهاز</option>
+                            <option ng-repeat="d in vm.devices" ng-value="d.labDeviceID">{{d.deviceName}}</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div ng-if="!vm.testForm.isPanel">
+                    <h6 style="margin-top: 8px;"><i class="fas fa-sliders-h me-1"></i> المعدلات المرجعية</h6>
+                    <div ng-repeat="r in vm.testForm.referenceRanges" style="border: 1px solid #eee; border-radius: 8px; padding: 10px; margin-bottom: 8px;">
+                        <div class="lab-grid">
+                            <div class="lab-col-2 form-group">
+                                <label>الجنس</label>
+                                <select class="form-control" ng-model="r.gender">
+                                    <option value="All">الكل</option>
+                                    <option value="Male">ذكر</option>
+                                    <option value="Female">أنثى</option>
+                                </select>
+                            </div>
+                            <div class="lab-col-2 form-group">
+                                <label>من عمر</label>
+                                <input type="number" class="form-control" ng-model="r.minAge">
+                            </div>
+                            <div class="lab-col-2 form-group">
+                                <label>إلى عمر</label>
+                                <input type="number" class="form-control" ng-model="r.maxAge">
+                            </div>
+                            <div class="lab-col-2 form-group">
+                                <label>الحد الأدنى</label>
+                                <input type="number" class="form-control" ng-model="r.normalMin" step="0.01">
+                            </div>
+                            <div class="lab-col-2 form-group">
+                                <label>الحد الأعلى</label>
+                                <input type="number" class="form-control" ng-model="r.normalMax" step="0.01">
+                            </div>
+                            <div class="lab-col-2 form-group" style="display: flex; align-items: flex-end;">
+                                <button class="btn btn-sm btn-outline-danger" ng-click="vm.removeRange($index)"><i class="fas fa-times"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn btn-sm btn-outline-primary" ng-click="vm.addRange()"><i class="fas fa-plus me-1"></i> إضافة معيار</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" ng-click="vm.submitTest()"><i class="fas fa-save me-1"></i> حفظ</button>
+                <button class="btn btn-secondary" ng-click="vm.showTestModal = false">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         MODAL: Create/Edit Device
+    ============================================================ -->
+    <div class="modal-overlay" ng-if="vm.showDeviceModal" ng-click="vm.showDeviceModal = false">
+        <div class="modal-content" style="max-width: 480px;" ng-click="$event.stopPropagation()">
+            <div class="modal-header">
+                <h4><i class="fas fa-microscope" style="color: var(--primary); margin-left: 8px;"></i> {{vm.deviceEditMode ? 'تعديل جهاز' : 'جهاز جديد'}}</h4>
+                <button class="btn-icon" style="background: none; border: none; font-size: 1.2rem;" ng-click="vm.showDeviceModal = false"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>اسم الجهاز <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" ng-model="vm.deviceForm.deviceName">
+                </div>
+                <div class="form-group">
+                    <label>كود الجهاز <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" ng-model="vm.deviceForm.deviceCode" placeholder="COBAS-01">
+                </div>
+                <div class="form-group">
+                    <label>الموديل</label>
+                    <input type="text" class="form-control" ng-model="vm.deviceForm.deviceModel">
+                </div>
+                <div class="form-group">
+                    <label>نوع الاتصال</label>
+                    <select class="form-control" ng-model="vm.deviceForm.connectionType">
+                        <option value="Manual">يدوي</option>
+                        <option value="HL7">HL7</option>
+                        <option value="ASTM">ASTM</option>
+                        <option value="Serial">Serial</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-check-label">
+                        <input type="checkbox" ng-model="vm.deviceForm.isActive"> مفعّل
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" ng-click="vm.submitDevice()"><i class="fas fa-save me-1"></i> حفظ</button>
+                <button class="btn btn-secondary" ng-click="vm.showDeviceModal = false">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         MODAL: Device Capture
+    ============================================================ -->
+    <div class="modal-overlay" ng-if="vm.showCaptureModal" ng-click="vm.showCaptureModal = false">
+        <div class="modal-content" style="max-width: 480px;" ng-click="$event.stopPropagation()">
+            <div class="modal-header">
+                <h4><i class="fas fa-wave-square" style="color: #2DC653; margin-left: 8px;"></i> التقاط نتيجة من {{vm.captureDevice.deviceName}}</h4>
+                <button class="btn-icon" style="background: none; border: none; font-size: 1.2rem;" ng-click="vm.showCaptureModal = false"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>عنصر الطلب المعلّق <span style="color: red;">*</span></label>
+                    <select class="form-control" ng-model="vm.captureInput.itemId">
+                        <option value="">-- اختر عنصراً بانتظار النتيجة --</option>
+                        <option ng-repeat="it in vm.pendingItems" ng-value="it.id">{{it.label}}</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>القيمة المقروءة <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" ng-model="vm.captureInput.value" placeholder="مثال: 98.4">
+                </div>
+                <div class="form-group">
+                    <label>ملاحظات</label>
+                    <input type="text" class="form-control" ng-model="vm.captureInput.notes" placeholder="اختياري — يُضاف تلقائياً اسم الجهاز">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" ng-click="vm.submitCapture()"><i class="fas fa-download me-1"></i> استلام النتيجة</button>
+                <button class="btn btn-secondary" ng-click="vm.showCaptureModal = false">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+</div>

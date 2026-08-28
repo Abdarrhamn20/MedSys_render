@@ -1,0 +1,578 @@
+<div class="treasury-page">
+
+    <style>
+        .tr-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 25px; }
+        .tr-stat-card { background: var(--bg-card, #fff); padding: 20px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.03); position: relative; overflow: hidden; }
+        .tr-stat-card::before { content: ''; position: absolute; top: 0; right: 0; width: 5px; height: 100%; background: var(--stat-color, #4361ee); }
+        .tr-stat-card h3 { font-size: 0.82rem; color: var(--text-muted, #888); margin: 0 0 8px 0; font-weight: 600; }
+        .tr-stat-value { font-size: 1.5rem; font-weight: 700; color: var(--text-primary, #333); margin: 0; }
+        .tr-filter-bar { display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; margin-bottom: 20px; }
+        .tr-filter-bar label { display: block; font-size: 0.8rem; font-weight: bold; color: var(--text-secondary, #555); margin-bottom: 6px; }
+        .tr-filter-bar select, .tr-filter-bar input { padding: 10px; border-radius: 8px; border: 1px solid var(--border-color, #ddd); background: var(--bg-primary, #fff); color: var(--text-primary, #333); font-family: 'Cairo'; outline: none; }
+        .tr-card { background: var(--bg-card, #fff); border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.03); overflow: hidden; }
+        .tr-card-header { display: flex; justify-content: space-between; align-items: center; padding: 18px 22px; border-bottom: 2px solid rgba(0,0,0,0.05); }
+        .tr-card-header h2 { font-size: 1.05rem; margin: 0; color: var(--text-primary, #333); font-weight: 700; }
+        .tr-table-wrap { overflow-x: auto; }
+        .tr-table { width: 100%; border-collapse: collapse; text-align: right; }
+        .tr-table thead tr { border-bottom: 2px solid rgba(0,0,0,0.05); background: #f8f9fa; }
+        .tr-table th { padding: 14px; font-weight: 700; color: #555; white-space: nowrap; }
+        .tr-table td { padding: 13px 14px; color: #333; border-bottom: 1px solid rgba(0,0,0,0.03); }
+        .tr-table tbody tr:hover { background: rgba(67, 97, 238, 0.03); }
+        .tr-tag { padding: 4px 12px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; white-space: nowrap; }
+        .tr-tag-receipt { background: rgba(45, 198, 83, 0.12); color: #1f9d55; }
+        .tr-tag-payment { background: rgba(230, 57, 70, 0.12); color: #c0392b; }
+        .tr-tag-transfer { background: rgba(67, 97, 238, 0.12); color: #4361ee; }
+        .tr-empty { padding: 40px; text-align: center; color: #888; font-family: 'Cairo'; }
+        .tr-btn { padding: 10px 18px; border-radius: 8px; font-family: 'Cairo'; font-weight: bold; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; font-size: 0.85rem; }
+        .tr-btn-primary { background: #4361ee; color: #fff; }
+        .tr-btn-success { background: #2ec4b6; color: #fff; }
+        .tr-btn-danger { background: #e63946; color: #fff; }
+        .tr-btn-light { background: #f1f3f9; color: #555; }
+        .tr-btn[disabled] { opacity: 0.6; cursor: not-allowed; }
+        .tr-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 20px; }
+        .tr-modal { background: var(--bg-card, #fff); border-radius: 16px; width: 100%; max-width: 720px; max-height: 92vh; overflow-y: auto; box-shadow: 0 25px 60px rgba(0,0,0,0.25); }
+        .tr-modal-header { display: flex; justify-content: space-between; align-items: center; padding: 18px 22px; border-bottom: 2px solid rgba(0,0,0,0.05); position: sticky; top: 0; background: var(--bg-card, #fff); z-index: 2; }
+        .tr-modal-header h2 { font-size: 1.05rem; margin: 0; }
+        .tr-modal-body { padding: 22px; }
+        .tr-modal-footer { padding: 16px 22px; border-top: 2px solid rgba(0,0,0,0.05); display: flex; justify-content: flex-end; gap: 10px; }
+        .tr-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .tr-form-grid .full { grid-column: 1 / -1; }
+        .tr-field label { display: block; font-size: 0.8rem; font-weight: bold; color: var(--text-secondary, #555); margin-bottom: 6px; }
+        .tr-field input, .tr-field select, .tr-field textarea { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color, #ddd); background: var(--bg-primary, #fff); color: var(--text-primary, #333); font-family: 'Cairo'; outline: none; box-sizing: border-box; }
+        .tr-pagination { display: flex; justify-content: space-between; align-items: center; padding: 15px 22px; border-top: 2px solid rgba(0,0,0,0.05); color: #666; font-size: 0.85rem; }
+        .tr-badge { padding: 4px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; }
+        .tr-badge-draft { background: rgba(255, 159, 28, 0.12); color: #b57e12; }
+        .tr-badge-posted { background: rgba(45, 198, 83, 0.12); color: #1f9d55; }
+        .tr-badge-reversed { background: rgba(230, 57, 70, 0.12); color: #c0392b; }
+        @media (max-width: 600px) { .tr-form-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 768px) {
+            .tr-stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 18px; }
+            .tr-stat-card { padding: 12px; border-radius: 12px; }
+            .tr-stat-card h3 { font-size: 0.68rem; margin-bottom: 5px; }
+            .tr-stat-value { font-size: 1.1rem; }
+            .tr-stat-value small { font-size: 0.65rem; }
+            .tr-filter-bar { gap: 10px; }
+            .tr-filter-bar select, .tr-filter-bar input { width: 100%; }
+            .tr-filter-bar > div { flex: 1 1 100%; }
+            .tr-card-header { padding: 14px 16px; }
+            .tr-card-header h2 { font-size: 0.9rem; }
+            .tr-modal { max-height: 88vh; }
+            .tr-modal-header, .tr-modal-body { padding: 16px; }
+            .tr-modal-footer { padding: 14px 16px; }
+            .tr-table th { padding: 10px 8px; font-size: 0.75rem; }
+            .tr-table td { padding: 10px 8px; font-size: 0.8rem; }
+            .tr-pagination { flex-direction: column; gap: 10px; padding: 12px 16px; }
+        }
+    </style>
+
+    <!-- Tabs -->
+    <div class="card-tabs-header no-print" style="margin-bottom: 25px; display: flex; gap: 4px; border-bottom: 2px solid rgba(0,0,0,0.05); padding-bottom: 8px; flex-wrap: wrap; overflow-x: auto;">
+        <button class="tab-btn" ng-class="{'active': vm.activeTab === 'vouchers'}" ng-click="vm.setTab('vouchers')" style="font-family: 'Cairo'; padding: 9px 12px; border: none; background: none; font-weight: bold; cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; font-size: 0.82rem;" ng-style="vm.activeTab === 'vouchers' ? {'border-color': '#4361ee', 'color': '#4361ee'} : {'color': '#666'}">
+            <i class="fas fa-file-invoice" style="margin-left: 5px;"></i>السندات
+        </button>
+        <button class="tab-btn" ng-class="{'active': vm.activeTab === 'treasuries'}" ng-click="vm.setTab('treasuries')" style="font-family: 'Cairo'; padding: 9px 12px; border: none; background: none; font-weight: bold; cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; font-size: 0.82rem;" ng-style="vm.activeTab === 'treasuries' ? {'border-color': '#4361ee', 'color': '#4361ee'} : {'color': '#666'}">
+            <i class="fas fa-vault" style="margin-left: 5px;"></i>الخزائن
+        </button>
+        <button class="tab-btn" ng-class="{'active': vm.activeTab === 'journal'}" ng-click="vm.setTab('journal')" style="font-family: 'Cairo'; padding: 9px 12px; border: none; background: none; font-weight: bold; cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; font-size: 0.82rem;" ng-style="vm.activeTab === 'journal' ? {'border-color': '#4361ee', 'color': '#4361ee'} : {'color': '#666'}">
+            <i class="fas fa-money-check-alt" style="margin-left: 5px;"></i>يومية الخزينة
+        </button>
+        <button class="tab-btn" ng-class="{'active': vm.activeTab === 'receivables'}" ng-click="vm.setTab('receivables')" style="font-family: 'Cairo'; padding: 9px 12px; border: none; background: none; font-weight: bold; cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; font-size: 0.82rem;" ng-style="vm.activeTab === 'receivables' ? {'border-color': '#4361ee', 'color': '#4361ee'} : {'color': '#666'}">
+            <i class="fas fa-hand-holding-usd" style="margin-left: 5px;"></i>المذنيه اليومية
+        </button>
+        <button class="tab-btn" ng-class="{'active': vm.activeTab === 'closure'}" ng-click="vm.setTab('closure')" style="font-family: 'Cairo'; padding: 9px 12px; border: none; background: none; font-weight: bold; cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; font-size: 0.82rem;" ng-style="vm.activeTab === 'closure' ? {'border-color': '#e63946', 'color': '#e63946'} : {'color': '#666'}">
+            <i class="fas fa-lock" style="margin-left: 5px;"></i>الإقفال المالي
+        </button>
+    </div>
+
+    <!-- No Treasury Warning -->
+    <div ng-if="vm.noTreasuryWarning" style="background: linear-gradient(135deg, #FFF3CD, #FFE69C); border: 1px solid #FFD43B; border-radius: 12px; padding: 16px 22px; margin-bottom: 22px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+        <div style="background: rgba(255,183,0,0.15); width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <i class="fas fa-exclamation-triangle" style="color: #E67700; font-size: 1.2rem;"></i>
+        </div>
+        <div style="flex: 1;">
+            <h4 style="margin: 0 0 3px; color: #7D5A00; font-size: 0.92rem;">لا توجد خزينة مخصصة لحسابك</h4>
+            <p style="margin: 0; color: #8B6914; font-size: 0.82rem;">لا يمكن عرض السندات ويومية الخزينة لأن حسابك لم يُربط بخزينة بعد. يرجى التواصل مع المدير لربط حسابك بخزينة مخصصة.</p>
+        </div>
+    </div>
+
+    <!-- ==================== VOUCHERS ==================== -->
+    <div class="tab-content" ng-if="vm.activeTab === 'vouchers'">
+        <div class="tr-filter-bar">
+            <div>
+                <label>نوع السند</label>
+                <select ng-model="vm.filterType" ng-change="vm.applyVoucherFilters()">
+                    <option value="">الكل</option>
+                    <option value="Receipt">سند قبض</option>
+                    <option value="Payment">سند صرف</option>
+                    <option value="Transfer">سند تحويل</option>
+                </select>
+            </div>
+            <div>
+                <label>الحالة</label>
+                <select ng-model="vm.filterStatus" ng-change="vm.applyVoucherFilters()">
+                    <option value="">الكل</option>
+                    <option value="Draft">مسودة</option>
+                    <option value="Posted">مرحّل</option>
+                    <option value="Reversed">معكوس</option>
+                </select>
+            </div>
+            <div>
+                <label>من تاريخ</label>
+                <input type="date" ng-model="vm.filterFrom" ng-change="vm.applyVoucherFilters()">
+            </div>
+            <div>
+                <label>إلى تاريخ</label>
+                <input type="date" ng-model="vm.filterTo" ng-change="vm.applyVoucherFilters()">
+            </div>
+            <div style="flex-grow: 1;"></div>
+            <button class="tr-btn tr-btn-primary" ng-if="vm.canCreateVoucher" ng-click="vm.openVoucherModal()">
+                <i class="fas fa-plus"></i>سند جديد
+            </button>
+            <button class="tr-btn tr-btn-light" ng-click="vm.loadVouchers()">
+                <i class="fas fa-sync"></i>تحديث
+            </button>
+        </div>
+
+        <div class="tr-card">
+            <div class="tr-card-header">
+                <h2><i class="fas fa-file-invoice" style="margin-left: 8px; color: #4361ee;"></i>سندات القبض والصرف والتحويل</h2>
+            </div>
+            <div class="tr-table-wrap">
+                <table class="tr-table">
+                    <thead>
+                        <tr>
+                            <th>رقم السند</th>
+                            <th>النوع</th>
+                            <th>التاريخ</th>
+                            <th>الخزينة</th>
+                            <th>الحساب المقابل</th>
+                            <th>المبلغ (د.ل)</th>
+                            <th>الحالة</th>
+                            <th>بواسطة</th>
+                            <th>إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="voucher in vm.vouchers">
+                            <td style="font-weight: bold;">{{ voucher.voucherNumber }}</td>
+                            <td>
+                                <span class="tr-tag" ng-class="{'tr-tag-receipt': voucher.voucherType === 'Receipt', 'tr-tag-payment': voucher.voucherType === 'Payment', 'tr-tag-transfer': voucher.voucherType === 'Transfer'}">{{ vm.voucherTypeAr(voucher.voucherType) }}</span>
+                            </td>
+                            <td>{{ voucher.voucherDate | date: 'yyyy-MM-dd' }}</td>
+                            <td>{{ voucher.treasuryNameAr }}</td>
+                            <td>{{ voucher.accountCode || voucher.toTreasuryNameAr || '-' }}</td>
+                            <td style="font-weight: bold;">{{ voucher.amount | number: 2 }}</td>
+                            <td><span class="tr-badge" ng-class="vm.statusBadgeClass(voucher.status)">{{ vm.statusAr(voucher.status) }}</span></td>
+                            <td>{{ voucher.createdByName }}</td>
+                            <td>
+                                <button class="tr-btn tr-btn-light" style="padding: 6px 12px;" ng-click="vm.openVoucherDetail(voucher)">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr ng-if="vm.vouchers.length === 0">
+                            <td colspan="9" class="tr-empty">لا توجد سندات مطابقة</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="tr-pagination">
+                <span>صفحة {{ vm.page }} من {{ vm.totalPages }}</span>
+                <div style="display: flex; gap: 8px;">
+                    <button class="tr-btn tr-btn-light" ng-disabled="vm.page <= 1" ng-click="vm.pageChange(-1)"><i class="fas fa-chevron-right"></i> السابق</button>
+                    <button class="tr-btn tr-btn-light" ng-disabled="vm.page >= vm.totalPages" ng-click="vm.pageChange(1)">التالي <i class="fas fa-chevron-left"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== TREASURIES ==================== -->
+    <div class="tab-content" ng-if="vm.activeTab === 'treasuries'">
+        <div class="tr-filter-bar">
+            <div style="flex-grow: 1;"></div>
+            <button class="tr-btn tr-btn-primary" ng-if="vm.isAdmin" ng-click="vm.openTreasuryModal(null)">
+                <i class="fas fa-plus"></i>خزينة جديدة
+            </button>
+            <button class="tr-btn tr-btn-light" ng-click="vm.loadTreasuries()">
+                <i class="fas fa-sync"></i>تحديث
+            </button>
+        </div>
+
+        <div class="tr-card">
+            <div class="tr-card-header">
+                <h2><i class="fas fa-vault" style="margin-left: 8px; color: #4361ee;"></i>الخزائن المتاحة</h2>
+            </div>
+            <div class="tr-table-wrap">
+                <table class="tr-table">
+                    <thead>
+                        <tr>
+                            <th>الكود</th>
+                            <th>اسم الخزينة</th>
+                            <th>الاسم بالإنجليزية</th>
+                            <th>الحساب المحاسبي</th>
+                            <th>الحالة</th>
+                            <th ng-if="vm.isAdmin">إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="treasury in vm.treasuries">
+                            <td style="font-weight: bold;">{{ treasury.treasuryCode }}</td>
+                            <td>{{ treasury.treasuryNameAr }}</td>
+                            <td>{{ treasury.treasuryName }}</td>
+                            <td>{{ treasury.accountCode }}</td>
+                            <td>
+                                <span class="tr-tag" ng-class="treasury.isActive ? 'tr-tag-receipt' : 'tr-tag-payment'">{{ treasury.isActive ? 'مفعّلة' : 'معطّلة' }}</span>
+                            </td>
+                            <td ng-if="vm.isAdmin">
+                                <button class="tr-btn tr-btn-light" style="padding: 6px 12px;" ng-click="vm.openTreasuryModal(treasury)">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="tr-btn tr-btn-danger" style="padding: 6px 12px;" ng-click="vm.deleteTreasury(treasury)">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr ng-if="vm.treasuries.length === 0">
+                            <td colspan="6" class="tr-empty">لا توجد خزائن مسجلة</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== DAILY JOURNAL ==================== -->
+    <div class="tab-content" ng-if="vm.activeTab === 'journal'">
+        <div class="tr-filter-bar">
+            <div>
+                <label>الخزينة</label>
+                <select ng-model="vm.journalTreasuryID">
+                    <option value="">الكل</option>
+                    <option ng-repeat="treasury in vm.treasuries" value="{{ treasury.treasuryID }}">{{ treasury.treasuryNameAr }}</option>
+                </select>
+            </div>
+            <div>
+                <label>من تاريخ</label>
+                <input type="date" ng-model="vm.journalFrom">
+            </div>
+            <div>
+                <label>إلى تاريخ</label>
+                <input type="date" ng-model="vm.journalTo">
+            </div>
+            <button class="tr-btn tr-btn-primary" ng-click="vm.loadDailyJournal()">
+                <i class="fas fa-search"></i>عرض اليومية
+            </button>
+        </div>
+
+        <div class="tr-stats-grid" ng-if="vm.dailyJournal">
+            <div class="tr-stat-card" style="--stat-color: #2ec4b6;">
+                <h3>إجمالي المقبوضات</h3>
+                <p class="tr-stat-value">{{ vm.dailyJournal.totals.totalReceipts | number: 2 }} <small style="font-size: 0.8rem;">د.ل</small></p>
+            </div>
+            <div class="tr-stat-card" style="--stat-color: #e63946;">
+                <h3>إجمالي المسدودات</h3>
+                <p class="tr-stat-value">{{ vm.dailyJournal.totals.totalPayments | number: 2 }} <small style="font-size: 0.8rem;">د.ل</small></p>
+            </div>
+            <div class="tr-stat-card" style="--stat-color: #4361ee;">
+                <h3>إجمالي التحويلات</h3>
+                <p class="tr-stat-value">{{ vm.dailyJournal.totals.totalTransfers | number: 2 }} <small style="font-size: 0.8rem;">د.ل</small></p>
+            </div>
+        </div>
+
+        <div class="tr-card">
+            <div class="tr-card-header">
+                <h2><i class="fas fa-money-check-alt" style="margin-left: 8px; color: #4361ee;"></i>حركة الخزينة (السندات المرحّلة)</h2>
+            </div>
+            <div class="tr-table-wrap">
+                <table class="tr-table">
+                    <thead>
+                        <tr>
+                            <th>رقم السند</th>
+                            <th>النوع</th>
+                            <th>التاريخ</th>
+                            <th>الخزينة</th>
+                            <th>الحساب</th>
+                            <th>البيان</th>
+                            <th>المبلغ (د.ل)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="voucher in vm.dailyJournal.vouchers">
+                            <td style="font-weight: bold;">{{ voucher.voucherNumber }}</td>
+                            <td>
+                                <span class="tr-tag" ng-class="{'tr-tag-receipt': voucher.voucherType === 'Receipt', 'tr-tag-payment': voucher.voucherType === 'Payment', 'tr-tag-transfer': voucher.voucherType === 'Transfer'}">{{ vm.voucherTypeAr(voucher.voucherType) }}</span>
+                            </td>
+                            <td>{{ voucher.voucherDate | date: 'yyyy-MM-dd' }}</td>
+                            <td>{{ voucher.treasuryNameAr }}</td>
+                            <td>{{ voucher.accountCode || voucher.toTreasuryNameAr || '-' }}</td>
+                            <td>{{ voucher.description }}</td>
+                            <td style="font-weight: bold;">{{ voucher.amount | number: 2 }}</td>
+                        </tr>
+                        <tr ng-if="!vm.dailyJournal || vm.dailyJournal.vouchers.length === 0">
+                            <td colspan="7" class="tr-empty">لا توجد حركة في اليومية للفترة المحددة</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== RECEIVABLES ==================== -->
+    <div class="tab-content" ng-if="vm.activeTab === 'receivables'">
+        <div class="tr-filter-bar">
+            <div>
+                <label>اعتباراً من تاريخ</label>
+                <input type="date" ng-model="vm.receivablesAsOf">
+            </div>
+            <button class="tr-btn tr-btn-primary" ng-click="vm.loadReceivables()">
+                <i class="fas fa-search"></i>عرض المذنيه
+            </button>
+        </div>
+
+        <div class="tr-card">
+            <div class="tr-card-header">
+                <h2><i class="fas fa-hand-holding-usd" style="margin-left: 8px; color: #4361ee;"></i>المذنيه اليومية (المرضى المستحق عليهم)</h2>
+            </div>
+            <div class="tr-table-wrap">
+                <table class="tr-table">
+                    <thead>
+                        <tr>
+                            <th>المريض</th>
+                            <th>الهاتف</th>
+                            <th>عدد الفواتير</th>
+                            <th>إجمالي المستحق (د.ل)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="row in vm.receivables">
+                            <td style="font-weight: bold;">{{ row.patientName }}</td>
+                            <td>{{ row.phone }}</td>
+                            <td>{{ row.invoiceCount }}</td>
+                            <td style="font-weight: bold; color: #e63946;">{{ row.totalDue | number: 2 }}</td>
+                        </tr>
+                        <tr ng-if="vm.receivables.length === 0">
+                            <td colspan="4" class="tr-empty">لا توجد مذنيه حالية — جميع الفواتير مسددة</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== FISCAL CLOSURE ==================== -->
+    <div class="tab-content" ng-if="vm.activeTab === 'closure'">
+        <div class="tr-card" style="max-width: 640px; margin: 0 auto;">
+            <div class="tr-card-header">
+                <h2><i class="fas fa-lock" style="margin-left: 8px; color: #e63946;"></i>الإقفال المالي</h2>
+            </div>
+            <div class="tr-modal-body">
+                <div style="padding: 16px; border-radius: 12px; margin-bottom: 20px;" ng-class="vm.closedThrough ? {'background': 'rgba(230,57,70,0.08)', 'border': '1px solid rgba(230,57,70,0.2)'} : {'background': 'rgba(46,196,182,0.08)', 'border': '1px solid rgba(46,196,182,0.2)'}">
+                    <p style="margin: 0; font-size: 0.9rem; line-height: 1.8;">
+                        <strong style="color: #333;">الحالة:</strong>
+                        <span ng-if="vm.closedThrough" style="color: #c0392b;">النظام مقفل مالياً — لا يُقبل أي ترحيل في تواريخ حتى {{ vm.closedThrough }}</span>
+                        <span ng-if="!vm.closedThrough" style="color: #1f9d55;">النظام مفتوح مالياً — الترحيل متاح لجميع التواريخ</span>
+                    </p>
+                </div>
+
+                <div ng-if="vm.isAdmin">
+                    <div class="tr-field" style="margin-bottom: 16px;">
+                        <label>تاريخ الإقفال</label>
+                        <input type="date" ng-model="vm.closedThrough">
+                        <small style="color: #888; display: block; margin-top: 6px;">سيُرفض أي سند أو قيد بتاريخ الإقفال أو قبله بعد التطبيق.</small>
+                    </div>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button class="tr-btn tr-btn-danger" ng-click="vm.setClosure()">
+                            <i class="fas fa-lock"></i>تطبيق الإقفال المالي
+                        </button>
+                        <button class="tr-btn tr-btn-success" ng-if="vm.closedThrough" ng-click="vm.openClosure()">
+                            <i class="fas fa-unlock"></i>فتح الإقفال
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== NEW VOUCHER MODAL ==================== -->
+    <div class="tr-modal-overlay" ng-if="vm.showVoucherModal" ng-click="vm.closeVoucherModal()">
+        <div class="tr-modal" ng-click="$event.stopPropagation()">
+            <div class="tr-modal-header">
+                <h2><i class="fas fa-file-invoice" style="margin-left: 8px; color: #4361ee;"></i>سند جديد</h2>
+                <button class="tr-btn tr-btn-light" style="padding: 6px 12px;" ng-click="vm.closeVoucherModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="tr-modal-body">
+                <div class="tr-form-grid">
+                    <div class="tr-field">
+                        <label>نوع السند</label>
+                        <select ng-model="vm.voucherForm.voucherType" ng-change="vm.onVoucherTypeChange()">
+                            <option value="Receipt">سند قبض</option>
+                            <option value="Payment">سند صرف</option>
+                            <option value="Transfer" ng-if="!vm.isCashier">سند تحويل</option>
+                        </select>
+                    </div>
+                    <div class="tr-field">
+                        <label>التاريخ</label>
+                        <input type="date" ng-model="vm.voucherForm.voucherDate">
+                    </div>
+                    <div class="tr-field">
+                        <label>الخزينة</label>
+                        <select ng-model="vm.voucherForm.treasuryID" ng-disabled="vm.isCashier">
+                            <option ng-repeat="treasury in vm.treasuries" ng-if="!vm.isCashier || treasury.treasuryID === vm.myTreasuryID" value="{{ treasury.treasuryID }}">{{ treasury.treasuryNameAr }}</option>
+                        </select>
+                    </div>
+                    <div class="tr-field" ng-if="vm.voucherForm.voucherType === 'Transfer'">
+                        <label>التحويل إلى خزينة</label>
+                        <select ng-model="vm.voucherForm.toTreasuryID">
+                            <option value="">اختر الخزينة</option>
+                            <option ng-repeat="treasury in vm.treasuries" ng-if="treasury.treasuryID !== vm.voucherForm.treasuryID" value="{{ treasury.treasuryID }}">{{ treasury.treasuryNameAr }}</option>
+                        </select>
+                    </div>
+                    <div class="tr-field" ng-if="vm.voucherForm.voucherType !== 'Transfer'">
+                        <label>الحساب المقابل</label>
+                        <select ng-model="vm.voucherForm.accountID">
+                            <option value="">اختر الحساب</option>
+                            <option ng-repeat="account in vm.flatAccounts" ng-if="account.parentAccountID !== null" value="{{ account.accountID }}">{{ account.accountCode }} — {{ account.accountNameAr }}</option>
+                        </select>
+                    </div>
+                    <div class="tr-field">
+                        <label>المبلغ (د.ل)</label>
+                        <input type="number" min="0" step="0.01" ng-model="vm.voucherForm.amount">
+                    </div>
+                    <div class="tr-field">
+                        <label>رقم المريض (اختياري)</label>
+                        <input type="number" min="0" ng-model="vm.voucherForm.patientUserID">
+                    </div>
+                    <div class="tr-field">
+                        <label>رقم الفاتورة (اختياري)</label>
+                        <input type="number" min="0" ng-model="vm.voucherForm.invoiceID">
+                    </div>
+                    <div class="tr-field">
+                        <label>رقم الحجز (اختياري)</label>
+                        <input type="number" min="0" ng-model="vm.voucherForm.appointmentID">
+                    </div>
+                    <div class="tr-field full">
+                        <label>البيان</label>
+                        <textarea ng-model="vm.voucherForm.description" rows="2" style="resize: vertical;"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="tr-modal-footer">
+                <button class="tr-btn tr-btn-light" ng-click="vm.closeVoucherModal()">إلغاء</button>
+                <button class="tr-btn tr-btn-primary" ng-click="vm.saveVoucher()" ng-disabled="vm.savingVoucher">
+                    <i class="fas fa-save"></i>{{ vm.savingVoucher ? 'جارٍ الحفظ...' : 'حفظ السند' }}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== VOUCHER DETAIL MODAL ==================== -->
+    <div class="tr-modal-overlay" ng-if="vm.showVoucherDetail" ng-click="vm.closeVoucherDetail()">
+        <div class="tr-modal" style="max-width: 560px;" ng-click="$event.stopPropagation()">
+            <div class="tr-modal-header">
+                <h2><i class="fas fa-file-invoice" style="margin-left: 8px; color: #4361ee;"></i>تفاصيل السند {{ vm.currentVoucher.voucherNumber }}</h2>
+                <button class="tr-btn tr-btn-light" style="padding: 6px 12px;" ng-click="vm.closeVoucherDetail()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="tr-modal-body">
+                <div class="tr-form-grid" ng-if="vm.currentVoucher">
+                    <div class="tr-field">
+                        <label>النوع</label>
+                        <input value="{{ vm.voucherTypeAr(vm.currentVoucher.voucherType) }}" readonly>
+                    </div>
+                    <div class="tr-field">
+                        <label>التاريخ</label>
+                        <input value="{{ vm.currentVoucher.voucherDate | date: 'yyyy-MM-dd' }}" readonly>
+                    </div>
+                    <div class="tr-field">
+                        <label>الخزينة</label>
+                        <input value="{{ vm.currentVoucher.treasuryNameAr }}" readonly>
+                    </div>
+                    <div class="tr-field" ng-if="vm.currentVoucher.toTreasuryNameAr">
+                        <label>التحويل إلى</label>
+                        <input value="{{ vm.currentVoucher.toTreasuryNameAr }}" readonly>
+                    </div>
+                    <div class="tr-field">
+                        <label>الحساب المقابل</label>
+                        <input value="{{ vm.currentVoucher.accountCode ? vm.currentVoucher.accountCode + ' — ' + vm.currentVoucher.accountNameAr : '-' }}" readonly>
+                    </div>
+                    <div class="tr-field">
+                        <label>المريض</label>
+                        <input value="{{ vm.currentVoucher.patientName || '-' }}" readonly>
+                    </div>
+                    <div class="tr-field">
+                        <label>المبلغ (د.ل)</label>
+                        <input value="{{ vm.currentVoucher.amount | number: 2 }}" readonly style="font-weight: bold;">
+                    </div>
+                    <div class="tr-field">
+                        <label>الحالة</label>
+                        <input value="{{ vm.statusAr(vm.currentVoucher.status) }}" readonly>
+                    </div>
+                    <div class="tr-field full">
+                        <label>البيان</label>
+                        <textarea readonly rows="2" style="resize: vertical;">{{ vm.currentVoucher.description }}</textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="tr-modal-footer">
+                <button class="tr-btn tr-btn-light" ng-click="vm.closeVoucherDetail()">إغلاق</button>
+                <button class="tr-btn tr-btn-success" ng-if="(vm.isAdmin || (vm.isCashier && vm.myTreasuryID && vm.currentVoucher.treasuryID === vm.myTreasuryID)) && vm.currentVoucher && vm.currentVoucher.status === 'Draft'" ng-click="vm.postVoucher(vm.currentVoucher)">
+                    <i class="fas fa-check-circle"></i>ترحيل السند
+                </button>
+                <button class="tr-btn tr-btn-danger" ng-if="(vm.isAdmin || (vm.isCashier && vm.myTreasuryID && vm.currentVoucher.treasuryID === vm.myTreasuryID)) && vm.currentVoucher && vm.currentVoucher.status === 'Posted'" ng-click="vm.reverseVoucher(vm.currentVoucher)">
+                    <i class="fas fa-undo"></i>عكس السند
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== TREASURY MODAL ==================== -->
+    <div class="tr-modal-overlay" ng-if="vm.showTreasuryModal" ng-click="vm.closeTreasuryModal()">
+        <div class="tr-modal" style="max-width: 560px;" ng-click="$event.stopPropagation()">
+            <div class="tr-modal-header">
+                <h2><i class="fas fa-vault" style="margin-left: 8px; color: #4361ee;"></i>{{ vm.editingTreasury ? 'تعديل خزينة' : 'خزينة جديدة' }}</h2>
+                <button class="tr-btn tr-btn-light" style="padding: 6px 12px;" ng-click="vm.closeTreasuryModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="tr-modal-body">
+                <div class="tr-form-grid">
+                    <div class="tr-field">
+                        <label>كود الخزينة</label>
+                        <input type="text" ng-model="vm.treasuryForm.treasuryCode" placeholder="مثال: CASH-02">
+                    </div>
+                    <div class="tr-field">
+                        <label>اسم الخزينة بالعربية</label>
+                        <input type="text" ng-model="vm.treasuryForm.treasuryNameAr">
+                    </div>
+                    <div class="tr-field">
+                        <label>الاسم بالإنجليزية</label>
+                        <input type="text" ng-model="vm.treasuryForm.treasuryName">
+                    </div>
+                    <div class="tr-field">
+                        <label>الحساب المحاسبي</label>
+                        <select ng-model="vm.treasuryForm.accountID">
+                            <option ng-repeat="account in vm.flatAccounts" ng-if="account.parentAccountID !== null" value="{{ account.accountID }}">{{ account.accountCode }} — {{ account.accountNameAr }}</option>
+                        </select>
+                    </div>
+                    <div class="tr-field">
+                        <label>الحالة</label>
+                        <select ng-model="vm.treasuryForm.isActive">
+                            <option value="true">مفعّلة</option>
+                            <option value="false">معطّلة</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="tr-modal-footer">
+                <button class="tr-btn tr-btn-light" ng-click="vm.closeTreasuryModal()">إلغاء</button>
+                <button class="tr-btn tr-btn-primary" ng-click="vm.saveTreasury()" ng-disabled="vm.savingTreasury">
+                    <i class="fas fa-save"></i>{{ vm.savingTreasury ? 'جارٍ الحفظ...' : 'حفظ' }}
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div>

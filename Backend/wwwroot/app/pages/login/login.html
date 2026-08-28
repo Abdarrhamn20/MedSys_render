@@ -1,0 +1,86 @@
+<div class="auth-page">
+    <!-- Floating Medical Icons Background -->
+    <div class="auth-floating-icons">
+        <i class="fas fa-heartbeat"></i>
+        <i class="fas fa-stethoscope"></i>
+        <i class="fas fa-notes-medical"></i>
+        <i class="fas fa-user-md"></i>
+        <i class="fas fa-hospital"></i>
+    </div>
+
+    <!-- Login Card -->
+    <div class="auth-card">
+        <div class="auth-header">
+            <div class="auth-logo">
+                <i class="fas fa-clinic-medical"></i>
+            </div>
+            <h2>مرحباً بعودتك</h2>
+            <p>سجّل دخولك إلى منظومة العيادة الافتراضية</p>
+        </div>
+
+        <!-- Error Alert -->
+        <div class="alert alert-danger" ng-if="vm.error" style="animation: fadeInUp 0.3s ease;">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>{{vm.error}}</span>
+        </div>
+
+        <!-- Login Form -->
+        <form class="auth-form" ng-submit="vm.login()" name="loginForm" novalidate>
+
+            <!-- Email -->
+            <div class="form-group">
+                <label>البريد الإلكتروني</label>
+                <div class="input-icon-wrapper">
+                    <input type="email"
+                           class="form-control"
+                           ng-class="{'error': loginForm.email.$touched && loginForm.email.$invalid}"
+                           ng-model="vm.credentials.email"
+                           name="email"
+                           placeholder="example@medical.com"
+                           required>
+                    <i class="fas fa-envelope input-icon"></i>
+                </div>
+                <div class="form-error" ng-show="loginForm.email.$touched && loginForm.email.$error.required">
+                    <i class="fas fa-info-circle"></i> البريد الإلكتروني مطلوب
+                </div>
+            </div>
+
+            <!-- Password -->
+            <div class="form-group">
+                <label>كلمة المرور</label>
+                <div class="input-icon-wrapper" style="position: relative;">
+                    <input type="{{vm.showPassword ? 'text' : 'password'}}"
+                           class="form-control"
+                           ng-class="{'error': loginForm.password.$touched && loginForm.password.$invalid}"
+                           ng-model="vm.credentials.password"
+                           name="password"
+                           placeholder="أدخل كلمة المرور"
+                           required
+                           minlength="6">
+                    <i class="fas fa-lock input-icon"></i>
+                    <button type="button" class="password-toggle" ng-click="vm.showPassword = !vm.showPassword">
+                        <i class="fas" ng-class="vm.showPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
+                    </button>
+                </div>
+                <div class="form-error" ng-show="loginForm.password.$touched && loginForm.password.$error.required">
+                    <i class="fas fa-info-circle"></i> كلمة المرور مطلوبة
+                </div>
+            </div>
+
+            <!-- Login Button -->
+            <button type="submit" class="btn btn-primary btn-block btn-lg" ng-disabled="loginForm.$invalid || vm.loading">
+                <span ng-if="!vm.loading">
+                    <i class="fas fa-sign-in-alt"></i> تسجيل الدخول
+                </span>
+                <span ng-if="vm.loading">
+                    <span class="spinner"></span> جاري تسجيل الدخول...
+                </span>
+            </button>
+        </form>
+
+        <!-- Footer -->
+        <div class="auth-footer">
+            <p>ليس لديك حساب؟ <a ui-sref="register">إنشاء حساب جديد</a></p>
+        </div>
+    </div>
+</div>

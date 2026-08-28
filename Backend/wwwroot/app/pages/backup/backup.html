@@ -1,0 +1,309 @@
+<!-- Backup & Restore Page - Design Preview (Frontend Only) -->
+<div class="stagger-children">
+
+    <!-- Page Header -->
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+        <div>
+            <h2 style="margin-bottom: 4px;"><i class="fas fa-database" style="color: var(--primary); margin-left: 8px;"></i> النسخ الاحتياطي واستعادة البيانات</h2>
+            <p class="text-muted" style="font-size: 0.85rem;">حماية بيانات المنظومة بالكامل — قاعدة البيانات + المرفقات الطبية</p>
+        </div>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button class="btn btn-secondary" ng-click="vm.viewActivity()" style="background: rgba(67,97,238,0.08); color: var(--primary); border: 1px solid rgba(67,97,238,0.25);">
+                <i class="fas fa-history"></i> سجل العمليات
+            </button>
+            <button class="btn btn-primary" ng-click="vm.createBackup()" ng-disabled="vm.creatingBackup" style="min-width: 170px;">
+                <i class="fas" ng-class="vm.creatingBackup ? 'fa-spinner fa-spin' : 'fa-plus-circle'"></i>
+                <span ng-if="!vm.creatingBackup">إنشاء نسخة الآن</span>
+                <span ng-if="vm.creatingBackup">جاري الإنشاء...</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Overview Stat Cards -->
+    <div class="row" style="margin-bottom: 24px;">
+        <div class="col-3">
+            <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(0,119,182,0.1); color: var(--primary);"><i class="fas fa-clock"></i></div>
+                <div class="stat-info"><h4>آخر نسخة ناجحة</h4><div class="stat-number" style="font-size: 1.15rem;">{{vm.overview.lastBackup}}</div></div>
+            </div>
+        </div>
+        <div class="col-3">
+            <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(45,198,83,0.1); color: #2DC653;"><i class="fas fa-hard-drive"></i></div>
+                <div class="stat-info"><h4>حجم النسخ المخزنة</h4><div class="stat-number">{{vm.overview.totalStorage}}</div></div>
+            </div>
+        </div>
+        <div class="col-3">
+            <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(255,159,28,0.1); color: #ff9f1c;"><i class="fas fa-layer-group"></i></div>
+                <div class="stat-info"><h4>النسخ المحتفظ بها</h4><div class="stat-number">{{vm.overview.backupsCount}}</div></div>
+            </div>
+        </div>
+        <div class="col-3">
+            <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(45,198,83,0.1); color: #2DC653;"><i class="fas fa-shield-alt"></i></div>
+                <div class="stat-info"><h4>حالة النظام</h4>
+                    <div class="stat-number" style="font-size: 1.05rem; color: #2DC653;" ng-if="vm.overview.healthy"><i class="fas fa-check-circle"></i> محمي</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Backup Schedule & Storage Settings -->
+    <div class="card" style="margin-bottom: 20px;">
+        <div class="card-body" style="padding: 20px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+                <div>
+                    <h4 style="margin: 0;"><i class="fas fa-calendar-alt" style="color: var(--primary); margin-left: 8px;"></i> إعدادات النسخ التلقائي</h4>
+                    <p class="text-muted" style="font-size: 0.8rem; margin-top: 4px;">تنسخ المنظومة بياناتها تلقائياً حسب الجدول أدناه</p>
+                </div>
+                <span class="badge" style="background: rgba(45,198,83,0.1); color: #2DC653;" ng-if="vm.settings.scheduleEnabled"><i class="fas fa-circle" style="font-size: 0.4rem;"></i> النسخ التلقائي مفعل</span>
+                <span class="badge" style="background: rgba(230,57,70,0.1); color: #e63946;" ng-if="!vm.settings.scheduleEnabled"><i class="fas fa-circle" style="font-size: 0.4rem;"></i> النسخ التلقائي معطل</span>
+            </div>
+
+            <div class="row">
+                <div class="col-6">
+                    <div class="info-box" style="background: rgba(67,97,238,0.04); border: 1px solid rgba(67,97,238,0.12); border-radius: 10px; padding: 14px 16px; height: 100%;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                            <div style="font-size: 0.82rem; color: var(--text-muted);"><i class="fas fa-clock" style="margin-left: 6px;"></i> وقت النسخ اليومي</div>
+                            <strong style="font-size: 1rem; color: var(--primary);">{{vm.settings.scheduleTime}}</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 10px;">
+                            <div style="font-size: 0.82rem; color: var(--text-muted);"><i class="fas fa-sync-alt" style="margin-left: 6px;"></i> سياسة الاحتفاظ</div>
+                            <strong style="font-size: 0.9rem;">{{vm.settings.keepDaily}} يومية + {{vm.settings.keepWeekly}} أسبوعية + {{vm.settings.keepMonthly}} شهرية</strong>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="info-box" style="background: rgba(0,119,182,0.04); border: 1px solid rgba(0,119,182,0.12); border-radius: 10px; padding: 14px 16px; height: 100%;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                            <div style="font-size: 0.82rem; color: var(--text-muted);"><i class="fas fa-folder-open" style="margin-left: 6px;"></i> التخزين المحلي (على السيرفر)</div>
+                            <strong style="font-size: 0.78rem; direction: ltr; unicode-bidi: embed;">{{vm.settings.localPath}}</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 10px;">
+                            <div style="font-size: 0.82rem; color: var(--text-muted);"><i class="fas fa-hdd" style="margin-left: 6px;"></i> النسخة الخارجية</div>
+                            <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+                                <strong style="font-size: 0.78rem; direction: ltr; unicode-bidi: embed; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 180px;">{{vm.settings.externalPath}}</strong>
+                                <span class="badge" style="background: rgba(45,198,83,0.1); color: #2DC653; flex-shrink: 0;" ng-if="vm.settings.externalEnabled">مفعل</span>
+                                <span class="badge" style="background: rgba(230,57,70,0.1); color: #e63946; flex-shrink: 0;" ng-if="!vm.settings.externalEnabled">معطل</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 16px; text-align: left;">
+                <button class="btn btn-sm" ng-click="vm.openSchedule()" style="background: rgba(0,119,182,0.08); color: var(--primary); border: 1px solid rgba(0,119,182,0.25);">
+                    <i class="fas fa-cog"></i> تعديل الإعدادات
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Backups Table -->
+    <div class="card">
+        <div class="card-header" style="padding: 14px 18px; border-bottom: 1px solid var(--border-color);">
+            <h3 style="margin: 0; font-size: 1rem;"><i class="fas fa-file-archive" style="color: var(--primary); margin-left: 8px;"></i> النسخ الاحتياطية المتاحة</h3>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <input type="text" class="form-control" placeholder="بحث في النسخ..." style="width: 200px; padding: 6px 12px; font-size: 0.8rem;">
+            </div>
+        </div>
+        <div class="table-wrapper" style="max-height: 460px; overflow-y: auto; -webkit-overflow-scrolling: touch;">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>اسم النسخة</th>
+                        <th>التاريخ</th>
+                        <th>النوع</th>
+                        <th>الحجم</th>
+                        <th>الحالة</th>
+                        <th>السلامة</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr ng-repeat="b in vm.backups">
+                        <td>{{$index + 1}}</td>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-file-archive" style="color: #ff9f1c; font-size: 1rem;"></i>
+                                <span style="direction: ltr; unicode-bidi: embed; font-size: 0.82rem;">{{b.name}}</span>
+                            </div>
+                        </td>
+                        <td>{{b.date}}</td>
+                        <td><span class="badge" ng-class="vm.getTypeClass(b.type)">{{b.type}}</span></td>
+                        <td>{{b.size}}</td>
+                        <td>
+                            <span class="badge" style="background: rgba(45,198,83,0.1); color: #2DC653;" ng-if="b.status === 'success'"><i class="fas fa-check"></i> ناجحة</span>
+                            <span class="badge" style="background: rgba(230,57,70,0.1); color: #e63946;" ng-if="b.status === 'failed'"><i class="fas fa-times"></i> فاشلة</span>
+                        </td>
+                        <td>
+                            <span class="badge badge-primary" ng-if="b.verified"><i class="fas fa-check-circle"></i> موثوقة</span>
+                        </td>
+                        <td>
+                            <div style="display: flex; gap: 6px;">
+                                <button class="btn btn-sm btn-secondary" title="تنزيل" ng-click="vm.downloadBackup(b)" style="padding: 4px 10px; min-height: auto;"><i class="fas fa-download"></i></button>
+                                <button class="btn btn-sm" title="استعادة" ng-click="vm.openRestore(b)" style="padding: 4px 10px; min-height: auto; background: rgba(67,97,238,0.1); color: var(--primary); border: 1px solid rgba(67,97,238,0.25);"><i class="fas fa-undo-alt"></i></button>
+                                <button class="btn btn-sm btn-danger" title="حذف" ng-click="vm.deleteBackup(b)" style="padding: 4px 10px; min-height: auto;"><i class="fas fa-trash-alt"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr ng-if="vm.backups.length === 0">
+                        <td colspan="8" style="text-align: center; padding: 30px; color: var(--text-muted);">
+                            <i class="fas fa-inbox" style="font-size: 2rem; color: #ccc; margin-bottom: 8px; display: block;"></i>
+                            لا توجد نسخ احتياطية بعد
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer" style="padding: 12px 18px; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <span class="text-muted" style="font-size: 0.8rem;"><i class="fas fa-info-circle" style="margin-left: 6px;"></i> إجمالي {{vm.backups.length}} نسخة — يتم حذف الأقدم تلقائياً وفق سياسة الاحتفاظ</span>
+        </div>
+    </div>
+
+    <!-- Restore Modal (Design Only) -->
+    <div class="modal-overlay" ng-if="vm.showRestoreModal" ng-click="vm.showRestoreModal = false">
+        <div class="modal-content" style="max-width: 480px;" ng-click="$event.stopPropagation()">
+            <div class="modal-header">
+                <h4><i class="fas fa-undo-alt" style="color: #e63946; margin-left: 8px;"></i> استعادة النسخة الاحتياطية</h4>
+                <button class="btn-icon" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-muted);" ng-click="vm.showRestoreModal = false"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div style="background: rgba(230,57,70,0.06); border: 1px solid rgba(230,57,70,0.2); border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
+                    <i class="fas fa-exclamation-triangle" style="color: #e63946; font-size: 1.4rem;"></i>
+                    <div style="font-size: 0.85rem; line-height: 1.6; color: #7a2e2e;">
+                        سيتم استبدال بيانات المنظومة الحالية بالكامل بالبيانات المحفوظة في هذه النسخة.
+                        <strong>لا يمكن التراجع عن هذه العملية.</strong>
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; background: rgba(0,119,182,0.04); border: 1px solid rgba(0,119,182,0.12); border-radius: 10px; padding: 12px 16px;">
+                    <div style="font-size: 0.85rem;">
+                        <div class="text-muted" style="font-size: 0.75rem;">النسخة المحددة</div>
+                        <strong style="direction: ltr; unicode-bidi: embed; font-size: 0.85rem;">{{vm.restoreTarget.name}}</strong>
+                    </div>
+                    <div style="font-size: 0.85rem;">
+                        <div class="text-muted" style="font-size: 0.75rem;">التاريخ</div>
+                        <strong>{{vm.restoreTarget.date}} — {{vm.restoreTarget.size}}</strong>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-top: 16px;">
+                    <label style="font-weight: bold; display: block; margin-bottom: 6px;">سبب الاستعادة (اختياري)</label>
+                    <textarea class="form-control" rows="2" placeholder="مثال: استعادة بعد خطأ تشغيلي..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger btn-block" ng-click="vm.confirmRestore()">
+                    <i class="fas fa-undo-alt"></i> تأكيد استعادة النسخة الآن
+                </button>
+                <button class="btn btn-secondary" ng-click="vm.showRestoreModal = false">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schedule Settings Modal (Design Only) -->
+    <div class="modal-overlay" ng-if="vm.showScheduleModal" ng-click="vm.showScheduleModal = false">
+        <div class="modal-content" style="max-width: 520px;" ng-click="$event.stopPropagation()">
+            <div class="modal-header">
+                <h4><i class="fas fa-cog" style="color: var(--primary); margin-left: 8px;"></i> إعدادات النسخ الاحتياطي التلقائي</h4>
+                <button class="btn-icon" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-muted);" ng-click="vm.showScheduleModal = false"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                    <div>
+                        <label style="font-weight: bold; display: block; margin-bottom: 2px;">تفعيل النسخ التلقائي اليومي</label>
+                        <span class="text-muted" style="font-size: 0.75rem;">يتم إنشاء نسخة كاملة يومياً في الوقت المحدد</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="badge" style="background: rgba(45,198,83,0.1); color: #2DC653;" ng-if="vm.settings.scheduleEnabled">مفعل</span>
+                        <span class="badge" style="background: rgba(230,57,70,0.1); color: #e63946;" ng-if="!vm.settings.scheduleEnabled">معطل</span>
+                        <button class="btn btn-sm" ng-click="vm.settings.scheduleEnabled = !vm.settings.scheduleEnabled" style="min-width: 70px;">تبديل</button>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                    <div class="form-group">
+                        <label style="font-weight: bold; display: block; margin-bottom: 6px;">وقت النسخ اليومي</label>
+                        <input type="time" class="form-control" ng-model="vm.settings.scheduleTime">
+                    </div>
+                    <div class="form-group">
+                        <label style="font-weight: bold; display: block; margin-bottom: 6px;">النسخ على قرص خارجي</label>
+                        <select class="form-control" ng-model="vm.settings.externalEnabled" ng-options="opt.value as opt.label for opt in [{value:true,label:'مفعل'},{value:false,label:'معطل'}]"></select>
+                    </div>
+                </div>
+                <div style="background: rgba(67,97,238,0.05); border: 1px solid rgba(67,97,238,0.15); border-radius: 10px; padding: 12px 14px; margin-bottom: 16px; display: flex; gap: 10px; align-items: flex-start;">
+                    <i class="fas fa-info-circle" style="color: var(--primary); margin-top: 2px;"></i>
+                    <small style="line-height: 1.7; font-size: 0.78rem; color: var(--text-muted);">
+                        تُفسَّر المسارات على جهاز <strong>السيرفر</strong> نفسه (الجهاز الذي يعمل عليه النظام وقاعدة البيانات) وليس على جهازك. مثال: قرص محلي على السيرفر مثل <span style="direction: ltr; unicode-bidi: embed;">C:\Backups</span>، أو فلاشة موصولة بالسيرفر مثل <span style="direction: ltr; unicode-bidi: embed;">E:\Backups</span>، أو مجلد مشترك على الشبكة بصيغة <span style="direction: ltr; unicode-bidi: embed;">\\PC-Name\Shared\Backups</span>.
+                    </small>
+                </div>
+                <div class="form-group">
+                    <label style="font-weight: bold; display: block; margin-bottom: 6px;"><i class="fas fa-folder-open" style="color: var(--primary); margin-left: 6px;"></i> مسار التخزين المحلي (على السيرفر)</label>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <input type="text" class="form-control" ng-model="vm.settings.localPath" style="direction: ltr; text-align: left; flex: 1;">
+                        <button class="btn btn-sm" ng-click="vm.testPath(vm.settings.localPath, 'المسار المحلي')" style="white-space: nowrap; background: rgba(0,119,182,0.08); color: var(--primary); border: 1px solid rgba(0,119,182,0.25); min-height: auto;">
+                            <i class="fas fa-plug"></i> فحص الاتصال
+                        </button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label style="font-weight: bold; display: block; margin-bottom: 6px;"><i class="fas fa-hdd" style="color: var(--primary); margin-left: 6px;"></i> مسار النسخة الخارجية (اختياري)</label>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <input type="text" class="form-control" ng-model="vm.settings.externalPath" placeholder="مثال: D:\IVS_Backups\Medical_System أو E:\ أو \\PC-Name\Shared\Backups" style="direction: ltr; text-align: left; flex: 1;">
+                        <button class="btn btn-sm" ng-click="vm.testPath(vm.settings.externalPath, 'المسار الخارجي')" style="white-space: nowrap; background: rgba(0,119,182,0.08); color: var(--primary); border: 1px solid rgba(0,119,182,0.25); min-height: auto;">
+                            <i class="fas fa-plug"></i> فحص الاتصال
+                        </button>
+                    </div>
+                    <small class="text-muted" style="margin-top: 4px; display: block;">إذا كان المسار غير متاح، يُحفظ النسخ محلياً فقط ويُسجَّل تنبيه في سجل العمليات.</small>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+                    <div class="form-group">
+                        <label style="font-weight: bold; display: block; margin-bottom: 6px;">نسخ يومية</label>
+                        <input type="number" min="1" class="form-control" ng-model="vm.settings.keepDaily">
+                    </div>
+                    <div class="form-group">
+                        <label style="font-weight: bold; display: block; margin-bottom: 6px;">نسخ أسبوعية</label>
+                        <input type="number" min="0" class="form-control" ng-model="vm.settings.keepWeekly">
+                    </div>
+                    <div class="form-group">
+                        <label style="font-weight: bold; display: block; margin-bottom: 6px;">نسخ شهرية</label>
+                        <input type="number" min="0" class="form-control" ng-model="vm.settings.keepMonthly">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" ng-click="vm.saveSchedule()"><i class="fas fa-save"></i> حفظ الإعدادات</button>
+                <button class="btn btn-secondary" ng-click="vm.showScheduleModal = false">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activity Log Modal (Design Only) -->
+    <div class="modal-overlay" ng-if="vm.showActivityModal" ng-click="vm.showActivityModal = false">
+        <div class="modal-content" style="max-width: 560px;" ng-click="$event.stopPropagation()">
+            <div class="modal-header">
+                <h4><i class="fas fa-history" style="color: var(--primary); margin-left: 8px;"></i> سجل عمليات النسخ الاحتياطي</h4>
+                <button class="btn-icon" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-muted);" ng-click="vm.showActivityModal = false"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div ng-repeat="a in vm.recentActivity" style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-bottom: 1px solid var(--border-color);">
+                    <div style="width: 34px; height: 34px; border-radius: 50%; background: rgba(67,97,238,0.1); color: var(--primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <i class="fas" ng-class="a.action.indexOf('نسخ') === 0 ? 'fa-save' : (a.action.indexOf('تنزيل') === 0 ? 'fa-download' : (a.action.indexOf('فحص') === 0 ? 'fa-check-circle' : 'fa-cog'))"></i>
+                    </div>
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-weight: 600; font-size: 0.85rem;">{{a.action}}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); direction: ltr; unicode-bidi: embed; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{a.target}}</div>
+                    </div>
+                    <div style="text-align: left; flex-shrink: 0;">
+                        <div style="font-size: 0.78rem; color: var(--text-muted);">{{a.date}}</div>
+                        <div style="font-size: 0.72rem; color: #888;">{{a.user}}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" ng-click="vm.showActivityModal = false">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+</div>

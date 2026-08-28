@@ -1,0 +1,109 @@
+<!-- Audit Logs Viewer Page -->
+<div class="stagger-children">
+
+    <!-- Page Header -->
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+        <div>
+            <h2 style="margin-bottom: 4px;">سجل التدقيق</h2>
+            <p class="text-muted" style="font-size: 0.85rem;">تتبّع كامل للعمليات المالية والإدارية على النظام — {{vm.totalCount}} عملية</p>
+        </div>
+        <button class="btn btn-outline-secondary" ng-click="vm.resetFilters()">
+            <i class="fas fa-undo"></i> إعادة تعيين الفلاتر
+        </button>
+    </div>
+
+    <!-- Filters -->
+    <div class="card" style="margin-bottom: 20px;">
+        <div class="card-body" style="padding: 16px;">
+            <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+                <select class="form-control" style="width: auto; min-width: 180px;" ng-model="vm.filters.actionType" ng-change="vm.loadLogs()">
+                    <option value="">كل أنواع العمليات</option>
+                    <option ng-repeat="t in vm.actionTypes" value="{{t}}">{{t}}</option>
+                </select>
+                <select class="form-control" style="width: auto; min-width: 160px;" ng-model="vm.filters.entityType" ng-change="vm.loadLogs()">
+                    <option value="">كل الكيانات</option>
+                    <option ng-repeat="t in vm.entityTypes" value="{{t}}">{{t}}</option>
+                </select>
+                <div class="input-icon-wrapper" style="flex: 1; min-width: 220px;">
+                    <input type="text" class="form-control" ng-model="vm.filters.search" ng-keyup="$event.keyCode === 13 && vm.loadLogs()"
+                           placeholder="بحث في التفاصيل أو اسم المستخدم..." style="padding-right: 40px;">
+                    <i class="fas fa-search input-icon"></i>
+                </div>
+                <div>
+                    <label class="form-label mb-0" style="font-size: 0.75rem;">من</label>
+                    <input type="date" class="form-control" ng-model="vm.filters.from" ng-change="vm.loadLogs()">
+                </div>
+                <div>
+                    <label class="form-label mb-0" style="font-size: 0.75rem;">إلى</label>
+                    <input type="date" class="form-control" ng-model="vm.filters.to" ng-change="vm.loadLogs()">
+                </div>
+                <button class="btn btn-primary" ng-click="vm.loadLogs()">
+                    <i class="fas fa-filter"></i> تصفية
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logs Table -->
+    <div class="card">
+        <div class="card-body" style="padding: 0;">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th style="width: 80px;">#</th>
+                            <th style="width: 170px;">العملية</th>
+                            <th style="width: 140px;">الكيان</th>
+                            <th>التفاصيل</th>
+                            <th style="width: 160px;">المستخدم</th>
+                            <th style="width: 170px;">التوقيت</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="log in vm.logs">
+                            <td>
+                                <span class="badge" style="background: rgba(0,119,182,0.12); color: var(--primary); font-family: monospace;">{{log.logID}}</span>
+                            </td>
+                            <td>
+                                <span class="badge" style="background: rgba(230,57,70,0.1); color: #c0392b; font-family: monospace; font-size: 0.7rem;">{{log.actionType}}</span>
+                            </td>
+                            <td>
+                                <span class="text-muted" style="font-size: 0.8rem; font-family: monospace;">{{log.entityType}}</span>
+                                <div ng-if="log.entityID" class="text-muted" style="font-size: 0.7rem;">#{{log.entityID}}</div>
+                            </td>
+                            <td style="font-size: 0.85rem;">{{log.details}}</td>
+                            <td style="font-size: 0.8rem;">
+                                <div ng-if="log.user">{{log.user.fullName}}</div>
+                                <div class="text-muted" style="font-size: 0.7rem;" ng-if="log.user">{{log.user.role}}</div>
+                            </td>
+                            <td style="font-size: 0.8rem; white-space: nowrap;">{{log.timestamp | date: 'yyyy/MM/dd hh:mm a'}}</td>
+                        </tr>
+                        <tr ng-if="!vm.loading && vm.logs.length === 0">
+                            <td colspan="6" class="text-center text-muted py-4">لا توجد عمليات مطابقة</td>
+                        </tr>
+                        <tr ng-if="vm.loading">
+                            <td colspan="6" class="text-center py-4">
+                                <i class="fas fa-spinner fa-spin" style="color: var(--primary);"></i> جارٍ التحميل...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <div ng-if="vm.totalPages > 1" style="display: flex; justify-content: center; margin-top: 16px;">
+        <nav>
+            <ul class="pagination pagination-sm">
+                <li class="page-item" ng-class="{disabled: vm.page === 1}">
+                    <button class="page-link" ng-click="vm.goPage(vm.page - 1)">السابق</button>
+                </li>
+                <li class="page-item disabled"><span class="page-link">صفحة {{vm.page}} / {{vm.totalPages}}</span></li>
+                <li class="page-item" ng-class="{disabled: vm.page === vm.totalPages}">
+                    <button class="page-link" ng-click="vm.goPage(vm.page + 1)">التالي</button>
+                </li>
+            </ul>
+        </nav>
+    </div>
+</div>

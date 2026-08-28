@@ -1,0 +1,26 @@
+{
+  "short_name": "العيادة الطبية",
+  "name": "منظومة العيادة الافتراضية الطبية IVS Mobile App",
+  "description": "منظومة العيادة الطبية المتكاملة لإدارة المواعيد والإيواء والتنويم السريري والسجلات الطبية والصيدلية",
+  "icons": [
+    {
+      "src": "assets/icons/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icons/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "./index.html",
+  "background_color": "#ffffff",
+  "theme_color": "#0077b6",
+  "display": "standalone",
+  "orientation": "portrait",
+  "dir": "rtl",
+  "lang": "ar"
+}

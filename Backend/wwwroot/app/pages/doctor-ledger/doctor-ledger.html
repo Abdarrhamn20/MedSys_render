@@ -1,0 +1,174 @@
+<!-- Doctor Financial Profit & Commissions Ledger View -->
+<div class="stagger-children">
+
+    <!-- Page Header -->
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+        <div>
+            <h2 style="margin-bottom: 4px;">
+                <i class="fas fa-hand-holding-usd" style="color: var(--primary);"></i>
+                {{vm.currentUser.role === 'Doctor' ? 'كشف أرباحي ومستحقاتي المالية' : 'إدارة عوائد ونسب الأطباء المالية'}}
+            </h2>
+            <p class="text-muted" style="font-size: 0.85rem;">متابعة الإيرادات، العمولات، وصافي حصة الطبيب والعيادة بالدينار الليبي (د.ل)</p>
+        </div>
+
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <!-- Select Doctor (Admin Only) -->
+            <div ng-if="vm.currentUser.role === 'Admin'" style="min-width: 220px;">
+                <select class="form-control" ng-model="vm.selectedDoctorId" ng-change="vm.loadLedger()">
+                    <option ng-repeat="doc in vm.doctors" ng-value="doc.userID">د. {{doc.fullName}} ({{doc.specialty || 'طبيب عام'}})</option>
+                </select>
+            </div>
+
+            <!-- Set Commission Button (Admin Only) -->
+            <button class="btn btn-primary" ng-if="vm.currentUser.role === 'Admin'" ng-click="vm.openCommissionModal()">
+                <i class="fas fa-sliders-h me-1"></i> ضبط نسبة الطبيب
+            </button>
+        </div>
+    </div>
+
+    <!-- Date Range Quick Filters -->
+    <div class="card" style="margin-bottom: 20px;">
+        <div class="card-body" style="padding: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div style="display: flex; gap: 8px;">
+                <button class="btn btn-sm" ng-class="vm.dateRange === 'today' ? 'btn-primary' : 'btn-secondary'" ng-click="vm.setDateFilter('today')">اليوم</button>
+                <button class="btn btn-sm" ng-class="vm.dateRange === 'week' ? 'btn-primary' : 'btn-secondary'" ng-click="vm.setDateFilter('week')">هذا الأسبوع</button>
+                <button class="btn btn-sm" ng-class="vm.dateRange === 'month' ? 'btn-primary' : 'btn-secondary'" ng-click="vm.setDateFilter('month')">هذا الشهر</button>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem;" class="text-muted">
+                <i class="fas fa-calendar-alt"></i>
+                <span>الفترة: <strong>{{vm.ledger.transactions[0].date | date:'yyyy/MM/dd'}}</strong> إلى <strong>{{vm.ledger.transactions[vm.ledger.transactions.length-1].date | date:'yyyy/MM/dd'}}</strong></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Statistics Grid -->
+    <div class="row" style="margin-bottom: 24px;">
+        <div class="col-3">
+            <div class="stat-card" style="border-right: 4px solid #0077b6;">
+                <div class="stat-icon" style="background: rgba(0,119,182,0.1); color: #0077b6;"><i class="fas fa-cash-register"></i></div>
+                <div class="stat-info">
+                    <h4>إجمالي الإيرادات</h4>
+                    <div class="stat-number" style="color: #0077b6;">{{vm.ledger.totalRevenue || 0 | number:2}} <small style="font-size: 0.7rem;">د.ل</small></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-3">
+            <div class="stat-card" style="border-right: 4px solid #2DC653;">
+                <div class="stat-icon" style="background: rgba(45,198,83,0.1); color: #2DC653;"><i class="fas fa-wallet"></i></div>
+                <div class="stat-info">
+                    <h4>صافي مستحقات الطبيب</h4>
+                    <div class="stat-number" style="color: #2DC653;">{{vm.ledger.doctorTotalEarnings || 0 | number:2}} <small style="font-size: 0.7rem;">د.ل</small></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-3">
+            <div class="stat-card" style="border-right: 4px solid #4361ee;">
+                <div class="stat-icon" style="background: rgba(67,97,238,0.1); color: #4361ee;"><i class="fas fa-hospital-user"></i></div>
+                <div class="stat-info">
+                    <h4>حصة العيادة</h4>
+                    <div class="stat-number" style="color: #4361ee;">{{vm.ledger.clinicTotalShare || 0 | number:2}} <small style="font-size: 0.7rem;">د.ل</small></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-3">
+            <div class="stat-card" style="border-right: 4px solid #ff9f1c;">
+                <div class="stat-icon" style="background: rgba(255,159,28,0.1); color: #ff9f1c;"><i class="fas fa-user-check"></i></div>
+                <div class="stat-info">
+                    <h4>عدد الحالات / الكشوفات</h4>
+                    <div class="stat-number">{{vm.ledger.totalConsultations || 0}}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Earnings Breakdown Table -->
+    <div class="card">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h4 style="margin: 0;"><i class="fas fa-list-alt me-1" style="color: var(--primary);"></i> تفاصيل الفواتير والعمليات المنجزة</h4>
+            <span class="badge badge-normal" ng-if="vm.ledger.transactions.length > 0">{{vm.ledger.transactions.length}} معاملة مجمعة</span>
+        </div>
+        <div class="table-wrapper" style="max-height: 500px; overflow-y: auto;">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>رقم الفاتورة</th>
+                        <th>التاريخ والوقت</th>
+                        <th>اسم المريض</th>
+                        <th>وسيلة الدفع</th>
+                        <th>إجمالي المبلغ</th>
+                        <th style="color: #2DC653;">حصة الطبيب (أرباحك)</th>
+                        <th style="color: #4361ee;">حصة العيادة</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr ng-repeat="item in vm.ledger.transactions" style="animation: fadeInUp {{$index * 0.04}}s ease;">
+                        <td><strong>#INV-{{item.invoiceID}}</strong></td>
+                        <td>{{item.date | date:'yyyy/MM/dd hh:mm a'}}</td>
+                        <td>
+                            <div style="font-weight: 600;">{{item.patientName}}</div>
+                        </td>
+                        <td>
+                            <span class="badge" ng-class="{'badge-success': item.paymentMethod === 'Cash', 'badge-primary': item.paymentMethod === 'POS', 'badge-normal': item.paymentMethod === 'Card'}">
+                                {{item.paymentMethod === 'Cash' ? 'نقدياً (Cash)' : (item.paymentMethod === 'POS' ? 'بطاقة (POS/سداد)' : item.paymentMethod)}}
+                            </span>
+                        </td>
+                        <td><strong>{{item.totalAmount | number:2}} د.ل</strong></td>
+                        <td style="color: #2DC653; font-weight: bold; font-size: 0.95rem; background: rgba(45,198,83,0.04);">
+                            + {{item.doctorShare | number:2}} د.ل
+                        </td>
+                        <td style="color: #4361ee; font-weight: 600;">
+                            {{item.clinicShare | number:2}} د.ل
+                        </td>
+                    </tr>
+                    <tr ng-if="!vm.ledger.transactions || vm.ledger.transactions.length === 0">
+                        <td colspan="7" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                            <i class="fas fa-inbox" style="font-size: 2.5rem; margin-bottom: 10px; display: block; opacity: 0.4;"></i>
+                            لا توجد معاملات أو كشوفات مسجلة في هذه الفترة الزمنية
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Set Commission Modal (Admin Only) -->
+    <div class="modal-overlay" ng-if="vm.showCommissionModal" ng-click="vm.showCommissionModal = false">
+        <div class="modal-content" style="max-width: 480px;" ng-click="$event.stopPropagation()">
+            <div class="modal-header">
+                <h4><i class="fas fa-sliders-h" style="color: var(--primary); margin-left: 8px;"></i> ضبط نسبة / عمولة الطبيب</h4>
+                <button class="btn-icon" style="background: none; border: none; font-size: 1.2rem; cursor: pointer;" ng-click="vm.showCommissionModal = false">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form name="commForm">
+                    <div class="form-group" ng-if="vm.currentUser.role === 'Admin'">
+                        <label>اختر الطبيب</label>
+                        <select class="form-control" ng-model="vm.newCommission.doctorId" required>
+                            <option value="">-- اختر الطبيب --</option>
+                            <option ng-repeat="doc in vm.doctors" ng-value="doc.userID">د. {{doc.fullName}} ({{doc.specialty || 'طبيب عام'}})</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>نوع الاحتساب</label>
+                        <select class="form-control" ng-model="vm.newCommission.commissionType" required>
+                            <option value="Percentage">نسبة مئوية (%)</option>
+                            <option value="FixedAmount">مبلغ ثابت لكل كشف (د.ل)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>{{vm.newCommission.commissionType === 'Percentage' ? 'النسبة المئوية المخصصة للطبيب (%)' : 'المبلغ الثابت للطبيب لكل كشف (د.ل)'}}</label>
+                        <input type="number" step="0.01" class="form-control" ng-model="vm.newCommission.value" required placeholder="مثال: 50">
+                        <small class="text-muted" ng-if="vm.newCommission.commissionType === 'Percentage'">سيتم اقتطاع هذه النسبة لصالح الطبيب والباقي لحساب العيادة.</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" ng-click="vm.saveCommission()"><i class="fas fa-save me-1"></i> حفظ النسبة</button>
+                <button class="btn btn-secondary" ng-click="vm.showCommissionModal = false">إلغاء</button>
+            </div>
+        </div>
+    </div>
+</div>

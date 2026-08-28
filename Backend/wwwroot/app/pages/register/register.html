@@ -1,0 +1,275 @@
+<div class="auth-page">
+    <!-- Floating Medical Icons Background -->
+    <div class="auth-floating-icons">
+        <i class="fas fa-heartbeat"></i>
+        <i class="fas fa-stethoscope"></i>
+        <i class="fas fa-notes-medical"></i>
+        <i class="fas fa-user-md"></i>
+        <i class="fas fa-hospital"></i>
+    </div>
+
+    <!-- Register Card -->
+    <div class="auth-card" style="max-width: 500px;">
+        <div class="auth-header">
+            <div class="auth-logo">
+                <i class="fas fa-user-plus"></i>
+            </div>
+            <h2>{{vm.mode === 'claim' ? 'تفعيل حساب مسجل بالاستقبال' : 'إنشاء حساب جديد'}}</h2>
+            <p>{{vm.mode === 'claim' ? 'أدخل رقم هاتفك لتفعيل وتأمين حسابك بالعيادة' : 'انضم إلى منظومة العيادة الافتراضية'}}</p>
+        </div>
+
+        <!-- Claim vs New Mode Switcher -->
+        <div style="display: flex; gap: 8px; margin-bottom: 20px; background: rgba(0,119,182,0.08); padding: 4px; border-radius: 10px;">
+            <button type="button" class="btn" ng-class="vm.mode === 'new' ? 'btn-primary' : 'btn-secondary'" style="flex: 1; font-size: 0.85rem;" ng-click="vm.mode = 'new'">
+                <i class="fas fa-user-plus me-1"></i> حساب جديد
+            </button>
+            <button type="button" class="btn" ng-class="vm.mode === 'claim' ? 'btn-primary' : 'btn-secondary'" style="flex: 1; font-size: 0.85rem;" ng-click="vm.mode = 'claim'">
+                <i class="fas fa-id-card me-1"></i> تفعيل حسابي بالاستقبال
+            </button>
+        </div>
+
+        <!-- Error Alert -->
+        <div class="alert alert-danger" ng-if="vm.error">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>{{vm.error}}</span>
+        </div>
+
+        <!-- Claim Account Mode Form -->
+        <div ng-if="vm.mode === 'claim'" style="animation: fadeInUp 0.3s ease;">
+            <!-- Claim Step 1: Check Phone -->
+            <form ng-if="vm.claimStep === 1" ng-submit="vm.checkClaimPhone()">
+                <div class="form-group">
+                    <label>رقم الهاتف المسجل لدى الاستقبال <span style="color: red;">*</span></label>
+                    <div class="input-icon-wrapper">
+                        <input type="tel" class="form-control" ng-model="vm.claimData.phone" placeholder="مثال: 09XXXXXXXX" required style="font-size: 1.1rem;">
+                        <i class="fas fa-phone input-icon"></i>
+                    </div>
+                    <small class="text-muted" style="margin-top: 4px; display: block;">أدخل رقم الهاتف الذي استخدمته عند الحجز في استقبال العيادة.</small>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block btn-lg" ng-disabled="!vm.claimData.phone || vm.loading">
+                    <span ng-if="!vm.loading"><i class="fas fa-search me-1"></i> التحقق من رقم الهاتف</span>
+                    <span ng-if="vm.loading"><span class="spinner"></span> جاري البحث...</span>
+                </button>
+            </form>
+
+            <!-- Claim Step 2: Found Patient & Set Password -->
+            <form ng-if="vm.claimStep === 2" ng-submit="vm.submitClaimAccount()">
+                <div style="background: rgba(45,198,83,0.1); border: 1px solid #2DC653; padding: 14px; border-radius: 10px; margin-bottom: 20px;">
+                    <div style="font-weight: bold; color: #2DC653; font-size: 1.05rem; margin-bottom: 4px;">
+                        <i class="fas fa-check-circle me-1"></i> أهلاً بك يا {{vm.foundPatient.fullName}}!
+                    </div>
+                    <div style="font-size: 0.85rem; color: #444;">وجدنا ملفك الطبي بالعيادة. يرجى تحديد كلمة المرور السريّة الخاصة بك لتفعيل الحساب بالكامل.</div>
+                </div>
+
+                <div class="form-group">
+                    <label>البريد الإلكتروني الشخصي (اختياري)</label>
+                    <div class="input-icon-wrapper">
+                        <input type="email" class="form-control" ng-model="vm.claimData.email" placeholder="example@gmail.com">
+                        <i class="fas fa-envelope input-icon"></i>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>كلمة المرور الجديدة <span style="color: red;">*</span></label>
+                    <div class="input-icon-wrapper">
+                        <input type="password" class="form-control" ng-model="vm.claimData.password" placeholder="أدخل كلمة مرور سريّة لحسابك" required minlength="6">
+                        <i class="fas fa-lock input-icon"></i>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn btn-secondary" ng-click="vm.claimStep = 1" style="flex: 1;">رجوع</button>
+                    <button type="submit" class="btn btn-primary" style="flex: 2;" ng-disabled="!vm.claimData.password || vm.loading">
+                        <span ng-if="!vm.loading"><i class="fas fa-user-check me-1"></i> تفعيل الحساب والدخول</span>
+                        <span ng-if="vm.loading"><span class="spinner"></span> جاري التفعيل...</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Normal Register Form -->
+        <form class="auth-form" ng-if="vm.mode === 'new'" ng-submit="vm.register()" name="registerForm" novalidate>
+
+            <!-- Role Selector -->
+            <div class="role-selector">
+                <div class="role-option" ng-class="{'active': vm.userData.role === 'Patient'}" ng-click="vm.userData.role = 'Patient'">
+                    <i class="fas fa-user"></i>
+                    <span>مريض</span>
+                </div>
+                <div class="role-option" ng-class="{'active': vm.userData.role === 'Doctor'}" ng-click="vm.userData.role = 'Doctor'">
+                    <i class="fas fa-user-md"></i>
+                    <span>طبيب</span>
+                </div>
+            </div>
+
+            <!-- Full Name -->
+            <div class="form-group">
+                <label>الاسم الكامل</label>
+                <div class="input-icon-wrapper">
+                    <input type="text" class="form-control" ng-model="vm.userData.fullName"
+                           name="fullName" placeholder="أدخل اسمك الكامل" required>
+                    <i class="fas fa-user input-icon"></i>
+                </div>
+                <div class="form-error" ng-show="registerForm.fullName.$touched && registerForm.fullName.$error.required">
+                    <i class="fas fa-info-circle"></i> الاسم الكامل مطلوب
+                </div>
+            </div>
+
+            <!-- Email -->
+            <div class="form-group">
+                <label>البريد الإلكتروني</label>
+                <div class="input-icon-wrapper">
+                    <input type="email" class="form-control" ng-model="vm.userData.email"
+                           name="email" placeholder="example@medical.com" required>
+                    <i class="fas fa-envelope input-icon"></i>
+                </div>
+                <div class="form-error" ng-show="registerForm.email.$touched && registerForm.email.$error.required">
+                    <i class="fas fa-info-circle"></i> البريد الإلكتروني مطلوب
+                </div>
+                <div class="form-error" ng-show="registerForm.email.$touched && registerForm.email.$error.email">
+                    <i class="fas fa-info-circle"></i> أدخل بريد إلكتروني صحيح
+                </div>
+            </div>
+
+            <!-- Phone -->
+            <div class="form-group">
+                <label>رقم الهاتف</label>
+                <div class="input-icon-wrapper">
+                    <input type="tel" class="form-control" ng-model="vm.userData.phone"
+                           name="phone" placeholder="05XXXXXXXX">
+                    <i class="fas fa-phone input-icon"></i>
+                </div>
+            </div>
+
+            <!-- Password -->
+            <div class="form-group">
+                <label>كلمة المرور</label>
+                <div class="input-icon-wrapper" style="position: relative;">
+                    <input type="{{vm.showPassword ? 'text' : 'password'}}" class="form-control"
+                           ng-model="vm.userData.password" name="password"
+                           placeholder="أدخل كلمة المرور" required minlength="6">
+                    <i class="fas fa-lock input-icon"></i>
+                    <button type="button" class="password-toggle" ng-click="vm.showPassword = !vm.showPassword">
+                        <i class="fas" ng-class="vm.showPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
+                    </button>
+                </div>
+                <div class="form-error" ng-show="registerForm.password.$touched && registerForm.password.$error.minlength">
+                    <i class="fas fa-info-circle"></i> كلمة المرور يجب أن تكون 6 أحرف على الأقل
+                </div>
+            </div>
+
+            <!-- Doctor Fields -->
+            <div ng-if="vm.userData.role === 'Doctor'" style="animation: fadeInUp 0.3s ease;">
+                <div class="form-group">
+                    <label>التخصص الطبي</label>
+                    <div class="input-icon-wrapper">
+                        <select class="form-control" ng-model="vm.userData.specialty" required
+                                style="appearance: auto; padding-left: 12px;">
+                            <option value="">-- اختر تخصصك الطبي --</option>
+                            <optgroup label="الطب العام والباطنة">
+                                <option value="طب عام">طب عام</option>
+                                <option value="طب باطني">طب باطني</option>
+                                <option value="طب أسرة">طب أسرة</option>
+                            </optgroup>
+                            <optgroup label="الطب النفسي والعصبي">
+                                <option value="الطب النفسي">الطب النفسي</option>
+                                <option value="طب نفسي أطفال ومراهقين">طب نفسي أطفال ومراهقين</option>
+                                <option value="طب الأعصاب">طب الأعصاب</option>
+                            </optgroup>
+                            <optgroup label="الجراحة">
+                                <option value="جراحة عامة">جراحة عامة</option>
+                                <option value="جراحة عظام">جراحة عظام</option>
+                                <option value="جراحة قلب">جراحة قلب</option>
+                                <option value="جراحة مخ وأعصاب">جراحة مخ وأعصاب</option>
+                                <option value="جراحة تجميل">جراحة تجميل</option>
+                            </optgroup>
+                            <optgroup label="تخصصات أخرى">
+                                <option value="طب أطفال">طب أطفال</option>
+                                <option value="طب القلب">طب القلب</option>
+                                <option value="طب الصدرية">طب الصدرية</option>
+                                <option value="طب العيون">طب العيون</option>
+                                <option value="طب الأنف والأذن والحنجرة">طب الأنف والأذن والحنجرة</option>
+                                <option value="طب الجلدية">طب الجلدية</option>
+                                <option value="طب المسالك البولية">طب المسالك البولية</option>
+                                <option value="طب النساء والتوليد">طب النساء والتوليد</option>
+                                <option value="طب العظام">طب العظام</option>
+                                <option value="طب الأسنان">طب الأسنان</option>
+                                <option value="طب الطوارئ">طب الطوارئ</option>
+                                <option value="الأشعة التشخيصية">الأشعة التشخيصية</option>
+                                <option value="التخدير والعناية المركزة">التخدير والعناية المركزة</option>
+                                <option value="الأورام">الأورام</option>
+                                <option value="الغدد الصماء والسكري">الغدد الصماء والسكري</option>
+                                <option value="أمراض الكلى">أمراض الكلى</option>
+                                <option value="أمراض الدم">أمراض الدم</option>
+                                <option value="الطب الطبيعي والتأهيل">الطب الطبيعي والتأهيل</option>
+                                <option value="التغذية العلاجية">التغذية العلاجية</option>
+                                <option value="أخرى">أخرى</option>
+                            </optgroup>
+                        </select>
+                        <i class="fas fa-stethoscope input-icon"></i>
+                    </div>
+                </div>
+                <!-- حقل التخصص المخصص عند اختيار "أخرى" -->
+                <div class="form-group" ng-if="vm.userData.specialty === 'أخرى'" style="animation: fadeInUp 0.2s ease;">
+                    <label>حدد تخصصك</label>
+                    <div class="input-icon-wrapper">
+                        <input type="text" class="form-control" ng-model="vm.userData.customSpecialty"
+                               placeholder="اكتب تخصصك الطبي هنا..." required>
+                        <i class="fas fa-pen input-icon"></i>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>رقم الترخيص الطبي</label>
+                    <div class="input-icon-wrapper">
+                        <input type="text" class="form-control" ng-model="vm.userData.licenseNumber"
+                               placeholder="رقم ترخيص مزاولة المهنة">
+                        <i class="fas fa-id-card input-icon"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Patient Fields -->
+            <div ng-if="vm.userData.role === 'Patient'" style="animation: fadeInUp 0.3s ease;">
+                <div style="display: flex; gap: 12px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label>فصيلة الدم</label>
+                        <select class="form-control" ng-model="vm.userData.bloodType">
+                            <option value="">اختر</option>
+                            <option value="A+">A+</option>
+                            <option value="A-">A-</option>
+                            <option value="B+">B+</option>
+                            <option value="B-">B-</option>
+                            <option value="AB+">AB+</option>
+                            <option value="AB-">AB-</option>
+                            <option value="O+">O+</option>
+                            <option value="O-">O-</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label>الجنس</label>
+                        <select class="form-control" ng-model="vm.userData.gender">
+                            <option value="">اختر</option>
+                            <option value="ذكر">ذكر</option>
+                            <option value="أنثى">أنثى</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Register Button -->
+            <button type="submit" class="btn btn-primary btn-block btn-lg" ng-disabled="registerForm.$invalid || vm.loading">
+                <span ng-if="!vm.loading">
+                    <i class="fas fa-user-plus"></i> إنشاء الحساب
+                </span>
+                <span ng-if="vm.loading">
+                    <span class="spinner"></span> جاري إنشاء الحساب...
+                </span>
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            <p>لديك حساب بالفعل؟ <a ui-sref="login">تسجيل الدخول</a></p>
+        </div>
+    </div>
+</div>

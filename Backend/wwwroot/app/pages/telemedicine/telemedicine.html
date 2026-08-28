@@ -1,0 +1,73 @@
+<div class="telemedicine-page" ng-class="{ 'dark-room': vm.status === 'connected' || vm.status === 'waiting' }">
+
+    <!-- Loading -->
+    <div class="tm-loading" ng-if="vm.status === 'loading'">
+        <div class="spinner"></div>
+        <p>جارٍ تجهيز جلسة الفيديو الآمنة...</p>
+    </div>
+
+    <!-- Error -->
+    <div class="tm-loading" ng-if="vm.status === 'error'">
+        <div class="tm-error-icon"><i class="fas fa-exclamation-triangle"></i></div>
+        <h3>تعذر بدء الجلسة</h3>
+        <p ng-bind="vm.errorMessage"></p>
+        <button class="btn btn-primary" ng-click="vm.goBack()">العودة للمواعيد</button>
+    </div>
+
+    <!-- Call Ended -->
+    <div class="tm-loading" ng-if="vm.status === 'ended'">
+        <div class="tm-error-icon"><i class="fas fa-phone-slash"></i></div>
+        <h3>انتهت مكالمة الفيديو</h3>
+        <p>تم إنهاء الجلسة. هل تريد إضافة ملاحظات على الجلسة؟</p>
+        <textarea ng-model="vm.endNotes" class="form-control tm-notes" rows="3" placeholder="ملاحظات الجلسة (اختياري)"></textarea>
+        <button class="btn btn-primary" ng-click="vm.goBack()">حفظ والعودة</button>
+    </div>
+
+    <!-- Active Call UI -->
+    <div class="tm-call" ng-if="vm.status === 'waiting' || vm.status === 'connected' || vm.status === 'ringing'">
+        <div class="tm-remote-area">
+            <video id="remoteVideo" autoplay playsinline ng-if="vm.status === 'connected' && vm.remoteStream"></video>
+            <div class="tm-remote-placeholder" ng-if="vm.status !== 'connected' || !vm.remoteStream">
+                <i class="fas fa-user-md tm-avatar"></i>
+                <h3 ng-bind="vm.remoteName"></h3>
+                <p ng-if="vm.status === 'waiting'">في انتظار انضمام الطرف الآخر إلى الغرفة...</p>
+                <p ng-if="vm.status === 'connected' && !vm.remoteStream">جارٍ الاتصال بالطرف الآخر...</p>
+                <p class="tm-room-code">رمز الغرفة: <span ng-bind="vm.roomCode"></span></p>
+            </div>
+            <div class="tm-chat" ng-show="vm.chatOpen">
+                <div class="tm-chat-header">الدردشة النصية</div>
+                <div class="tm-chat-body">
+                    <div class="tm-msg" ng-repeat="m in vm.chatMessages" ng-class="{ mine: m.mine }">
+                        <strong ng-bind="m.user"></strong><span ng-bind="m.text"></span>
+                    </div>
+                </div>
+                <div class="tm-chat-input">
+                    <input ng-model="vm.chatText" ng-keydown="$event.keyCode === 13 && vm.sendChat()" class="form-control" placeholder="اكتب رسالة...">
+                    <button class="btn btn-sm btn-primary" ng-click="vm.sendChat()"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Local preview -->
+        <div class="tm-local-box">
+            <video id="localVideo" autoplay playsinline muted></video>
+            <i class="fas fa-video-slash tm-video-off" ng-if="vm.videoOff"></i>
+        </div>
+
+        <!-- Controls -->
+        <div class="tm-controls">
+            <button class="tm-btn" ng-click="vm.toggleMute()" ng-class="{ active: vm.muted }" title="كتم الصوت">
+                <i class="fas" ng-class="vm.muted ? 'fa-microphone-slash' : 'fa-microphone'"></i>
+            </button>
+            <button class="tm-btn tm-end" ng-click="vm.endCall()" title="إنهاء المكالمة">
+                <i class="fas fa-phone-slash"></i>
+            </button>
+            <button class="tm-btn" ng-click="vm.toggleVideo()" ng-class="{ active: vm.videoOff }" title="إيقاف الكاميرا">
+                <i class="fas" ng-class="vm.videoOff ? 'fa-video-slash' : 'fa-video'"></i>
+            </button>
+            <button class="tm-btn" ng-click="vm.toggleChat()" title="الدردشة">
+                <i class="fas fa-comment-dots"></i>
+            </button>
+        </div>
+    </div>
+</div>

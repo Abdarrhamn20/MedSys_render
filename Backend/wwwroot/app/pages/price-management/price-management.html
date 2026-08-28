@@ -1,0 +1,469 @@
+<div class="page-content" style="font-family: 'Cairo', sans-serif;">
+
+    <style>
+        @keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+        .pm-tab{padding:10px 20px;border-radius:10px;cursor:pointer;font-weight:600;font-size:.9rem;transition:all .2s;border:2px solid transparent;background:#f8f9fa;color:#555;}
+        .pm-tab:hover{background:#e8eaf6;color:#4361ee;}
+        .pm-tab.active{background:#4361ee;color:#fff;border-color:#3651d4;box-shadow:0 4px 15px rgba(67,97,238,0.25);}
+        .pm-table{width:100%;border-collapse:separate;border-spacing:0;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.04);}
+        .pm-table th{background:#f0f2ff;color:#1d3557;font-weight:700;padding:14px 16px;text-align:right;font-size:.85rem;border-bottom:2px solid #e0e3f5;}
+        .pm-table td{padding:12px 16px;border-bottom:1px solid #f0f0f0;font-size:.88rem;color:#333;}
+        .pm-table tr:hover td{background:#f8f9ff;}
+        .pm-input{width:110px;padding:8px 12px;border:2px solid #4361ee;border-radius:8px;font-weight:700;color:#1d3557;text-align:center;font-size:.95rem;outline:none;}
+        .pm-input:focus{box-shadow:0 0 0 3px rgba(67,97,238,0.15);}
+        .pm-stat{background:#fff;border-radius:14px;padding:20px;text-align:center;box-shadow:0 4px 15px rgba(0,0,0,0.03);border:1px solid rgba(0,0,0,0.03);}
+        .pm-stat .num{font-size:1.8rem;font-weight:900;color:#4361ee;}
+        .pm-stat .lbl{font-size:.78rem;color:#888;font-weight:600;margin-top:4px;}
+        .btn-sm{padding:6px 14px;border-radius:8px;font-size:.82rem;font-weight:700;border:none;cursor:pointer;transition:all .2s;}
+        .btn-sm:hover{transform:translateY(-1px);}
+        .pm-form{background:#fff;border-radius:14px;padding:24px;box-shadow:0 2px 12px rgba(0,0,0,0.04);margin-bottom:20px;border:2px solid #e8eaf6;}
+        .pm-form label{font-weight:700;color:#333;display:block;margin-bottom:6px;font-size:.85rem;}
+        .pm-form input,.pm-form select,.pm-form textarea{width:100%;padding:10px 14px;border:2px solid #e0e3f5;border-radius:10px;font-family:Cairo;font-size:.9rem;outline:none;box-sizing:border-box;}
+        .pm-form input:focus,.pm-form select:focus,.pm-form textarea:focus{border-color:#4361ee;box-shadow:0 0 0 3px rgba(67,97,238,0.1);}
+        .pm-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+        .btn-danger{background:#f44336;color:#fff;padding:6px 14px;border-radius:8px;font-size:.82rem;font-weight:700;border:none;cursor:pointer;}
+        .btn-danger:hover{background:#d32f2f;}
+    </style>
+
+    <!-- HEADER -->
+    <div style="margin-bottom:28px;">
+        <h2 style="margin:0 0 6px;font-weight:900;color:#1d3557;font-size:1.5rem;">
+            <i class="fas fa-tags" style="color:#4361ee;margin-left:10px;"></i>إدارة الأسعار المركزية
+        </h2>
+        <p style="margin:0;color:#888;font-size:.88rem;">تحديث جميع أسعار النظام من مكان واحد — الأسعار تُطبَّق فوراً على الفواتير</p>
+    </div>
+
+    <!-- OVERVIEW STATS -->
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:14px;margin-bottom:24px;">
+        <div class="pm-stat">
+            <div class="num">{{vm.overview.doctorsCount || 0}}</div>
+            <div class="lbl"><i class="fas fa-user-md"></i> أطباء</div>
+        </div>
+        <div class="pm-stat">
+            <div class="num">{{vm.overview.labTestsCount || 0}}</div>
+            <div class="lbl"><i class="fas fa-flask"></i> تحاليل</div>
+        </div>
+        <div class="pm-stat">
+            <div class="num">{{vm.overview.radiologyTemplatesCount || 0}}</div>
+            <div class="lbl"><i class="fas fa-x-ray"></i> أشعة</div>
+        </div>
+        <div class="pm-stat">
+            <div class="num">{{vm.overview.medicationsCount || 0}}</div>
+            <div class="lbl"><i class="fas fa-pills"></i> أدوية</div>
+        </div>
+        <div class="pm-stat">
+            <div class="num">{{vm.overview.roomsCount || 0}}</div>
+            <div class="lbl"><i class="fas fa-bed"></i> غرف</div>
+        </div>
+        <div class="pm-stat">
+            <div class="num">{{vm.overview.inventoryCount || 0}}</div>
+            <div class="lbl"><i class="fas fa-boxes-stacked"></i> مخزون</div>
+        </div>
+        <div class="pm-stat">
+            <div class="num">{{vm.overview.healthServicesCount || 0}}</div>
+            <div class="lbl"><i class="fas fa-stethoscope"></i> خدمات</div>
+        </div>
+    </div>
+
+    <!-- TABS -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;">
+        <button class="pm-tab" ng-class="{'active':vm.activeTab==='doctors'}" ng-click="vm.setTab('doctors')">
+            <i class="fas fa-user-md"></i> رسوم الكشف
+        </button>
+        <button class="pm-tab" ng-class="{'active':vm.activeTab==='labTests'}" ng-click="vm.setTab('labTests')">
+            <i class="fas fa-flask"></i> التحاليل
+        </button>
+        <button class="pm-tab" ng-class="{'active':vm.activeTab==='radiology'}" ng-click="vm.setTab('radiology')">
+            <i class="fas fa-x-ray"></i> الأشعة
+        </button>
+        <button class="pm-tab" ng-class="{'active':vm.activeTab==='medications'}" ng-click="vm.setTab('medications')">
+            <i class="fas fa-pills"></i> الأدوية
+        </button>
+        <button class="pm-tab" ng-class="{'active':vm.activeTab==='rooms'}" ng-click="vm.setTab('rooms')">
+            <i class="fas fa-bed"></i> الغرف
+        </button>
+        <button class="pm-tab" ng-class="{'active':vm.activeTab==='inventory'}" ng-click="vm.setTab('inventory')">
+            <i class="fas fa-boxes-stacked"></i> المخزون
+        </button>
+        <button class="pm-tab" ng-class="{'active':vm.activeTab==='healthServices'}" ng-click="vm.setTab('healthServices')">
+            <i class="fas fa-stethoscope"></i> الخدمات الصحية
+        </button>
+        <button class="pm-tab" ng-class="{'active':vm.activeTab==='adjust'}" ng-click="vm.setTab('adjust')" style="background:#fff3cd;color:#856404;border-color:#ffc107;">
+            <i class="fas fa-sliders"></i> تعديل جماعي
+        </button>
+    </div>
+
+    <!-- LOADING (inside content, tabs remain visible) -->
+    <div ng-if="vm.loading" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:300px;text-align:center;">
+        <div style="position:relative;width:60px;height:60px;margin-bottom:16px;">
+            <div style="box-sizing:border-box;position:absolute;width:100%;height:100%;border:4px solid rgba(67,97,238,0.1);border-radius:50%;"></div>
+            <div style="box-sizing:border-box;position:absolute;width:100%;height:100%;border:4px solid transparent;border-top-color:#4361ee;border-radius:50%;animation:spin 1s linear infinite;"></div>
+        </div>
+        <h4 style="font-weight:700;color:#555;margin:0;">جاري تحميل البيانات...</h4>
+    </div>
+
+    <!-- =================== DOCTORS TAB =================== -->
+    <div ng-if="!vm.loading && vm.activeTab==='doctors'">
+        <div style="background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.04);">
+            <table class="pm-table">
+                <thead><tr><th>#</th><th>اسم الطبيب</th><th>التخصص</th><th>رسوم الكشف (د.ل)</th><th>إجراءات</th></tr></thead>
+                <tbody>
+                    <tr ng-repeat="d in vm.doctors">
+                        <td style="font-weight:700;color:#aaa;">{{$index+1}}</td>
+                        <td style="font-weight:700;">{{d.fullName}}</td>
+                        <td>{{d.specialty}}</td>
+                        <td>
+                            <span ng-if="vm.editingId !== d.doctorID" style="font-weight:900;color:#4361ee;font-size:1.05rem;">{{d.consultationFee | number:2}} د.ل</span>
+                            <input ng-if="vm.editingId === d.doctorID" type="number" class="pm-input" ng-model="vm.editPrice" min="0" step="0.01">
+                        </td>
+                        <td>
+                            <button ng-if="vm.editingId !== d.doctorID" class="btn-sm" style="background:#e8eaf6;color:#4361ee;" ng-click="vm.startEdit(d)"><i class="fas fa-pen"></i> تعديل</button>
+                            <div ng-if="vm.editingId === d.doctorID" style="display:flex;gap:6px;">
+                                <button class="btn-sm" style="background:#4361ee;color:#fff;" ng-click="vm.savePrice(d,'doctor')"><i class="fas fa-check"></i> حفظ</button>
+                                <button class="btn-sm" style="background:#f44336;color:#fff;" ng-click="vm.cancelEdit()"><i class="fas fa-times"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr ng-if="vm.doctors.length === 0"><td colspan="5" style="text-align:center;color:#aaa;padding:30px;">لا يوجد أطباء مسجلين</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- =================== LAB TESTS TAB =================== -->
+    <div ng-if="!vm.loading && vm.activeTab==='labTests'">
+        <!-- Create Button -->
+        <div style="margin-bottom:16px;text-align:left;">
+            <button class="btn-sm" style="background:#4361ee;color:#fff;padding:10px 20px;font-size:.9rem;" ng-click="vm.toggleCreateForm()">
+                <i class="fas" ng-class="vm.showCreateForm ? 'fa-times' : 'fa-plus'" style="margin-left:6px;"></i>
+                {{vm.showCreateForm ? 'إلغاء' : 'إضافة فحص جديد'}}
+            </button>
+        </div>
+        <!-- Create Form -->
+        <div class="pm-form" ng-if="vm.showCreateForm">
+            <h4 style="margin-top:0;color:#1d3557;font-weight:800;"><i class="fas fa-flask" style="color:#4361ee;margin-left:8px;"></i>إضافة فحص تحاليل جديد</h4>
+            <div class="pm-form-grid">
+                <div><label>اسم الفحص *</label><input ng-model="vm.newLabTest.testName" placeholder="مثال: صورة دم كاملة"></div>
+                <div><label>الكود *</label><input ng-model="vm.newLabTest.code" placeholder="مثال: CBC" style="text-transform:uppercase;"></div>
+                <div><label>الفئة</label>
+                    <select ng-model="vm.newLabTest.category">
+                        <option value="Hematology">Hematology</option><option value="Biochemistry">Biochemistry</option>
+                        <option value="Immunology">Immunology</option><option value="Microbiology">Microbiology</option>
+                        <option value="General">General</option>
+                    </select>
+                </div>
+                <div><label>السعر (د.ل) *</label><input type="number" ng-model="vm.newLabTest.price" min="0" step="0.01" placeholder="0.00"></div>
+                <div><label>الوحدة</label><input ng-model="vm.newLabTest.unit" placeholder="mg/dL"></div>
+            </div>
+            <div style="margin-top:16px;">
+                <button class="btn-sm" style="background:#4361ee;color:#fff;padding:10px 24px;font-size:.9rem;" ng-click="vm.createItem()">
+                    <i class="fas fa-save" style="margin-left:6px;"></i> حفظ الفحص
+                </button>
+            </div>
+        </div>
+        <!-- Table -->
+        <div style="background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.04);">
+            <table class="pm-table">
+                <thead><tr><th>#</th><th>اسم الفحص</th><th>الكود</th><th>الفئة</th><th>السعر (د.ل)</th><th>إجراءات</th></tr></thead>
+                <tbody>
+                    <tr ng-repeat="t in vm.labTests">
+                        <td style="font-weight:700;color:#aaa;">{{$index+1}}</td>
+                        <td style="font-weight:700;">{{t.testName}}</td>
+                        <td><span style="background:#e8eaf6;padding:3px 10px;border-radius:6px;font-weight:700;font-size:.8rem;color:#4361ee;">{{t.code}}</span></td>
+                        <td>{{t.category}}</td>
+                        <td>
+                            <span ng-if="vm.editingId !== t.labTestID" style="font-weight:900;color:#4361ee;font-size:1.05rem;">{{t.price | number:2}} د.ل</span>
+                            <input ng-if="vm.editingId === t.labTestID" type="number" class="pm-input" ng-model="vm.editPrice" min="0" step="0.01">
+                        </td>
+                        <td>
+                            <div ng-if="vm.editingId !== t.labTestID" style="display:flex;gap:6px;">
+                                <button class="btn-sm" style="background:#e8eaf6;color:#4361ee;" ng-click="vm.startEdit(t)"><i class="fas fa-pen"></i> تعديل</button>
+                                <button class="btn-danger" ng-click="vm.deleteItem(t,'labtest')"><i class="fas fa-trash"></i></button>
+                            </div>
+                            <div ng-if="vm.editingId === t.labTestID" style="display:flex;gap:6px;">
+                                <button class="btn-sm" style="background:#4361ee;color:#fff;" ng-click="vm.savePrice(t,'labtest')"><i class="fas fa-check"></i> حفظ</button>
+                                <button class="btn-sm" style="background:#f44336;color:#fff;" ng-click="vm.cancelEdit()"><i class="fas fa-times"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr ng-if="vm.labTests.length === 0"><td colspan="6" style="text-align:center;color:#aaa;padding:30px;">لا توجد تحاليل مسجلة</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- =================== RADIOLOGY TAB =================== -->
+    <div ng-if="!vm.loading && vm.activeTab==='radiology'">
+        <div style="margin-bottom:16px;text-align:left;">
+            <button class="btn-sm" style="background:#e65100;color:#fff;padding:10px 20px;font-size:.9rem;" ng-click="vm.toggleCreateForm()">
+                <i class="fas" ng-class="vm.showCreateForm ? 'fa-times' : 'fa-plus'" style="margin-left:6px;"></i>
+                {{vm.showCreateForm ? 'إلغاء' : 'إضافة قالب جديد'}}
+            </button>
+        </div>
+        <div class="pm-form" ng-if="vm.showCreateForm">
+            <h4 style="margin-top:0;color:#1d3557;font-weight:800;"><i class="fas fa-x-ray" style="color:#e65100;margin-left:8px;"></i>إضافة قالب أشعة جديد</h4>
+            <div class="pm-form-grid">
+                <div><label>اسم القالب *</label><input ng-model="vm.newRadiology.templateName" placeholder="مثال: أشعة صدر طبيعية"></div>
+                <div><label>الطريقة (Modality) *</label>
+                    <select ng-model="vm.newRadiology.modality">
+                        <option value="X-Ray">X-Ray</option><option value="Ultrasound">Ultrasound</option>
+                        <option value="CT">CT</option><option value="MRI">MRI</option>
+                        <option value="Mammography">Mammography</option><option value="Fluoroscopy">Fluoroscopy</option>
+                    </select>
+                </div>
+                <div><label>المنطقة المفحوصة</label><input ng-model="vm.newRadiology.bodyPart" placeholder="مثال: Chest, Abdomen"></div>
+                <div><label>السعر (د.ل) *</label><input type="number" ng-model="vm.newRadiology.price" min="0" step="0.01" placeholder="0.00"></div>
+            </div>
+            <div style="margin-top:16px;">
+                <button class="btn-sm" style="background:#e65100;color:#fff;padding:10px 24px;font-size:.9rem;" ng-click="vm.createItem()">
+                    <i class="fas fa-save" style="margin-left:6px;"></i> حفظ القالب
+                </button>
+            </div>
+        </div>
+        <div style="background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.04);">
+            <table class="pm-table">
+                <thead><tr><th>#</th><th>اسم القالب</th><th>الطريقة</th><th>المنطقة</th><th>السعر (د.ل)</th><th>إجراءات</th></tr></thead>
+                <tbody>
+                    <tr ng-repeat="t in vm.radiologyTemplates">
+                        <td style="font-weight:700;color:#aaa;">{{$index+1}}</td>
+                        <td style="font-weight:700;">{{t.templateName}}</td>
+                        <td><span style="background:#fff3e0;padding:3px 10px;border-radius:6px;font-weight:700;font-size:.8rem;color:#e65100;">{{t.modality}}</span></td>
+                        <td>{{t.bodyPart}}</td>
+                        <td>
+                            <span ng-if="vm.editingId !== t.templateID" style="font-weight:900;color:#e65100;font-size:1.05rem;">{{t.price | number:2}} د.ل</span>
+                            <input ng-if="vm.editingId === t.templateID" type="number" class="pm-input" ng-model="vm.editPrice" min="0" step="0.01">
+                        </td>
+                        <td>
+                            <div ng-if="vm.editingId !== t.templateID" style="display:flex;gap:6px;">
+                                <button class="btn-sm" style="background:#fff3e0;color:#e65100;" ng-click="vm.startEdit(t)"><i class="fas fa-pen"></i> تعديل</button>
+                                <button class="btn-danger" ng-click="vm.deleteItem(t,'radiology')"><i class="fas fa-trash"></i></button>
+                            </div>
+                            <div ng-if="vm.editingId === t.templateID" style="display:flex;gap:6px;">
+                                <button class="btn-sm" style="background:#e65100;color:#fff;" ng-click="vm.savePrice(t,'radiology')"><i class="fas fa-check"></i> حفظ</button>
+                                <button class="btn-sm" style="background:#f44336;color:#fff;" ng-click="vm.cancelEdit()"><i class="fas fa-times"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr ng-if="vm.radiologyTemplates.length === 0"><td colspan="6" style="text-align:center;color:#aaa;padding:30px;">لا توجد قوالب أشعة مسجلة</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- =================== MEDICATIONS TAB =================== -->
+    <div ng-if="!vm.loading && vm.activeTab==='medications'">
+        <div style="display:flex;gap:12px;margin-bottom:16px;">
+            <input type="text" ng-model="vm.medSearch" placeholder="بحث عن دواء..." ng-keyup="vm.searchMedications()"
+                   style="flex:1;padding:10px 16px;border:2px solid #e0e3f5;border-radius:10px;font-family:Cairo;font-size:.9rem;outline:none;">
+        </div>
+        <div style="background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.04);">
+            <table class="pm-table">
+                <thead><tr><th>#</th><th>الاسم بالعربية</th><th>الفئة</th><th>المخزون</th><th>سعر الشراء (د.ل)</th><th>سعر البيع (د.ل)</th><th>إجراءات</th></tr></thead>
+                <tbody>
+                    <tr ng-repeat="m in vm.medications">
+                        <td style="font-weight:700;color:#aaa;">{{$index+1}}</td>
+                        <td style="font-weight:700;">{{m.nameAr}}</td>
+                        <td>{{m.category || '-'}}</td>
+                        <td><span ng-style="{'color': m.quantityInStock < 10 ? '#f44336' : '#2dce89','font-weight':700}">{{m.quantityInStock}}</span></td>
+                        <td>
+                            <span ng-if="vm.editingId !== m.medicationID" style="font-weight:700;color:#888;">{{m.purchasePrice | number:2}} د.ل</span>
+                            <input ng-if="vm.editingId === m.medicationID" type="number" class="pm-input" ng-model="vm.editPurchasePrice" min="0" step="0.01" style="width:90px;">
+                        </td>
+                        <td>
+                            <span ng-if="vm.editingId !== m.medicationID" style="font-weight:900;color:#2dce89;font-size:1.05rem;">{{m.sellingPrice | number:2}} د.ل</span>
+                            <input ng-if="vm.editingId === m.medicationID" type="number" class="pm-input" ng-model="vm.editSellingPrice" min="0" step="0.01" style="width:90px;">
+                        </td>
+                        <td>
+                            <button ng-if="vm.editingId !== m.medicationID" class="btn-sm" style="background:#e8f5e9;color:#2dce89;" ng-click="vm.startEdit(m)"><i class="fas fa-pen"></i> تعديل</button>
+                            <div ng-if="vm.editingId === m.medicationID" style="display:flex;gap:6px;">
+                                <button class="btn-sm" style="background:#2dce89;color:#fff;" ng-click="vm.saveMedPrices(m)"><i class="fas fa-check"></i> حفظ</button>
+                                <button class="btn-sm" style="background:#f44336;color:#fff;" ng-click="vm.cancelEdit()"><i class="fas fa-times"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr ng-if="vm.medications.length === 0"><td colspan="7" style="text-align:center;color:#aaa;padding:30px;">لا توجد أدوية مسجلة</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div style="display:flex;justify-content:center;gap:12px;margin-top:16px;" ng-if="vm.medTotal > 50">
+            <button class="btn-sm" style="background:#e8eaf6;color:#4361ee;" ng-disabled="vm.medPage<=1" ng-click="vm.medPage=vm.medPage-1;vm.searchMedications()"><i class="fas fa-chevron-right"></i> السابق</button>
+            <span style="font-weight:700;color:#888;line-height:2;">صفحة {{vm.medPage}}</span>
+            <button class="btn-sm" style="background:#e8eaf6;color:#4361ee;" ng-disabled="vm.medications.length < 50" ng-click="vm.medPage=vm.medPage+1;vm.searchMedications()">التالي <i class="fas fa-chevron-left"></i></button>
+        </div>
+    </div>
+
+    <!-- =================== ROOMS TAB =================== -->
+    <div ng-if="!vm.loading && vm.activeTab==='rooms'">
+        <div style="background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.04);">
+            <table class="pm-table">
+                <thead><tr><th>#</th><th>رقم الغرفة</th><th>القسم</th><th>النوع</th><th>السعر اليومي (د.ل)</th><th>إجراءات</th></tr></thead>
+                <tbody>
+                    <tr ng-repeat="r in vm.rooms">
+                        <td style="font-weight:700;color:#aaa;">{{$index+1}}</td>
+                        <td style="font-weight:700;">{{r.roomNumber}}</td>
+                        <td>{{r.wardName}}</td>
+                        <td><span style="background:#e3f2fd;padding:3px 10px;border-radius:6px;font-weight:700;font-size:.8rem;color:#1565c0;">{{r.roomType}}</span></td>
+                        <td>
+                            <span ng-if="vm.editingId !== r.roomID" style="font-weight:900;color:#1565c0;font-size:1.05rem;">{{r.dailyRate | number:2}} د.ل</span>
+                            <input ng-if="vm.editingId === r.roomID" type="number" class="pm-input" ng-model="vm.editPrice" min="0" step="0.01">
+                        </td>
+                        <td>
+                            <button ng-if="vm.editingId !== r.roomID" class="btn-sm" style="background:#e3f2fd;color:#1565c0;" ng-click="vm.startEdit(r)"><i class="fas fa-pen"></i> تعديل</button>
+                            <div ng-if="vm.editingId === r.roomID" style="display:flex;gap:6px;">
+                                <button class="btn-sm" style="background:#1565c0;color:#fff;" ng-click="vm.savePrice(r,'room')"><i class="fas fa-check"></i> حفظ</button>
+                                <button class="btn-sm" style="background:#f44336;color:#fff;" ng-click="vm.cancelEdit()"><i class="fas fa-times"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr ng-if="vm.rooms.length === 0"><td colspan="6" style="text-align:center;color:#aaa;padding:30px;">لا توجد غرف نشطة</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- =================== INVENTORY TAB =================== -->
+    <div ng-if="!vm.loading && vm.activeTab==='inventory'">
+        <div style="display:flex;gap:12px;margin-bottom:16px;">
+            <input type="text" ng-model="vm.invSearch" placeholder="بحث عن صنف مخزون..." ng-keyup="vm.searchInventory()"
+                   style="flex:1;padding:10px 16px;border:2px solid #e0e3f5;border-radius:10px;font-family:Cairo;font-size:.9rem;outline:none;">
+        </div>
+        <div style="background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.04);">
+            <table class="pm-table">
+                <thead><tr><th>#</th><th>الصنف</th><th>الفئة</th><th>سعر الشراء (د.ل)</th><th>سعر البيع (د.ل)</th><th>إجراءات</th></tr></thead>
+                <tbody>
+                    <tr ng-repeat="i in vm.inventory">
+                        <td style="font-weight:700;color:#aaa;">{{$index+1}}</td>
+                        <td style="font-weight:700;">{{i.itemNameAr}}</td>
+                        <td>{{i.categoryName || '-'}}</td>
+                        <td>
+                            <span ng-if="vm.editingId !== i.itemID" style="font-weight:700;color:#888;">{{i.purchasePrice | number:2}} د.ل</span>
+                            <input ng-if="vm.editingId === i.itemID" type="number" class="pm-input" ng-model="vm.editPurchasePrice" min="0" step="0.01" style="width:90px;">
+                        </td>
+                        <td>
+                            <span ng-if="vm.editingId !== i.itemID" style="font-weight:900;color:#e65100;font-size:1.05rem;">{{i.sellingPrice | number:2}} د.ل</span>
+                            <input ng-if="vm.editingId === i.itemID" type="number" class="pm-input" ng-model="vm.editSellingPrice" min="0" step="0.01" style="width:90px;">
+                        </td>
+                        <td>
+                            <button ng-if="vm.editingId !== i.itemID" class="btn-sm" style="background:#fff3e0;color:#e65100;" ng-click="vm.startEdit(i)"><i class="fas fa-pen"></i> تعديل</button>
+                            <div ng-if="vm.editingId === i.itemID" style="display:flex;gap:6px;">
+                                <button class="btn-sm" style="background:#e65100;color:#fff;" ng-click="vm.saveInvPrices(i)"><i class="fas fa-check"></i> حفظ</button>
+                                <button class="btn-sm" style="background:#f44336;color:#fff;" ng-click="vm.cancelEdit()"><i class="fas fa-times"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr ng-if="vm.inventory.length === 0"><td colspan="6" style="text-align:center;color:#aaa;padding:30px;">لا توجد أصناف مخزون مسجلة</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div style="display:flex;justify-content:center;gap:12px;margin-top:16px;" ng-if="vm.invTotal > 50">
+            <button class="btn-sm" style="background:#e8eaf6;color:#4361ee;" ng-disabled="vm.invPage<=1" ng-click="vm.invPage=vm.invPage-1;vm.searchInventory()"><i class="fas fa-chevron-right"></i> السابق</button>
+            <span style="font-weight:700;color:#888;line-height:2;">صفحة {{vm.invPage}}</span>
+            <button class="btn-sm" style="background:#e8eaf6;color:#4361ee;" ng-disabled="vm.inventory.length < 50" ng-click="vm.invPage=vm.invPage+1;vm.searchInventory()">التالي <i class="fas fa-chevron-left"></i></button>
+        </div>
+    </div>
+
+    <!-- =================== HEALTH SERVICES TAB =================== -->
+    <div ng-if="!vm.loading && vm.activeTab==='healthServices'">
+        <div style="margin-bottom:16px;text-align:left;">
+            <button class="btn-sm" style="background:#00897b;color:#fff;padding:10px 20px;font-size:.9rem;" ng-click="vm.toggleCreateForm()">
+                <i class="fas" ng-class="vm.showCreateForm ? 'fa-times' : 'fa-plus'" style="margin-left:6px;"></i>
+                {{vm.showCreateForm ? 'إلغاء' : 'إضافة خدمة جديدة'}}
+            </button>
+        </div>
+        <div class="pm-form" ng-if="vm.showCreateForm">
+            <h4 style="margin-top:0;color:#1d3557;font-weight:800;"><i class="fas fa-stethoscope" style="color:#00897b;margin-left:8px;"></i>إضافة خدمة صحية جديدة</h4>
+            <div class="pm-form-grid">
+                <div><label>اسم الخدمة بالإنجليزية *</label><input ng-model="vm.newHealthService.serviceName" placeholder="Example: Nursing Care"></div>
+                <div><label>اسم الخدمة بالعربية *</label><input ng-model="vm.newHealthService.serviceNameAr" placeholder="مثال: تمريض"></div>
+                <div><label>الفئة</label>
+                    <select ng-model="vm.newHealthService.category">
+                        <option value="RoomService">خدمات الغرفة</option><option value="Nursing">تمريض</option>
+                        <option value="Diagnostic">تشخيص</option><option value="Procedure">إجراء طبي</option>
+                        <option value="Diet">تغذية</option><option value="General">عام</option>
+                    </select>
+                </div>
+                <div><label>الوحدة</label><input ng-model="vm.newHealthService.unit" placeholder="مرة، يوم، جلسة"></div>
+                <div><label>السعر (د.ل) *</label><input type="number" ng-model="vm.newHealthService.price" min="0" step="0.01" placeholder="0.00"></div>
+                <div><label>الوصف</label><input ng-model="vm.newHealthService.description" placeholder="وصف مختصر للخدمة"></div>
+            </div>
+            <div style="margin-top:16px;">
+                <button class="btn-sm" style="background:#00897b;color:#fff;padding:10px 24px;font-size:.9rem;" ng-click="vm.createItem()">
+                    <i class="fas fa-save" style="margin-left:6px;"></i> حفظ الخدمة
+                </button>
+            </div>
+        </div>
+        <div style="background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.04);">
+            <table class="pm-table">
+                <thead><tr><th>#</th><th>اسم الخدمة</th><th>الفئة</th><th>الوحدة</th><th>السعر (د.ل)</th><th>إجراءات</th></tr></thead>
+                <tbody>
+                    <tr ng-repeat="s in vm.healthServices">
+                        <td style="font-weight:700;color:#aaa;">{{$index+1}}</td>
+                        <td style="font-weight:700;">{{s.serviceNameAr}}<br><span style="font-size:.75rem;color:#aaa;">{{s.serviceName}}</span></td>
+                        <td><span style="background:#e0f2f1;padding:3px 10px;border-radius:6px;font-weight:700;font-size:.8rem;color:#00897b;">{{s.category || 'General'}}</span></td>
+                        <td>{{s.unit || 'مرة'}}</td>
+                        <td>
+                            <span ng-if="vm.editingId !== s.serviceID" style="font-weight:900;color:#00897b;font-size:1.05rem;">{{s.price | number:2}} د.ل</span>
+                            <input ng-if="vm.editingId === s.serviceID" type="number" class="pm-input" ng-model="vm.editPrice" min="0" step="0.01">
+                        </td>
+                        <td>
+                            <div ng-if="vm.editingId !== s.serviceID" style="display:flex;gap:6px;">
+                                <button class="btn-sm" style="background:#e0f2f1;color:#00897b;" ng-click="vm.startEdit(s)"><i class="fas fa-pen"></i> تعديل</button>
+                                <button class="btn-sm" style="background:#00897b;color:#fff;" ng-click="vm.savePrice(s,'healthService')"><i class="fas fa-check"></i> حفظ</button>
+                                <button class="btn-danger" ng-click="vm.deleteItem(s,'healthService')"><i class="fas fa-trash"></i></button>
+                            </div>
+                            <div ng-if="vm.editingId === s.serviceID" style="display:flex;gap:6px;">
+                                <button class="btn-sm" style="background:#00897b;color:#fff;" ng-click="vm.savePrice(s,'healthService')"><i class="fas fa-check"></i> حفظ</button>
+                                <button class="btn-sm" style="background:#f44336;color:#fff;" ng-click="vm.cancelEdit()"><i class="fas fa-times"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr ng-if="vm.healthServices.length === 0"><td colspan="6" style="text-align:center;color:#aaa;padding:30px;">لا توجد خدمات صحية مسجلة. أضف خدمة للبدء!</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- =================== BULK ADJUST TAB =================== -->
+    <div ng-if="!vm.loading && vm.activeTab==='adjust'">
+        <div style="background:#fff;border-radius:14px;padding:30px;box-shadow:0 2px 12px rgba(0,0,0,0.04);max-width:600px;">
+            <h3 style="margin-top:0;color:#1d3557;font-weight:800;margin-bottom:8px;">
+                <i class="fas fa-sliders" style="color:#ffc107;margin-left:8px;"></i> تعديل جماعي للأسعار
+            </h3>
+            <p style="color:#888;font-size:.88rem;margin-bottom:24px;line-height:1.8;">
+                اختر فئة الأسعار المطلوبة ثم أدخل النسبة المئوية للتعديل. استخدم قيمة موجبة لزيادة الأسعار أو سالبة لخصم.
+            </p>
+            <div style="margin-bottom:20px;">
+                <label style="font-weight:700;color:#333;display:block;margin-bottom:8px;">فئة الأسعار:</label>
+                <select ng-model="vm.adjustEntityType"
+                        style="width:100%;padding:12px;border:2px solid #e0e3f5;border-radius:10px;font-family:Cairo;font-size:.9rem;background:#fff;outline:none;">
+                    <option value="doctors">رسوم الكشف (الأطباء)</option>
+                    <option value="labTests">التحاليل المخبرية</option>
+                    <option value="radiology">الأشعة التشخيصية</option>
+                    <option value="rooms">الغرف اليومية</option>
+                    <option value="medications">الأدوية (سعر البيع)</option>
+                    <option value="inventory">المخزون (سعر البيع)</option>
+                </select>
+            </div>
+            <div style="margin-bottom:24px;">
+                <label style="font-weight:700;color:#333;display:block;margin-bottom:8px;">النسبة المئوية (%):</label>
+                <div style="display:flex;gap:10px;">
+                    <input type="number" ng-model="vm.adjustPercentage" step="0.5"
+                           style="flex:1;padding:12px;border:2px solid #ffc107;border-radius:10px;font-family:Cairo;font-size:1.1rem;font-weight:700;text-align:center;outline:none;background:#fffdf0;">
+                    <span style="line-height:46px;font-weight:700;color:#856404;font-size:1.2rem;">%</span>
+                </div>
+                <div style="display:flex;gap:8px;margin-top:10px;">
+                    <button class="btn-sm" style="background:#e8f5e9;color:#2dce89;" ng-click="vm.adjustPercentage=5">+5%</button>
+                    <button class="btn-sm" style="background:#e8f5e9;color:#2dce89;" ng-click="vm.adjustPercentage=10">+10%</button>
+                    <button class="btn-sm" style="background:#e8f5e9;color:#2dce89;" ng-click="vm.adjustPercentage=20">+20%</button>
+                    <button class="btn-sm" style="background:#ffebee;color:#f44336;" ng-click="vm.adjustPercentage=-5">-5%</button>
+                    <button class="btn-sm" style="background:#ffebee;color:#f44336;" ng-click="vm.adjustPercentage=-10">-10%</button>
+                </div>
+            </div>
+            <button ng-click="vm.adjustAllPrices()" class="btn-sm"
+                    style="background:#ffc107;color:#333;padding:12px 28px;font-size:.95rem;border-radius:10px;font-weight:800;">
+                <i class="fas fa-check-double" style="margin-left:8px;"></i> تطبيق التعديل على جميع الأسعار
+            </button>
+        </div>
+    </div>
+
+</div>

@@ -1,0 +1,845 @@
+<div class="page-content stagger-children">
+
+    <!-- ========================================================= -->
+    <!--  1. VIEW FOR PATIENT (شاشة المريض الفردية الخاصة بإقامته) -->
+    <!-- ========================================================= -->
+    <div ng-if="vm.role === 'Patient'">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+            <div>
+                <h2 style="margin: 0; font-weight: 800; color: var(--text-primary); display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-bed-pulse" style="color: var(--primary);"></i>
+                    سجل التنويم والخطة العلاجية بالمستشفى (My Hospital Stay & Care Plan)
+                </h2>
+                <p class="text-muted" style="margin: 4px 0 0; font-size: 0.9rem;">
+                    تفاصيل إقامتك، طبيبك المسؤول، جدول الأدوية والمغذيات المحددة لك، وسجل العلامات الحيوية
+                </p>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <div class="card" ng-if="vm.loadingMyStay" style="text-align: center; padding: 48px;">
+            <div class="spinner" style="margin: 0 auto 16px;"></div>
+            <p style="color: var(--text-muted);">جاري استرجاع تفاصيل الإيواء والخطة العلاجية الخاصة بك...</p>
+        </div>
+
+        <!-- Patient Not Admitted Empty State -->
+        <div class="card empty-state" ng-if="!vm.loadingMyStay && !vm.myStay">
+            <i class="fas fa-heart-pulse" style="color: var(--priority-normal);"></i>
+            <h3 style="color: var(--text-primary); margin-top: 12px;">أنت لست منوماً حالياً بالمنظومة</h3>
+            <p class="text-muted">نتمنى لك دوام الصحة والعافية. سيتم إظهار تفاصيل جناحك وغرفتك وجدول أدويتك وعلاماتك الحيوية هنا تلقائياً فور تنويمك من قِبل الطبيب.</p>
+        </div>
+
+        <!-- Patient Active Stay Card -->
+        <div ng-if="!vm.loadingMyStay && vm.myStay">
+            <!-- Active Stay Banner -->
+            <div class="card" style="padding: 24px; margin-bottom: 24px; background: linear-gradient(135deg, rgba(0,119,182,0.08), rgba(45,198,83,0.05)); border-right: 6px solid var(--primary);">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+                    <div>
+                        <span class="badge" ng-class="(vm.myStay.status || vm.myStay.Status) === 'Active' ? 'badge-emergency' : 'badge-normal'" style="font-size: 0.85rem; padding: 6px 14px; margin-bottom: 8px;">
+                            {{(vm.myStay.status || vm.myStay.Status) === 'Active' ? '🔴 إقامة نشطة حالياً' : '🟢 تم الخروج'}}
+                        </span>
+                        <h3 style="margin: 0; color: var(--primary); font-size: 1.4rem; font-weight: 800;">
+                            <i class="fas fa-hospital-user"></i> {{vm.myStay.wardNameAr || vm.myStay.WardNameAr}} - غرفة {{vm.myStay.roomNumber || vm.myStay.RoomNumber}} (سرير {{vm.myStay.bedNumber || vm.myStay.BedNumber}})
+                        </h3>
+                        <p class="text-muted" style="margin: 6px 0 0; font-size: 0.9rem;">
+                            <i class="fas fa-calendar-alt"></i> تاريخ الدخول: {{(vm.myStay.admissionDate || vm.myStay.AdmissionDate) | date:'yyyy/MM/dd HH:mm'}}
+                        </p>
+                    </div>
+                    <div style="background: var(--bg-card); padding: 16px 20px; border-radius: var(--border-radius-md); box-shadow: var(--shadow-sm); border: 1px solid var(--border-color);">
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">الطبيب المعالج المسؤول</div>
+                        <div style="font-weight: 800; font-size: 1.1rem; color: var(--text-primary); margin-top: 2px;">
+                            <i class="fas fa-user-md" style="color: var(--primary);"></i> د. {{vm.myStay.doctorName || vm.myStay.DoctorName}}
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--primary);">{{vm.myStay.doctorSpecialty || vm.myStay.DoctorSpecialty}}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION A: MEDICATIONS & CARE PLAN FOR PATIENT -->
+            <div class="card" style="padding: 20px; margin-bottom: 24px;">
+                <h4 style="margin: 0 0 16px; font-size: 1.05rem; color: var(--primary); border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+                    <i class="fas fa-pills"></i> جدول الأدوية والمغذيات والخدمات المحددة لك (My Care Schedule)
+                </h4>
+
+                <div ng-if="!(vm.myStay.careOrders || vm.myStay.CareOrders) || (vm.myStay.careOrders || vm.myStay.CareOrders).length === 0" class="text-muted" style="text-align: center; padding: 20px; font-size: 0.9rem;">
+                    لم يتم تسجيل أي جرعات أو أدوية مجدولة لك حتى الآن
+                </div>
+
+                <div class="table-wrapper" ng-if="(vm.myStay.careOrders || vm.myStay.CareOrders).length > 0">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>نوع الخدمة / الجرعة</th>
+                                <th>تفاصيل الدواء والخدمة</th>
+                                <th>التكرار اليومي</th>
+                                <th>الموعد المجدول (اليوم والساعة)</th>
+                                <th>التكلفة (د.ل)</th>
+                                <th>حالة التنفيذ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr ng-repeat="ord in (vm.myStay.careOrders || vm.myStay.CareOrders)">
+                                <td>
+                                    <span class="badge" ng-class="{
+                                        'badge-emergency': (ord.orderType || ord.OrderType) === 'Medication' || (ord.orderType || ord.OrderType) === 'IVFluid',
+                                        'badge-info': (ord.orderType || ord.OrderType) === 'VitalCheck',
+                                        'badge-urgent': (ord.orderType || ord.OrderType) === 'NursingProcedure',
+                                        'badge-normal': (ord.orderType || ord.OrderType) === 'Diet'
+                                    }">
+                                        {{(ord.orderType || ord.OrderType) === 'Medication' ? '💊 دواء' : ((ord.orderType || ord.OrderType) === 'IVFluid' ? '💧 مغذي وريدي' : ((ord.orderType || ord.OrderType) === 'VitalCheck' ? '📊 علامات حيوية' : ((ord.orderType || ord.OrderType) === 'Diet' ? '🥗 حمية غذائية' : '🩺 إجراء تمريضي')))}}
+                                    </span>
+                                </td>
+                                <td><strong style="color: var(--text-primary);">{{ord.orderDescription || ord.OrderDescription}}</strong></td>
+                                <td><span class="badge badge-info">{{ord.frequency || ord.Frequency}}</span></td>
+                                <td><i class="fas fa-clock" style="color: var(--primary);"></i> {{(ord.scheduledTime || ord.ScheduledTime) | date:'yyyy/MM/dd - hh:mm a'}}</td>
+                                <td><strong>{{ord.unitPrice || ord.UnitPrice || 0}} د.ل</strong></td>
+                                <td>
+                                    <span class="badge" ng-class="(ord.status || ord.Status) === 'Executed' ? 'badge-normal' : 'badge-urgent'">
+                                        {{(ord.status || ord.Status) === 'Executed' ? '🟢 تم إعطاؤك إياه' : '🟡 مجدول وقيد المتابعة'}}
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Details & Vital Signs Section -->
+            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 20px; margin-bottom: 24px;">
+                
+                <!-- Room & Diagnosis Summary -->
+                <div class="card" style="padding: 20px;">
+                    <h4 style="margin: 0 0 16px; font-size: 1rem; color: var(--primary); border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+                        <i class="fas fa-info-circle"></i> تفاصيل الإقامة والتشخيص
+                    </h4>
+                    <div style="margin-bottom: 14px;">
+                        <strong style="font-size: 0.85rem; color: var(--text-secondary); display: block;">نوع الغرفة:</strong>
+                        <span class="badge badge-info">{{vm.myStay.roomType || vm.myStay.RoomType}}</span>
+                    </div>
+                    <div style="margin-bottom: 14px;">
+                        <strong style="font-size: 0.85rem; color: var(--text-secondary); display: block;">تكلفة الإقامة اليومية:</strong>
+                        <span style="font-weight: 700; color: var(--priority-normal);">{{vm.myStay.dailyRate || vm.myStay.DailyRate}} د.ل / يوم</span>
+                    </div>
+                    <div style="margin-bottom: 14px;">
+                        <strong style="font-size: 0.85rem; color: var(--text-secondary); display: block;">سبب الدخول والتشخيص المبدئي:</strong>
+                        <p style="font-size: 0.9rem; color: var(--text-primary); background: var(--bg-primary); padding: 10px; border-radius: 8px; margin-top: 4px;">
+                            {{vm.myStay.admissionReason || vm.myStay.AdmissionReason}}
+                        </p>
+                    </div>
+                    <div ng-if="vm.myStay.dischargeSummary || vm.myStay.DischargeSummary">
+                        <strong style="font-size: 0.85rem; color: var(--text-secondary); display: block;">تقرير الخروج والتوصيات:</strong>
+                        <p style="font-size: 0.9rem; color: var(--priority-emergency); background: rgba(230,57,70,0.05); padding: 10px; border-radius: 8px; margin-top: 4px;">
+                            {{vm.myStay.dischargeSummary || vm.myStay.DischargeSummary}}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Daily Vitals & Progress Log -->
+                <div class="card" style="padding: 20px;">
+                    <h4 style="margin: 0 0 16px; font-size: 1rem; color: var(--primary); border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+                        <i class="fas fa-heart-pulse"></i> سجل العلامات الحيوية والمتابعة اليومية
+                    </h4>
+
+                    <div ng-if="!(vm.myStay.dailyLogs || vm.myStay.DailyLogs) || (vm.myStay.dailyLogs || vm.myStay.DailyLogs).length === 0" class="text-muted" style="text-align: center; padding: 24px;">
+                        لم يتم تسجبل أي علامات حيوية حتى الآن
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 14px;">
+                        <div ng-repeat="log in (vm.myStay.dailyLogs || vm.myStay.DailyLogs)" 
+                             style="background: var(--bg-primary); padding: 16px; border-radius: var(--border-radius-sm); border-right: 4px solid var(--primary);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 0.85rem;">
+                                <strong style="color: var(--primary);"><i class="fas fa-user-nurse me-1"></i> {{log.loggedByName || log.LoggedByName}}</strong>
+                                <span class="text-muted"><i class="fas fa-clock me-1"></i> {{(log.logDate || log.LogDate) | date:'yyyy/MM/dd HH:mm'}}</span>
+                            </div>
+                            <!-- Vitals Badges -->
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;">
+                                <span class="badge badge-normal" ng-if="log.temperature || log.Temperature"><i class="fas fa-thermometer-half"></i> الحرارة: {{log.temperature || log.Temperature}} °C</span>
+                                <span class="badge badge-info" ng-if="log.bloodPressure || log.BloodPressure"><i class="fas fa-heart"></i> الضغط: {{log.bloodPressure || log.BloodPressure}}</span>
+                                <span class="badge badge-urgent" ng-if="log.pulseRate || log.PulseRate"><i class="fas fa-wave-square"></i> النبض: {{log.pulseRate || log.PulseRate}} bpm</span>
+                                <span class="badge badge-primary" ng-if="log.oxygenLevel || log.OxygenLevel"><i class="fas fa-lungs"></i> الأوكسجين: {{log.oxygenLevel || log.OxygenLevel}}</span>
+                            </div>
+                            <div ng-if="log.nursingNotes || log.NursingNotes" style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 6px;">
+                                <strong>ملاحظات التمريض:</strong> {{log.nursingNotes || log.NursingNotes}}
+                            </div>
+                            <div ng-if="log.doctorNotes || log.DoctorNotes" style="font-size: 0.85rem; color: var(--primary-dark); margin-top: 4px;">
+                                <strong>توصيات الطبيب:</strong> {{log.doctorNotes || log.DoctorNotes}}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ========================================================= -->
+    <!--  2. VIEW FOR ADMIN & DOCTOR (لوحة تحكم الإدارة والأطباء) -->
+    <!-- ========================================================= -->
+    <div ng-if="vm.role !== 'Patient'">
+
+        <!-- Page Header -->
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+            <div>
+                <h2 style="margin: 0; font-weight: 800; color: var(--text-primary); display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-bed-pulse" style="color: var(--primary);"></i>
+                    {{vm.role === 'Doctor' ? 'إدارة التنويم والمرضى الخاصين بي (My Inpatients)' : 'إدارة الإيواء والتنويم السريري العام (Inpatient Management)'}}
+                </h2>
+                <p class="text-muted" style="margin: 4px 0 0; font-size: 0.9rem;">
+                    {{vm.role === 'Doctor' ? 'عرض المرضى الخاضعين لرعايتك المباشرة، جدولة الجرعات والخدمات، وتتبع العلامات الحيوية' : 'خريطة الأسرة الشاملة، شاشة التمريض المباشرة، جدولة خدمات التنويم والجرعات، وتصفية الحسابات'}}
+                </p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-primary" ng-click="vm.openCreateOrderModal(null)" ng-if="vm.role === 'Admin' || vm.role === 'Doctor'">
+                    <i class="fas fa-plus-circle"></i> جدولة خدمة / جرعة جديدة
+                </button>
+                <button class="btn btn-secondary" ng-click="vm.showAddWardModal = true" ng-if="vm.role === 'Admin'">
+                    <i class="fas fa-cogs"></i> الأجنحة والتجهيزات
+                </button>
+            </div>
+        </div>
+
+        <!-- Statistics Overview Grid -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px;">
+            <div class="card" style="padding: 16px; text-align: center; border-right: 4px solid var(--primary);">
+                <div style="font-size: 1.8rem; font-weight: 800; color: var(--primary);">{{vm.stats.totalWards}}</div>
+                <div class="text-muted" style="font-size: 0.85rem;">إجمالي الأجنحة</div>
+            </div>
+            <div class="card" style="padding: 16px; text-align: center; border-right: 4px solid #00B4D8;">
+                <div style="font-size: 1.8rem; font-weight: 800; color: #00B4D8;">{{vm.stats.totalRooms}}</div>
+                <div class="text-muted" style="font-size: 0.85rem;">إجمالي الغرف</div>
+            </div>
+            <div class="card" style="padding: 16px; text-align: center; border-right: 4px solid #7209B7;">
+                <div style="font-size: 1.8rem; font-weight: 800; color: #7209B7;">{{vm.stats.totalBeds}}</div>
+                <div class="text-muted" style="font-size: 0.85rem;">إجمالي الأسرة</div>
+            </div>
+            <div class="card" style="padding: 16px; text-align: center; border-right: 4px solid var(--priority-emergency);">
+                <div style="font-size: 1.8rem; font-weight: 800; color: var(--priority-emergency);">{{vm.stats.occupiedBeds}}</div>
+                <div class="text-muted" style="font-size: 0.85rem;">أسرة مشغولة</div>
+            </div>
+            <div class="card" style="padding: 16px; text-align: center; border-right: 4px solid var(--priority-normal);">
+                <div style="font-size: 1.8rem; font-weight: 800; color: var(--priority-normal);">{{vm.stats.vacantBeds}}</div>
+                <div class="text-muted" style="font-size: 0.85rem;">أسرة شاغرة</div>
+            </div>
+            <div class="card" style="padding: 16px; text-align: center; border-right: 4px solid var(--priority-urgent);">
+                <div style="font-size: 1.8rem; font-weight: 800; color: var(--priority-urgent);">{{vm.stats.occupancyRate}}%</div>
+                <div class="text-muted" style="font-size: 0.85rem;">نسبة الأشغال</div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div style="display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap;">
+            <button class="btn" ng-class="vm.activeTab === 'grid' ? 'btn-primary' : 'btn-secondary'" ng-click="vm.setTab('grid')">
+                <i class="fas fa-th"></i> خريطة الأسرة التفاعلية (Bed Grid)
+            </button>
+            <button class="btn" ng-class="vm.activeTab === 'nursing' ? 'btn-primary' : 'btn-secondary'" ng-click="vm.setTab('nursing')">
+                <i class="fas fa-user-nurse"></i> 🩺 محطة التمريض وجدولة الخدمات {{vm.role === 'Doctor' ? '(المرضى الخاصين بي)' : ''}}
+                <span ng-if="vm.nursingOrders.length > 0" style="background:var(--priority-urgent); color:#fff; border-radius:10px; padding:2px 8px; font-size:0.75rem; margin-right:6px;">{{vm.nursingOrders.length}}</span>
+            </button>
+            <button class="btn" ng-class="vm.activeTab === 'admissions' ? 'btn-primary' : 'btn-secondary'" ng-click="vm.setTab('admissions')">
+                <i class="fas fa-hospital-user"></i> المرضى المنومون حالياً {{vm.role === 'Doctor' ? '(مرضاي فقط)' : ''}}
+                <span ng-if="vm.admissions.length > 0" style="background:var(--priority-emergency); color:#fff; border-radius:10px; padding:2px 8px; font-size:0.75rem; margin-right:6px;">{{vm.admissions.length}}</span>
+            </button>
+        </div>
+
+        <!-- TAB 1: BED GRID MAP -->
+        <div ng-if="vm.activeTab === 'grid'">
+            <!-- Loading -->
+            <div class="card" ng-if="vm.loading" style="text-align: center; padding: 48px;">
+                <div class="spinner" style="margin: 0 auto 16px;"></div>
+                <p style="color: var(--text-muted);">جاري تحميل خريطة الأسرة والأجنحة...</p>
+            </div>
+
+            <!-- Empty State -->
+            <div class="card empty-state" ng-if="!vm.loading && vm.wards.length === 0">
+                <i class="fas fa-hospital-user"></i>
+                <h4>لا توجد أجنحة أو أسرة مسجلة في المنظومة</h4>
+                <p class="text-muted">يمكن لمدير النظام إضافة الأجنحة والغرف والأسرة للبدء في تسكين المرضى</p>
+            </div>
+
+            <!-- Wards Loop -->
+            <div ng-repeat="ward in vm.wards" style="margin-bottom: 32px;">
+                <div class="card" style="padding: 16px 20px; margin-bottom: 16px; background: linear-gradient(135deg, rgba(0,119,182,0.05), rgba(0,180,216,0.02)); border-right: 5px solid var(--primary);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                        <div>
+                            <h3 style="margin: 0; font-size: 1.15rem; color: var(--primary); font-weight: 700;">
+                                <i class="fas fa-building me-2"></i> {{ward.wardNameAr || ward.WardNameAr}}
+                                <small style="font-size: 0.8rem; font-weight: 400; color: var(--text-secondary); margin-right: 8px;">
+                                    ({{ (ward.genderType || ward.GenderType) === 'Mixed' ? 'جناح مشترك' : (ward.genderType || ward.GenderType) }} - الطابق {{ward.floorNumber || ward.FloorNumber}})
+                                </small>
+                            </h3>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <span class="badge badge-info"><i class="fas fa-door-open"></i> {{(ward.rooms || ward.Rooms || []).length}} غرف</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rooms Grid inside Ward -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                    <div class="card" ng-repeat="room in (ward.rooms || ward.Rooms || [])" style="padding: 0; overflow: hidden;">
+                        <div style="padding: 12px 16px; background: var(--bg-primary); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                            <strong style="font-size: 0.95rem; color: var(--text-primary);">
+                                <i class="fas fa-door-closed" style="color: var(--primary);"></i> غرفة {{room.roomNumber || room.RoomNumber}}
+                            </strong>
+                            <span class="badge badge-primary">
+                                {{room.roomType || room.RoomType}} | {{room.dailyRate || room.DailyRate}} د.ل/يوم
+                            </span>
+                        </div>
+                        <div style="padding: 16px;">
+                            <div style="display: grid; grid-template-columns: 1fr; gap: 12px;">
+                                <!-- Beds Loop -->
+                                <div ng-repeat="bed in (room.beds || room.Beds || [])"
+                                     style="padding: 14px; border-radius: var(--border-radius-sm); border: 2px solid; transition: all 0.2s ease; cursor: pointer;"
+                                     ng-style="{
+                                         'border-color': (bed.status || bed.Status) === 'Vacant' ? 'var(--priority-normal)' : ((bed.status || bed.Status) === 'Occupied' ? 'var(--priority-emergency)' : 'var(--priority-urgent)'),
+                                         'background': (bed.status || bed.Status) === 'Vacant' ? 'rgba(45, 198, 83, 0.05)' : ((bed.status || bed.Status) === 'Occupied' ? 'rgba(230, 57, 70, 0.05)' : 'rgba(255, 159, 28, 0.05)')
+                                     }"
+                                     ng-click="vm.openAdmissionModal(bed)">
+                                    
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span style="font-weight: 700; font-size: 0.95rem;">
+                                            <i class="fas fa-bed" style="margin-left: 6px;"></i> سرير {{bed.bedNumber || bed.BedNumber}}
+                                        </span>
+                                        <span class="badge" ng-class="{'badge-normal': (bed.status || bed.Status) === 'Vacant', 'badge-emergency': (bed.status || bed.Status) === 'Occupied', 'badge-urgent': (bed.status || bed.Status) === 'Maintenance'}">
+                                            {{(bed.status || bed.Status) === 'Vacant' ? '🟢 شاغر (اضغط للتسكين)' : ((bed.status || bed.Status) === 'Occupied' ? '🔴 مشغول' : '🟡 صيانة')}}
+                                        </span>
+                                    </div>
+
+                                    <div ng-if="(bed.status || bed.Status) === 'Occupied' && (bed.currentAdmission || bed.CurrentAdmission)" style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border-color); font-size: 0.85rem;">
+                                        <div style="font-weight: 700; color: var(--priority-emergency); margin-bottom: 4px;">
+                                            <i class="fas fa-user-injured"></i> {{(bed.currentAdmission || bed.CurrentAdmission).patientName || (bed.currentAdmission || bed.CurrentAdmission).PatientName}}
+                                        </div>
+                                        <div style="color: var(--text-secondary); margin-bottom: 2px;">
+                                            <i class="fas fa-user-md"></i> د. {{(bed.currentAdmission || bed.CurrentAdmission).doctorName || (bed.currentAdmission || bed.CurrentAdmission).DoctorName}}
+                                        </div>
+                                        <div style="color: var(--text-muted); font-size: 0.75rem;">
+                                            <i class="fas fa-clock"></i> الدخول: {{(bed.currentAdmission || bed.CurrentAdmission).admissionDate || (bed.currentAdmission || bed.CurrentAdmission).AdmissionDate | date:'yyyy/MM/dd HH:mm'}}
+                                        </div>
+                                    </div>
+
+                                    <div ng-if="(bed.status || bed.Status) === 'Vacant'" style="margin-top: 6px; font-size: 0.8rem; color: var(--priority-normal);">
+                                        <i class="fas fa-plus-circle"></i> انقر هنا للتسجيل والتنويم الفوري
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: NURSING STATION & CARE ORDERS CHECKLIST -->
+        <div ng-if="vm.activeTab === 'nursing'">
+            <div class="card" style="padding: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+                    <div>
+                        <h3 style="margin: 0; font-size: 1.15rem; color: var(--primary); font-weight: 800;">
+                            <i class="fas fa-list-check"></i> شاشة التمريض المباشرة وقائمة الجرعات والخدمات المجدولة {{vm.role === 'Doctor' ? '(المرضى الخاصين بي)' : ''}}
+                        </h3>
+                        <p class="text-muted" style="margin: 2px 0 0; font-size: 0.85rem;">
+                            متابعة تنفيذ الأدوية، القياسات الحيوية، والمغذيات الوريدية
+                        </p>
+                    </div>
+                    <button class="btn btn-primary btn-sm" ng-click="vm.openCreateOrderModal(null)">
+                        <i class="fas fa-plus me-1"></i> جدولة خدمة جديدة
+                    </button>
+                </div>
+
+                <div class="table-wrapper">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>المريض والسرير</th>
+                                <th>نوع الإجراء</th>
+                                <th>وصف الخدمة / الجرعة</th>
+                                <th>التكرار</th>
+                                <th>الموعد المجدول</th>
+                                <th>التكلفة</th>
+                                <th>الحالة</th>
+                                <th>التنفيذ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr ng-repeat="ord in vm.nursingOrders">
+                                <td>
+                                    <div style="font-weight: 700; color: var(--text-primary);">{{ord.patientName || ord.PatientName}}</div>
+                                    <div style="font-size: 0.8rem; color: var(--primary);">
+                                        {{ord.wardNameAr || ord.WardNameAr}} - غرفة {{ord.roomNumber || ord.RoomNumber}} (سرير {{ord.bedNumber || ord.BedNumber}})
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge" ng-class="{
+                                        'badge-emergency': (ord.orderType || ord.OrderType) === 'Medication' || (ord.orderType || ord.OrderType) === 'IVFluid',
+                                        'badge-info': (ord.orderType || ord.OrderType) === 'VitalCheck',
+                                        'badge-urgent': (ord.orderType || ord.OrderType) === 'NursingProcedure',
+                                        'badge-normal': (ord.orderType || ord.OrderType) === 'Diet'
+                                    }">
+                                        {{(ord.orderType || ord.OrderType) === 'Medication' ? '💊 دواء' : ((ord.orderType || ord.OrderType) === 'IVFluid' ? '💧 مغذي وريدي' : ((ord.orderType || ord.OrderType) === 'VitalCheck' ? '📊 علامات حيوية' : ((ord.orderType || ord.OrderType) === 'Diet' ? '🥗 حمية غذائية' : '🩺 إجراء تمريضي')))}}
+                                    </span>
+                                </td>
+                                <td style="font-weight: 700; max-width: 240px; font-size: 0.9rem;">
+                                    {{ord.orderDescription || ord.OrderDescription}}
+                                </td>
+                                <td><span class="badge badge-info">{{ord.frequency || ord.Frequency}}</span></td>
+                                <td><i class="fas fa-clock"></i> {{(ord.scheduledTime || ord.ScheduledTime) | date:'yyyy/MM/dd - hh:mm a'}}</td>
+                                <td><strong>{{ord.unitPrice || ord.UnitPrice || 0}} د.ل</strong></td>
+                                <td>
+                                    <span class="badge" ng-class="{
+                                        'badge-normal': (ord.status || ord.Status) === 'Executed',
+                                        'badge-urgent': (ord.status || ord.Status) === 'Pending' && !(ord.isOverdue || ord.IsOverdue),
+                                        'badge-emergency': (ord.status || ord.Status) === 'Pending' && (ord.isOverdue || ord.IsOverdue)
+                                    }">
+                                        {{(ord.status || ord.Status) === 'Executed' ? '🟢 تم التنفيذ' : ((ord.isOverdue || ord.IsOverdue) ? '🔴 متأخر عن الموعد' : '🟡 مستحق التنفيذ')}}
+                                    </span>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" ng-if="(ord.status || ord.Status) === 'Pending'" ng-click="vm.openExecuteOrderModal(ord)">
+                                        <i class="fas fa-check-double"></i> 1-Click تنفيذ
+                                    </button>
+                                    <span class="text-muted" ng-if="(ord.status || ord.Status) === 'Executed'" style="font-size: 0.8rem;">
+                                        <i class="fas fa-check-circle" style="color: var(--priority-normal);"></i> موثّق
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr ng-if="vm.nursingOrders.length === 0">
+                                <td colspan="8" style="text-align: center; padding: 32px; color: var(--text-muted);">
+                                    لا توجد أية أوامر أو خدمات تمريضية مجدولة حالياً {{vm.role === 'Doctor' ? 'لمرضاك' : ''}}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: ACTIVE ADMISSIONS LIST -->
+        <div ng-if="vm.activeTab === 'admissions'">
+            <div class="card">
+                <div class="table-wrapper">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th># السجل</th>
+                                <th>المريض</th>
+                                <th>الجناح والغرفة والسرير</th>
+                                <th>الطبيب المسؤول</th>
+                                <th>تاريخ الدخول</th>
+                                <th>سبب التنويم</th>
+                                <th>التسجيلات الحيوية</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr ng-repeat="adm in vm.admissions">
+                                <td><strong>#{{adm.admissionID || adm.AdmissionID}}</strong></td>
+                                <td>
+                                    <div style="font-weight: 700;">{{adm.patientName || adm.PatientName}}</div>
+                                    <small class="text-muted"><i class="fas fa-droplet" style="color:red;"></i> فصيلة: {{adm.patientBloodType || adm.PatientBloodType || 'غير معروف'}}</small>
+                                </td>
+                                <td>
+                                    <span class="badge badge-primary">{{adm.wardNameAr || adm.WardNameAr}}</span>
+                                    <span class="badge badge-info">غرفة {{adm.roomNumber || adm.RoomNumber}}</span>
+                                    <span class="badge badge-normal">سرير {{adm.bedNumber || adm.BedNumber}}</span>
+                                </td>
+                                <td><i class="fas fa-user-md" style="color: var(--primary);"></i> د. {{adm.doctorName || adm.DoctorName}}</td>
+                                <td><i class="fas fa-calendar-alt"></i> {{(adm.admissionDate || adm.AdmissionDate) | date:'yyyy/MM/dd HH:mm'}}</td>
+                                <td style="max-width: 200px; font-size: 0.85rem;">{{adm.admissionReason || adm.AdmissionReason}}</td>
+                                <td>
+                                    <span class="badge badge-info"><i class="fas fa-heart-pulse"></i> {{adm.logsCount || adm.LogsCount || 0}} سجلات</span>
+                                </td>
+                                <td>
+                                    <div style="display: flex; gap: 6px;">
+                                        <button class="btn btn-sm btn-primary" ng-click="vm.openCreateOrderModal(adm)" title="جدولة خدمة أو جرعة">
+                                            <i class="fas fa-plus"></i> أمر رعاية
+                                        </button>
+                                        <button class="btn btn-sm btn-secondary" ng-click="vm.openLogModal(adm)" title="عرض السجلات وتناول العلامات الحيوية">
+                                            <i class="fas fa-notes-medical"></i> الحيوي
+                                        </button>
+                                        <button class="btn btn-sm btn-danger" ng-if="vm.role === 'Admin' || vm.role === 'Doctor'" ng-click="vm.openDischargeModal(adm)" title="تسجيل خروج وتصفية حساب الإيواء">
+                                            <i class="fas fa-door-open"></i> خروج
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr ng-if="vm.admissions.length === 0">
+                                <td colspan="8" style="text-align: center; padding: 32px; color: var(--text-muted);">
+                                    لا يوجد مرضى منومون حالياً {{vm.role === 'Doctor' ? 'تحت رعايتك المباشرة' : 'في المنظومة'}}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL 1: ADMISSION MODAL -->
+        <div class="modal-overlay" ng-if="vm.showAdmissionModal" ng-click="vm.showAdmissionModal = false">
+            <div class="modal-content" ng-click="$event.stopPropagation()" style="max-width: 540px;">
+                <div class="modal-header">
+                    <h3 style="margin: 0; font-size: 1.1rem; color: var(--primary);">
+                        <i class="fas fa-bed-pulse"></i> تنويم مريض بالسرير #{{vm.selectedBed.bedNumber || vm.selectedBed.BedNumber}}
+                    </h3>
+                    <button class="btn btn-sm btn-secondary" ng-click="vm.showAdmissionModal = false" style="min-height: auto; padding: 4px 8px;"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="modal-body">
+                    <form ng-submit="vm.submitAdmission()">
+                        <div style="margin-bottom: 16px;">
+                            <label class="form-label" style="font-weight: 700; margin-bottom: 6px; display: block;">اختر المريض <span style="color:red;">*</span></label>
+                            <select class="form-control" ng-model="vm.admissionForm.patientID" required>
+                                <option value="" disabled>-- اختر المريض --</option>
+                                <option ng-repeat="p in vm.patients" ng-value="p.patientID || p.PatientID">{{p.fullName || p.FullName}} (هاتف: {{p.phone || p.Phone}})</option>
+                            </select>
+                        </div>
+                        <div style="margin-bottom: 16px;">
+                            <label class="form-label" style="font-weight: 700; margin-bottom: 6px; display: block;">الطبيب المعالج المسؤول <span style="color:red;">*</span></label>
+                            <select class="form-control" ng-model="vm.admissionForm.doctorID" required>
+                                <option value="" disabled>-- اختر الطبيب المعالج --</option>
+                                <option ng-repeat="d in vm.doctors" ng-value="d.doctorID || d.DoctorID">د. {{d.fullName || d.FullName}} - ({{d.specialty || d.Specialty}})</option>
+                            </select>
+                        </div>
+                        <div style="margin-bottom: 16px;">
+                            <label class="form-label" style="font-weight: 700; margin-bottom: 6px; display: block;">دواعي التنويم والتشخيص المبدئي <span style="color:red;">*</span></label>
+                            <textarea class="form-control" rows="3" ng-model="vm.admissionForm.admissionReason" placeholder="اكتب سبب إدخال وتنويم المريض والملاحظات المبدئية..." required></textarea>
+                        </div>
+                        <div class="modal-footer" style="padding-right: 0; padding-left: 0; padding-bottom: 0;">
+                            <button type="submit" class="btn btn-primary btn-block" ng-disabled="vm.loading">
+                                <i class="fas fa-check-circle"></i> تأكيد التنويم وتسكين السرير
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL 2: DAILY LOGS & PREVIOUS HISTORY MODAL FOR DOCTOR/ADMIN -->
+        <div class="modal-overlay" ng-if="vm.showLogModal" ng-click="vm.showLogModal = false">
+            <div class="modal-content" ng-click="$event.stopPropagation()" style="max-width: 680px;">
+                <div class="modal-header">
+                    <h3 style="margin: 0; font-size: 1.1rem; color: var(--primary);">
+                        <i class="fas fa-heart-pulse"></i> السجل الحيوي والمتابعة: {{vm.selectedAdmission.patientName || vm.selectedAdmission.PatientName}}
+                    </h3>
+                    <button class="btn btn-sm btn-secondary" ng-click="vm.showLogModal = false" style="min-height: auto; padding: 4px 8px;"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="modal-body">
+                    
+                    <!-- SECTION A: PREVIOUS VITAL LOGS FOR THIS ADMISSION -->
+                    <div style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid var(--border-color);">
+                        <h4 style="font-size: 0.95rem; color: var(--primary); margin: 0 0 12px; font-weight: 700;">
+                            <i class="fas fa-history"></i> السجلات والتسجيلات الحيوية السابقة للمريض
+                        </h4>
+                        
+                        <div ng-if="!vm.selectedAdmissionLogs || vm.selectedAdmissionLogs.length === 0" class="text-muted" style="font-size: 0.85rem; padding: 12px; background: var(--bg-primary); border-radius: 8px; text-align: center;">
+                            لا تتوفر تسجيلات حيوية سابقة لهذا المريض المنوم
+                        </div>
+
+                        <div style="max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;" ng-if="vm.selectedAdmissionLogs.length > 0">
+                            <div ng-repeat="log in vm.selectedAdmissionLogs" style="background: var(--bg-primary); padding: 12px; border-radius: 8px; border-right: 3px solid var(--primary); font-size: 0.85rem;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                                    <strong style="color: var(--primary);"><i class="fas fa-user-nurse"></i> {{log.loggedByName || log.LoggedByName}}</strong>
+                                    <span class="text-muted"><i class="fas fa-clock"></i> {{(log.logDate || log.LogDate) | date:'yyyy/MM/dd HH:mm'}}</span>
+                                </div>
+                                <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px;">
+                                    <span class="badge badge-normal" ng-if="log.temperature || log.Temperature">الحرارة: {{log.temperature || log.Temperature}} °C</span>
+                                    <span class="badge badge-info" ng-if="log.bloodPressure || log.BloodPressure">الضغط: {{log.bloodPressure || log.BloodPressure}}</span>
+                                    <span class="badge badge-urgent" ng-if="log.pulseRate || log.PulseRate">النبض: {{log.pulseRate || log.PulseRate}} bpm</span>
+                                    <span class="badge badge-primary" ng-if="log.oxygenLevel || log.OxygenLevel">الأوكسجين: {{log.oxygenLevel || log.OxygenLevel}}</span>
+                                </div>
+                                <div ng-if="log.nursingNotes || log.NursingNotes" style="color: var(--text-secondary);">
+                                    <strong>ملاحظات التمريض:</strong> {{log.nursingNotes || log.NursingNotes}}
+                                </div>
+                                <div ng-if="log.doctorNotes || log.DoctorNotes" style="color: var(--primary-dark); margin-top: 2px;">
+                                    <strong>توصيات الطبيب:</strong> {{log.doctorNotes || log.DoctorNotes}}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SECTION B: ADD NEW LOG FORM -->
+                    <form ng-submit="vm.submitDailyLog()">
+                        <h4 style="font-size: 0.95rem; color: var(--priority-normal); margin: 0 0 12px; font-weight: 700;">
+                            <i class="fas fa-plus-circle"></i> إضافة تسجيل حيوي وجولة جديدة
+                        </h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+                            <div>
+                                <label style="font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; display: block;">درجة الحرارة (°C)</label>
+                                <input type="text" class="form-control" ng-model="vm.logForm.temperature" placeholder="37.0">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; display: block;">ضغط الدم (BP)</label>
+                                <input type="text" class="form-control" ng-model="vm.logForm.bloodPressure" placeholder="120/80">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; display: block;">النبض (bpm)</label>
+                                <input type="text" class="form-control" ng-model="vm.logForm.pulseRate" placeholder="75">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; display: block;">نسبة الأوكسجين (O2%)</label>
+                                <input type="text" class="form-control" ng-model="vm.logForm.oxygenLevel" placeholder="98%">
+                            </div>
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <label style="font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; display: block;">ملاحظات التمريض</label>
+                            <textarea class="form-control" rows="2" ng-model="vm.logForm.nursingNotes" placeholder="حالة الجرعات، التغذية، والملاحظات الحركية..."></textarea>
+                        </div>
+                        <div style="margin-bottom: 16px;">
+                            <label style="font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; display: block;">ملاحظات الطبيب والمعاينة</label>
+                            <textarea class="form-control" rows="2" ng-model="vm.logForm.doctorNotes" placeholder="توصيات الطبيب في الجولة اليومية..."></textarea>
+                        </div>
+                        <div class="modal-footer" style="padding-right: 0; padding-left: 0; padding-bottom: 0;">
+                            <button type="submit" class="btn btn-primary btn-block" ng-disabled="vm.loading">
+                                <i class="fas fa-save"></i> حفظ وإضافة السجل الحيوي
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL 3: DISCHARGE MODAL -->
+        <div class="modal-overlay" ng-if="vm.showDischargeModal" ng-click="vm.showDischargeModal = false">
+            <div class="modal-content" ng-click="$event.stopPropagation()" style="max-width: 520px;">
+                <div class="modal-header">
+                    <h3 style="margin: 0; font-size: 1.1rem; color: var(--priority-emergency);">
+                        <i class="fas fa-door-open"></i> تسجيل خروج: {{vm.selectedAdmission.patientName || vm.selectedAdmission.PatientName}}
+                    </h3>
+                    <button class="btn btn-sm btn-secondary" ng-click="vm.showDischargeModal = false" style="min-height: auto; padding: 4px 8px;"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="modal-body">
+                    <form ng-submit="vm.submitDischarge()">
+                        <div class="alert alert-warning" style="margin-bottom: 16px;">
+                            <i class="fas fa-exclamation-triangle"></i> سيتم تفريغ السرير فوراً وتوليد فاتورة الإقامة المستحقة شاملة خدمات التمريض والمغذيات.
+                        </div>
+                        <div style="margin-bottom: 16px;">
+                            <label style="font-weight: 700; margin-bottom: 6px; display: block;">تقرير الخروج والتوصيات <span style="color:red;">*</span></label>
+                            <textarea class="form-control" rows="4" ng-model="vm.dischargeForm.dischargeSummary" placeholder="ملخص التقرير الطبي عند المغادرة والتوصيات والعلاجات..." required></textarea>
+                        </div>
+                        <div class="modal-footer" style="padding-right: 0; padding-left: 0; padding-bottom: 0;">
+                            <button type="submit" class="btn btn-danger btn-block" ng-disabled="vm.loading">
+                                <i class="fas fa-check"></i> تأكيد الخروج وتصفية الفاتورة
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL 4: ADD CARE ORDER / MEDICATION SCHEDULE MODAL -->
+        <div class="modal-overlay" ng-if="vm.showCreateOrderModal" ng-click="vm.showCreateOrderModal = false">
+            <div class="modal-content" ng-click="$event.stopPropagation()" style="max-width: 560px;">
+                <div class="modal-header">
+                    <h3 style="margin: 0; font-size: 1.1rem; color: var(--primary);">
+                        <i class="fas fa-calendar-plus"></i> جدولة أمر رعاية / خدمة / جرعة تمريضية
+                    </h3>
+                    <button class="btn btn-sm btn-secondary" ng-click="vm.showCreateOrderModal = false" style="min-height: auto; padding: 4px 8px;"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="modal-body">
+                    <form ng-submit="vm.submitCreateOrder()">
+                        <div style="margin-bottom: 14px;">
+                            <label style="font-weight: 700; margin-bottom: 4px; display: block;">اختر المريض المنوم <span style="color:red;">*</span></label>
+                            <select class="form-control" ng-model="vm.orderForm.admissionID" required>
+                                <option value="" disabled>-- اختر المريض المنوم --</option>
+                                <option ng-repeat="a in vm.admissions" ng-value="a.admissionID || a.AdmissionID">
+                                    {{a.patientName || a.PatientName}} ({{a.wardNameAr || a.WardNameAr}} - غرفة {{a.roomNumber || a.RoomNumber}})
+                                </option>
+                            </select>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+                            <div>
+                                <label style="font-size: 0.85rem; font-weight: 700; margin-bottom: 4px; display: block;">نوع الإجراء/الخدمة</label>
+                                <select class="form-control" ng-model="vm.orderForm.orderType">
+                                    <option value="Medication">💊 دواء وريدي/فموي</option>
+                                    <option value="IVFluid">💧 مغذي ومحاليل وريدية</option>
+                                    <option value="VitalCheck">📊 قياس علامات حيوية</option>
+                                    <option value="NursingProcedure">🩺 إجراء تمريضي / غيار جرح</option>
+                                    <option value="Diet">🥗 نظام وحمية غذائية</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="font-size: 0.85rem; font-weight: 700; margin-bottom: 4px; display: block;">التكرار المجدول</label>
+                                <select class="form-control" ng-model="vm.orderForm.frequency">
+                                    <option value="Once">مرة واحدة</option>
+                                    <option value="Every4Hours">كل 4 ساعات</option>
+                                    <option value="Every8Hours">كل 8 ساعات</option>
+                                    <option value="Every12Hours">كل 12 ساعة</option>
+                                    <option value="Daily">يومياً</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 14px;">
+                            <label style="font-weight: 700; margin-bottom: 4px; display: block;">تفاصيل ووصف الجرعة أو الخدمة <span style="color:red;">*</span></label>
+                            <textarea class="form-control" rows="2" ng-model="vm.orderForm.orderDescription" placeholder="مثال: مغذي Normal Saline 500ml + حقنة مضاد حيوي 1g..." required></textarea>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                            <div>
+                                <label style="font-size: 0.85rem; font-weight: 700; margin-bottom: 4px; display: block;">الموعد المجدول</label>
+                                <input type="datetime-local" step="60" class="form-control" ng-model="vm.orderForm.scheduledTime">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.85rem; font-weight: 700; margin-bottom: 4px; display: block;">تكلفة الخدمة إن وجدت (د.ل)</label>
+                                <input type="number" step="0.5" class="form-control" ng-model="vm.orderForm.unitPrice" placeholder="0.00">
+                            </div>
+                        </div>
+
+                        <div class="modal-footer" style="padding-right: 0; padding-left: 0; padding-bottom: 0;">
+                            <button type="submit" class="btn btn-primary btn-block" ng-disabled="vm.loading">
+                                <i class="fas fa-plus-circle"></i> حفظ وجدولة أمر الرعاية
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL 5: EXECUTE CARE ORDER MODAL (1-CLICK NURSING CONFIRMATION) -->
+        <div class="modal-overlay" ng-if="vm.showExecuteOrderModal" ng-click="vm.showExecuteOrderModal = false">
+            <div class="modal-content" ng-click="$event.stopPropagation()" style="max-width: 520px;">
+                <div class="modal-header">
+                    <h3 style="margin: 0; font-size: 1.1rem; color: var(--primary);">
+                        <i class="fas fa-check-double"></i> توثيق تنفيذ الخدمة التمريضية
+                    </h3>
+                    <button class="btn btn-sm btn-secondary" ng-click="vm.showExecuteOrderModal = false" style="min-height: auto; padding: 4px 8px;"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="modal-body">
+                    <form ng-submit="vm.submitExecuteOrder()">
+                        <div style="background: var(--bg-primary); padding: 14px; border-radius: 8px; margin-bottom: 16px; border-right: 4px solid var(--primary);">
+                            <strong style="color: var(--primary); font-size: 0.95rem; display: block; margin-bottom: 4px;">
+                                {{vm.selectedOrder.orderDescription || vm.selectedOrder.OrderDescription}}
+                            </strong>
+                            <div style="font-size: 0.85rem; color: var(--text-secondary);">
+                                المريض: {{vm.selectedOrder.patientName || vm.selectedOrder.PatientName}} (غرفة {{vm.selectedOrder.roomNumber || vm.selectedOrder.RoomNumber}})
+                            </div>
+                        </div>
+
+                        <!-- Optional Vitals Capture -->
+                        <div style="margin-bottom: 14px;">
+                            <label style="font-size: 0.85rem; font-weight: 700; margin-bottom: 6px; display: block;">قياسات حيوية تم تسجيلها أثناء التنفيذ (اختياري)</label>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                                <input type="text" class="form-control" ng-model="vm.executeForm.vitalTemperature" placeholder="الحرارة °C">
+                                <input type="text" class="form-control" ng-model="vm.executeForm.vitalBloodPressure" placeholder="الضغط BP">
+                                <input type="text" class="form-control" ng-model="vm.executeForm.vitalPulse" placeholder="النبض bpm">
+                                <input type="text" class="form-control" ng-model="vm.executeForm.vitalOxygen" placeholder="الأوكسجين O2%">
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 16px;">
+                            <label style="font-weight: 700; margin-bottom: 4px; display: block;">ملاحظات التنفيذ أو استجابة المريض</label>
+                            <textarea class="form-control" rows="2" ng-model="vm.executeForm.notes" placeholder="تم إعطاء المغذي أو الجرعة الوريدية بالكامل بدون مضاعفات..."></textarea>
+                        </div>
+
+                        <div class="modal-footer" style="padding-right: 0; padding-left: 0; padding-bottom: 0;">
+                            <button type="submit" class="btn btn-primary btn-block" ng-disabled="vm.loading">
+                                <i class="fas fa-check-circle"></i> تأكيد وتوثيق التنفيذ الآن
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL 6: ADD WARD/ROOM/BED MODAL FOR ADMIN -->
+        <div class="modal-overlay" ng-if="vm.showAddWardModal" ng-click="vm.showAddWardModal = false">
+            <div class="modal-content" ng-click="$event.stopPropagation()" style="max-width: 600px;">
+                <div class="modal-header">
+                    <h3 style="margin: 0; font-size: 1.1rem; color: var(--primary);">
+                        <i class="fas fa-cogs"></i> إضافة تجهيزات الإيواء (أجنحة وغرف وأسرة)
+                    </h3>
+                    <button class="btn btn-sm btn-secondary" ng-click="vm.showAddWardModal = false" style="min-height: auto; padding: 4px 8px;"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="modal-body">
+                    <div style="display: flex; gap: 6px; margin-bottom: 20px;">
+                        <button class="btn btn-sm" ng-class="vm.managementSubTab === 'ward' ? 'btn-primary' : 'btn-secondary'" ng-click="vm.managementSubTab = 'ward'">1. جناح جديد</button>
+                        <button class="btn btn-sm" ng-class="vm.managementSubTab === 'room' ? 'btn-primary' : 'btn-secondary'" ng-click="vm.managementSubTab = 'room'">2. غرفة جديدة</button>
+                        <button class="btn btn-sm" ng-class="vm.managementSubTab === 'bed' ? 'btn-primary' : 'btn-secondary'" ng-click="vm.managementSubTab = 'bed'">3. سرير جديد</button>
+                    </div>
+
+                    <form ng-if="vm.managementSubTab === 'ward'" ng-submit="vm.submitWard()">
+                        <div style="margin-bottom: 12px;">
+                            <label style="font-size: 0.85rem; font-weight: 700; margin-bottom: 4px; display: block;">اسم القسم بالعربي <span style="color:red;">*</span></label>
+                            <input type="text" class="form-control" ng-model="vm.wardForm.wardNameAr" placeholder="مثال: جناح الجراحة العامة" required>
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <label style="font-size: 0.85rem; font-weight: 700; margin-bottom: 4px; display: block;">اسم القسم بالإنجليزي <span style="color:red;">*</span></label>
+                            <input type="text" class="form-control" ng-model="vm.wardForm.wardName" placeholder="Surgical Ward" required>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                            <div>
+                                <label style="font-size: 0.85rem; font-weight: 700; margin-bottom: 4px; display: block;">نوع الجنس</label>
+                                <select class="form-control" ng-model="vm.wardForm.genderType">
+                                    <option value="Mixed">مشترك</option>
+                                    <option value="Male">رجال</option>
+                                    <option value="Female">نساء</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="font-size: 0.85rem; font-weight: 700; margin-bottom: 4px; display: block;">رقم الطابق</label>
+                                <input type="number" class="form-control" ng-model="vm.wardForm.floorNumber">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block"><i class="fas fa-save"></i> حفظ الجناح</button>
+                    </form>
+
+                    <form ng-if="vm.managementSubTab === 'room'" ng-submit="vm.submitRoom()">
+                        <div style="margin-bottom: 12px;">
+                            <label style="font-size: 0.85rem; font-weight: 700; margin-bottom: 4px; display: block;">اختر الجناح التابع له <span style="color:red;">*</span></label>
+                            <select class="form-control" ng-model="vm.roomForm.wardID" required>
+                                <option value="" disabled>-- اختر الجناح --</option>
+                                <option ng-repeat="w in vm.wards" ng-value="w.wardID || w.WardID">{{w.wardNameAr || w.WardNameAr}}</option>
+                            </select>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                            <div>
+                                <label style="font-size: 0.85rem; font-weight: 700; margin-bottom: 4px; display: block;">رقم الغرفة <span style="color:red;">*</span></label>
+                                <input type="text" class="form-control" ng-model="vm.roomForm.roomNumber" placeholder="101-VIP" required>
+                            </div>
+                            <div>
+                                <label style="font-size: 0.85rem; font-weight: 700; margin-bottom: 4px; display: block;">نوع الغرفة</label>
+                                <select class="form-control" ng-model="vm.roomForm.roomType">
+                                    <option value="General">عادية</option>
+                                    <option value="Private">خاصة</option>
+                                    <option value="VIP">VIP فاخرة</option>
+                                    <option value="ICU">عناية مركزة ICU</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                            <div>
+                                <label style="font-size: 0.85rem; font-weight: 700; margin-bottom: 4px; display: block;">سعر الإقامة اليومي (د.ل)</label>
+                                <input type="number" class="form-control" ng-model="vm.roomForm.dailyRate">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.85rem; font-weight: 700; margin-bottom: 4px; display: block;">أقصى عدد أسرة</label>
+                                <input type="number" class="form-control" ng-model="vm.roomForm.maxBeds">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block"><i class="fas fa-save"></i> حفظ الغرفة</button>
+                    </form>
+
+                    <form ng-if="vm.managementSubTab === 'bed'" ng-submit="vm.submitBed()">
+                        <div style="margin-bottom: 12px;">
+                            <label style="font-size: 0.85rem; font-weight: 700; margin-bottom: 4px; display: block;">اختر الغرفة التابعة <span style="color:red;">*</span></label>
+                            <select class="form-control" ng-model="vm.bedForm.roomID" required>
+                                <option value="" disabled>-- اختر الغرفة --</option>
+                                <optgroup ng-repeat="w in vm.wards" label="{{w.wardNameAr || w.WardNameAr}}">
+                                    <option ng-repeat="r in (w.rooms || w.Rooms || [])" ng-value="r.roomID || r.RoomID">غرفة {{r.roomNumber || r.RoomNumber}} ({{r.roomType || r.RoomType}})</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <label style="font-size: 0.85rem; font-weight: 700; margin-bottom: 4px; display: block;">رقم/رمز السرير <span style="color:red;">*</span></label>
+                            <input type="text" class="form-control" ng-model="vm.bedForm.bedNumber" placeholder="B101-1" required>
+                        </div>
+                        <div style="margin-bottom: 16px;">
+                            <label style="font-size: 0.85rem; font-weight: 700; margin-bottom: 4px; display: block;">ملاحظات التجهيزات</label>
+                            <input type="text" class="form-control" ng-model="vm.bedForm.notes" placeholder="سرير عناية فاخر أو تجهيز تنفس">
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block"><i class="fas fa-save"></i> حفظ السرير</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
