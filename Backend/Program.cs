@@ -150,19 +150,27 @@ app.MapFallbackToFile("index.html");
 
 static string GetPostgresConnectionString(IConfiguration cfg)
 {
-    var raw = cfg["DATABASE_URL"];
-    if (!string.IsNullOrWhiteSpace(raw) && raw.StartsWith("postgres://"))
+    var raw = (cfg["DATABASE_URL"] ?? string.Empty).Trim();
+    if (string.IsNullOrWhiteSpace(raw))
+        throw new InvalidOperationException("DATABASE_URL is not set. Add it as an environment variable on Render (Render injects it automatically when the web service and the PostgreSQL database are in the same environment).");
+
+    if (raw.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase) ||
+        raw.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase))
     {
         var uri = new Uri(raw);
-        var info = uri.UserInfo ?? "";
-        var parts = info.Split(':', 2);
-        var user = parts.Length > 0 ? Uri.UnescapeDataString(parts[0]) : "";
-        var pass = parts.Length > 1 ? Uri.UnescapeDataString(parts[1]) : "";
-        return $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={user};Password={pass};Timeout=30;Trust Server Certificate=true";
+        var userInfo = uri.UserInfo ?? string.Empty;
+        var colon = userInfo.IndexOf(':');
+        var user = colon >= 0 ? Uri.UnescapeDataString(userInfo.Substring(0, colon)) : Uri.UnescapeDataString(userInfo);
+        var pass = colon >= 0 ? Uri.UnescapeDataString(userInfo.Substring(colon + 1)) : string.Empty;
+        var db = Uri.UnescapeDataString(uri.AbsolutePath.TrimStart('/'));
+        var port = uri.Port > 0 ? uri.Port : 5432;
+        return $"Host={uri.Host};Port={port};Database={db};Username={user};Password={pass};Timeout=30;SSL Mode=Require;Trust Server Certificate=true";
     }
-    var conn = cfg.GetConnectionString("DefaultConnection");
-    if (!string.IsNullOrWhiteSpace(conn)) return conn;
-    throw new InvalidOperationException("Missing database connection. Set DATABASE_URL or ConnectionStrings:DefaultConnection.");
+
+    if (raw.StartsWith("Host=", StringComparison.OrdinalIgnoreCase))
+        return raw;
+
+    throw new InvalidOperationException("DATABASE_URL is not a PostgreSQL connection string. It must start with postgres:// or postgresql:// (found: " + (raw.Length > 40 ? raw.Substring(0, 40) + "..." : raw) + ").");
 }
 
 app.Run();
