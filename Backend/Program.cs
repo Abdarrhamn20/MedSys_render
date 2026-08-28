@@ -10,6 +10,12 @@ using WebPush;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Bind to the port Render injects via PORT (docker free instances use 10000); fall back to 80 otherwise.
+var portEnv = builder.Configuration["PORT"];
+if (!string.IsNullOrWhiteSpace(portEnv) &&
+    int.TryParse(portEnv, out var bindPort) && bindPort is > 0 and < 65536)
+    builder.WebHost.UseUrls($"http://0.0.0.0:{bindPort}");
+
 // === Database ===
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(GetPostgresConnectionString(builder.Configuration),
