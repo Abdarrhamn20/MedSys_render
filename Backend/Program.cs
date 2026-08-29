@@ -15,36 +15,7 @@ using WebPush;
 // Legacy mode maps DateTime -> timestamp without time zone, matching the existing schema.
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
-var builder = CreateWebAppBuilder(args);
-
-static WebApplicationBuilder CreateWebAppBuilder(string[] args)
-{
-    try
-    {
-        // Default builder: reloads appsettings.json via file watchers.
-        return WebApplication.CreateBuilder(args);
-    }
-    catch (IOException ex) when (
-        ex.Message.Contains("inotify", StringComparison.OrdinalIgnoreCase) ||
-        ex.Message.Contains("file descriptors", StringComparison.OrdinalIgnoreCase))
-    {
-        // Some container hosts (e.g. shared Render free instances) exhaust the inotify limit, which
-        // makes the default reload-based configuration builder crash at startup. Fall back to a
-        // builder with NO file watchers (config loaded once; env vars still override everything).
-        var custom = new ConfigurationBuilder()
-            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
-            .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json",
-                optional: true, reloadOnChange: false)
-            .AddEnvironmentVariables()
-            .AddCommandLine(args)
-            .Build();
-        return WebApplication.CreateBuilder(new WebApplicationOptions
-        {
-            Args = args,
-            Configuration = custom
-        });
-    }
-}
+var builder = WebApplication.CreateBuilder(args);
 
 // === Database ===
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
